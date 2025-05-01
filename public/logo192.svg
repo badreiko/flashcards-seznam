@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="192" height="192" viewBox="0 0 192 192" xmlns="http://www.w3.org/2000/svg">
+    <g fill="#3498db">
+        <!-- Book Shape -->
+        <path d="M172 16H20c-8.8 0-16 7.2-16 16v144l16-16h144l16 16V32c0-8.8-7.2-16-16-16z"/>
+        <!-- Czech Flag Element -->
+        <path d="M86 86h24v24h-24z"/>
+        <path d="M86 116h24v24h-24z"/>
+        <!-- Text "Flashcards" -->
+        <text x="106" y="160" font-family="Arial" font-size="32" fill="#ecf0f1">Flashcards</text>
+    </g>
+</svg>

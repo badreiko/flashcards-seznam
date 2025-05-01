@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+    <g fill="#3498db">
+        <!-- Book Shape -->
+        <path d="M19 2H5c-1.1 0-2 .9-2 2v18l4-4h10l4 4V4c0-1.1-.9-2-2-2z"/>
+        <!-- Czech Flag Element -->
+        <path d="M11 11h2v2h-2z"/>
+        <path d="M11 14h2v2h-2z"/>
+    </g>
+</svg>

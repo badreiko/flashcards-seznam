@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+    <g fill="#3498db">
+        <!-- Book Shape -->
+        <path d="M480 32H32c-17.7 0-32 14.3-32 32v416l32-32h416l32 32V64c0-17.7-14.3-32-32-32z"/>
+        <!-- Czech Flag Element -->
+        <path d="M224 224h64v64h-64z"/>
+        <path d="M224 320h64v64h-64z"/>
+        <!-- Text "Flashcards Seznam" -->
+        <text x="256" y="416" font-family="Arial" font-size="64" fill="#ecf0f1">Flashcards Seznam</text>
+        <!-- Subtitle -->
+        <text x="256" y="464" font-family="Arial" font-size="32" fill="#ecf0f1">Изучение чешских слов</text>
+    </g>
+</svg>
