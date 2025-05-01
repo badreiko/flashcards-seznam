@@ -1,14 +1,87 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
-    <g fill="#3498db">
-        <!-- Book Shape -->
-        <path d="M480 32H32c-17.7 0-32 14.3-32 32v416l32-32h416l32 32V64c0-17.7-14.3-32-32-32z"/>
-        <!-- Czech Flag Element -->
-        <path d="M224 224h64v64h-64z"/>
-        <path d="M224 320h64v64h-64z"/>
-        <!-- Text "Flashcards Seznam" -->
-        <text x="256" y="416" font-family="Arial" font-size="64" fill="#ecf0f1">Flashcards Seznam</text>
-        <!-- Subtitle -->
-        <text x="256" y="464" font-family="Arial" font-size="32" fill="#ecf0f1">Изучение чешских слов</text>
-    </g>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Градиентный фон -->
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2c3e50" />
+      <stop offset="100%" stop-color="#34495e" />
+    </linearGradient>
+    <linearGradient id="cardGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3498db" />
+      <stop offset="100%" stop-color="#2980b9" />
+    </linearGradient>
+    <linearGradient id="redCardGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#e74c3c" />
+      <stop offset="100%" stop-color="#c0392b" />
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="15" />
+      <feOffset dx="0" dy="10" result="offsetblur" />
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.3" />
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Фон -->
+  <rect width="512" height="512" rx="30" fill="url(#bgGradient)" />
+  
+  <!-- Круг подсветки -->
+  <circle cx="380" cy="120" r="180" fill="white" opacity="0.05" />
+  
+  <!-- Стопка карточек в ряд (для эффекта колоды) -->
+  <g filter="url(#shadow)" opacity="0.8">
+    <rect x="70" y="220" width="300" height="200" rx="20" fill="#bdc3c7" transform="rotate(-12 70 220)" />
+    <rect x="80" y="210" width="300" height="200" rx="20" fill="#95a5a6" transform="rotate(-8 80 210)" />
+    <rect x="90" y="200" width="300" height="200" rx="20" fill="#7f8c8d" transform="rotate(-4 90 200)" />
+  </g>
+  
+  <!-- Основная карточка (синяя, чешский язык) -->
+  <g filter="url(#shadow)">
+    <rect x="100" y="120" width="300" height="200" rx="20" fill="url(#cardGradient)" />
+    
+    <!-- Блик на синей карточке -->
+    <rect x="130" y="140" width="240" height="70" rx="10" fill="white" opacity="0.15" />
+    
+    <!-- Глянцевый эффект -->
+    <rect x="115" y="125" width="270" height="30" rx="10" fill="white" opacity="0.15" />
+    
+    <!-- "CS" для обозначения чешского языка -->
+    <text x="130" y="180" font-family="Arial" font-size="32" font-weight="bold" fill="white">CS</text>
+    
+    <!-- Линии текста на чешском -->
+    <rect x="130" y="200" width="240" height="10" rx="5" fill="white" opacity="0.7" />
+    <rect x="130" y="220" width="180" height="10" rx="5" fill="white" opacity="0.6" />
+    <rect x="130" y="240" width="210" height="10" rx="5" fill="white" opacity="0.7" />
+    <rect x="130" y="260" width="160" height="10" rx="5" fill="white" opacity="0.6" />
+    
+    <!-- Buton переворота -->
+    <circle cx="360" cy="170" r="15" fill="white" opacity="0.3" />
+    <path d="M353 170 L360 163 L367 170 M353 170 L360 177 L367 170" stroke="white" stroke-width="2" fill="none" />
+  </g>
+  
+  <!-- Перевернутая карточка (красная, русский язык) -->
+  <g filter="url(#shadow)">
+    <rect x="180" y="160" width="300" height="200" rx="20" fill="url(#redCardGradient)" transform="rotate(12 180 160)" />
+    
+    <!-- Блик на красной карточке -->
+    <rect x="200" y="180" width="240" height="70" rx="10" fill="white" opacity="0.1" transform="rotate(12 200 180)" />
+    
+    <!-- "RU" для обозначения русского языка -->
+    <text x="240" y="230" font-family="Arial" font-size="32" font-weight="bold" fill="white" transform="rotate(12 240 230)">RU</text>
+    
+    <!-- Линии текста на русском -->
+    <rect x="240" y="250" width="200" height="10" rx="5" fill="white" opacity="0.6" transform="rotate(12 240 250)" />
+    <rect x="240" y="270" width="160" height="10" rx="5" fill="white" opacity="0.5" transform="rotate(12 240 270)" />
+    <rect x="240" y="290" width="180" height="10" rx="5" fill="white" opacity="0.6" transform="rotate(12 240 290)" />
+  </g>
+  
+  <!-- Текст "Flashcards" -->
+  <text x="256" y="410" font-family="Arial" font-size="40" font-weight="bold" fill="white" text-anchor="middle">Flashcards</text>
+  
+  <!-- Текст "Seznam" -->
+  <text x="256" y="450" font-family="Arial" font-size="40" font-weight="bold" fill="#3498db" text-anchor="middle">Seznam</text>
 </svg>
