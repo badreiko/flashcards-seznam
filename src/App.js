@@ -19,7 +19,7 @@ const App = () => {
     const lowerCaseText = text.toLowerCase();
     
     // Удаляем символы пунктуации и заменяем их пробелами
-    const cleanedText = lowerCaseText.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()«»„"\[\]]/g, ' ');
+    const cleanedText = lowerCaseText.replace(/[.,/#!$%^&*;:{}=\-_`~()«»„"[\]]/g, ' ');
     
     // Разбиваем на слова и убираем лишние пробелы
     const words = cleanedText
