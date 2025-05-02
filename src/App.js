@@ -1,9 +1,43 @@
 import React, { useState } from 'react';
+import { translateText } from './translator';
+
+// Типы для карточек
+type Translation = {
+  word: string;
+  translations: string[];
+  samples: Array<{
+    phrase: string;
+    translation: string;
+  }>;
+  note?: string;
+};
 
 // ----- Вспомогательные функции для обработки текста -----
-const extractUniqueWords = (text) => {
+const extractUniqueWords = (text: string): string[] => {
   if (!text || typeof text !== 'string') {
-    return [];
+    throw new Error('Invalid input text');
+  }
+
+  try {
+    // Приводим к нижнему регистру
+    const lowerCaseText = text.toLowerCase();
+    
+    // Удаляем символы пунктуации и заменяем их пробелами
+    const cleanedText = lowerCaseText.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()«»„"\[\]]/g, ' ');
+    
+    // Разбиваем на слова и убираем лишние пробелы
+    const words = cleanedText
+      .split(/\s+/)
+      .filter(word => word.length > 1 && word.match(/^[a-zA-ZáčďéěíňóřšťúůýžÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ]+$/)); // Фильтруем только чешские слова
+    
+    // Создаем множество (Set) для исключения дубликатов
+    const uniqueWordsSet = new Set(words);
+    
+    // Преобразуем множество обратно в массив и сортируем
+    return Array.from(uniqueWordsSet).sort();
+  } catch (error) {
+    console.error('Error extracting words:', error);
+    throw error;
   }
 
   // Приводим к нижнему регистру
@@ -24,21 +58,22 @@ const extractUniqueWords = (text) => {
   return Array.from(uniqueWordsSet).sort();
 };
 
-// ----- API для работы с переводами -----
-const fetchTranslation = async (word) => {
-  if (!word) return null;
+// ----- API для работы с переводами с использованием LibreTranslate API -----
+const fetchTranslation = async (word: string): Promise<Translation | null> => {
+  if (!word || typeof word !== 'string') {
+    throw new Error('Invalid word for translation');
+  }
 
-  const url = `http://slovnik.rpeshkov.com/translate?word=${encodeURIComponent(word)}`;
-  
   try {
-    const response = await fetch(url);
+    // Используем LibreTranslate API для перевода
+    const translatedText = await translateText(word, 'cs', 'ru');
     
-    if (!response.ok) {
-      throw new Error(`HTTP error: ${response.status}`);
-    }
-    
-    const data = await response.json();
-    return data[0] || null; // Возвращаем первый результат или null
+    // Создаем объект в формате, совместимом с приложением
+    return {
+      word: word,
+      translations: [translatedText],
+      samples: [] // LibreTranslate не предоставляет примеры использования
+    };
   } catch (error) {
     console.error(`Error fetching translation for word "${word}":`, error);
     return null;
@@ -46,7 +81,14 @@ const fetchTranslation = async (word) => {
 };
 
 // ----- Компонент для ввода текста -----
-const TextInput = ({ text, onTextChange, onExtractWords }) => {
+interface TextInputProps {
+  text: string;
+  onTextChange: (text: string) => void;
+  onExtractWords: () => void;
+  isLoading?: boolean;
+}
+
+const TextInput = ({ text, onTextChange, onExtractWords, isLoading = false }: TextInputProps) => {
   return (
     <div className="text-input">
       <h2>Введите текст на чешском языке</h2>
@@ -73,8 +115,23 @@ const TextInput = ({ text, onTextChange, onExtractWords }) => {
   );
 };
 
+// ----- Индикатор прогресса -----
+const ProgressIndicator = ({ progress }) => {
+  return (
+    <div className="progress-container">
+      <div className="progress-bar">
+        <div 
+          className="progress-bar-fill" 
+          style={{ width: `${progress}%` }}
+        />
+      </div>
+      <div className="progress-text">{progress}% завершено</div>
+    </div>
+  );
+};
+
 // ----- Компонент карточки -----
-const Flashcard = ({ word, translations, samples }) => {
+const Flashcard = ({ word, translations, samples, note }) => {
   const [isFlipped, setIsFlipped] = useState(false);
   
   const handleFlip = () => {
@@ -124,7 +181,13 @@ const Flashcard = ({ word, translations, samples }) => {
             </div>
           )}
           
+          {note && <p className="note">{note}</p>}
+          
           <p className="hint">Нажмите, чтобы вернуться к слову</p>
+          
+          <div className="attribution">
+            Перевод: LibreTranslate
+          </div>
         </div>
       </div>
     </div>
@@ -132,7 +195,11 @@ const Flashcard = ({ word, translations, samples }) => {
 };
 
 // ----- Компонент просмотра карточек -----
-const FlashcardViewer = ({ flashcards }) => {
+interface FlashcardViewerProps {
+  flashcards: Translation[];
+}
+
+const FlashcardViewer = ({ flashcards }: FlashcardViewerProps) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   
   if (!flashcards || flashcards.length === 0) {
@@ -172,6 +239,7 @@ const FlashcardViewer = ({ flashcards }) => {
           word={currentCard.word}
           translations={currentCard.translations}
           samples={currentCard.samples}
+          note={currentCard.note}
         />
         
         <button 
@@ -197,19 +265,40 @@ const FlashcardViewer = ({ flashcards }) => {
 };
 
 // ----- Главный компонент приложения -----
-const App = () => {
+interface AppProps {
+  // Добавьте пропсы, если они будут использоваться
+}
+
+const App: React.FC<AppProps> = () => {
   const [text, setText] = useState('');
   const [uniqueWords, setUniqueWords] = useState([]);
   const [flashcards, setFlashcards] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState('input'); // input, extracted, translated
+  const [progress, setProgress] = useState(0);
 
   const handleTextChange = (newText) => {
     setText(newText);
   };
 
-  const handleExtractWords = () => {
-    if (!text.trim()) return;
+  const handleExtractWords = async () => {
+    if (!text.trim()) {
+      alert('Пожалуйста, введите текст');
+      return;
+    }
+
+    try {
+      const words = extractUniqueWords(text);
+      if (words.length === 0) {
+        alert('Не найдено подходящих слов для изучения');
+        return;
+      }
+      setUniqueWords(words);
+      setCurrentStep('extracted');
+    } catch (error) {
+      console.error('Error extracting words:', error);
+      alert('Ошибка при обработке текста. Пожалуйста, проверьте введенный текст.');
+    }
     
     const words = extractUniqueWords(text);
     setUniqueWords(words);
@@ -217,22 +306,43 @@ const App = () => {
   };
 
   const handleGetTranslations = async () => {
+    if (uniqueWords.length === 0) {
+      alert('Сначала извлеките слова из текста');
+      return;
+    }
+
+    setIsLoading(true);
+    setProgress(0);
     if (uniqueWords.length === 0) return;
     
     setIsLoading(true);
+    setProgress(0);
     
     try {
       const translatedCards = [];
+      let completed = 0;
+      const total = uniqueWords.length;
       
-      // Обрабатываем последовательно, чтобы не перегружать API
-      for (const word of uniqueWords) {
-        const translation = await fetchTranslation(word);
-        if (translation) {
-          translatedCards.push({
-            word: word,
-            translations: translation.translations || [],
-            samples: translation.samples || []
-          });
+      // Обрабатываем по 5 слов за раз, чтобы не перегружать API
+      for (let i = 0; i < uniqueWords.length; i += 5) {
+        const batch = uniqueWords.slice(i, i + 5);
+        const batchPromises = batch.map(word => fetchTranslation(word));
+        
+        const batchResults = await Promise.all(batchPromises);
+        
+        batchResults.forEach(result => {
+          if (result) {
+            translatedCards.push(result);
+          }
+        });
+        
+        // Обновляем прогресс
+        completed += batch.length;
+        setProgress(Math.floor((completed / total) * 100));
+        
+        // Небольшая задержка, чтобы не перегружать API
+        if (i + 5 < uniqueWords.length) {
+          await new Promise(resolve => setTimeout(resolve, 500));
         }
       }
       
@@ -242,14 +352,31 @@ const App = () => {
       console.error('Error fetching translations:', error);
     } finally {
       setIsLoading(false);
+      setProgress(100);
     }
   };
 
   const handleReset = () => {
+    if (currentStep === 'translated' || currentStep === 'extracted') {
+      if (window.confirm('Вы уверены, что хотите сбросить прогресс?')) {
+        setText('');
+        setUniqueWords([]);
+        setFlashcards([]);
+        setCurrentStep('input');
+        setProgress(0);
+      }
+    } else {
+      setText('');
+      setUniqueWords([]);
+      setFlashcards([]);
+      setCurrentStep('input');
+      setProgress(0);
+    }
     setText('');
     setUniqueWords([]);
     setFlashcards([]);
     setCurrentStep('input');
+    setProgress(0);
   };
 
   return (
@@ -288,6 +415,35 @@ const App = () => {
                 Сбросить
               </button>
             </div>
+            
+            {isLoading && (
+              <div className="loading-state">
+                <ProgressIndicator progress={progress} />
+                <p>Получение переводов для {uniqueWords.length} слов...</p>
+              </div>
+            )}
+          </div>
+        )}
+            <h2>Найдено {uniqueWords.length} уникальных слов</h2>
+            <div className="words-container">
+              {uniqueWords.map((word, index) => (
+                <span key={index} className="word-chip">{word}</span>
+              ))}
+            </div>
+            <div className="actions">
+              <button 
+                className="btn btn-primary"
+                onClick={handleGetTranslations}
+                disabled={isLoading}
+              >
+                {isLoading ? 'Загрузка...' : 'Получить переводы'}
+              </button>
+              <button className="btn btn-secondary" onClick={handleReset}>
+                Сбросить
+              </button>
+            </div>
+            
+            {isLoading && <ProgressIndicator progress={progress} />}
           </div>
         )}
 
@@ -299,11 +455,25 @@ const App = () => {
                 Начать заново
               </button>
             </div>
+            <div className="api-attribution">
+              Переводы предоставлены API <a href="https://libretranslate.com/" target="_blank" rel="noopener noreferrer">LibreTranslate</a>
+            </div>
+          </>
+        )}
+            <div className="actions">
+              <button className="btn btn-secondary" onClick={handleReset}>
+                Начать заново
+              </button>
+            </div>
+            <div className="api-attribution">
+              Переводы предоставлены API <a href="https://libretranslate.com/" target="_blank" rel="noopener noreferrer">LibreTranslate</a>
+            </div>
           </>
         )}
       </main>
 
-      <style>{`
+      <style jsx>{`
+        /* Основные стили CSS */
         :root {
           --primary-color: #2c3e50;
           --secondary-color: #3498db;
@@ -439,6 +609,7 @@ const App = () => {
           border-color: var(--secondary-color);
         }
         
+        /* Стили для TextInput */
         .text-input {
           width: 100%;
           max-width: 800px;
@@ -483,6 +654,7 @@ const App = () => {
           min-width: 200px;
         }
         
+        /* Стили для FlashcardViewer */
         .flashcard-viewer {
           width: 100%;
           max-width: 800px;
@@ -561,6 +733,7 @@ const App = () => {
           color: var(--dark-color);
         }
         
+        /* Стили для Flashcard */
         .flashcard {
           width: 100%;
           max-width: 400px;
@@ -670,6 +843,57 @@ const App = () => {
           font-style: italic;
         }
         
+        .note {
+          font-size: 0.9rem;
+          font-style: italic;
+          color: var(--dark-color);
+          margin-top: 10px;
+          text-align: center;
+        }
+        
+        .attribution {
+          font-size: 0.8rem;
+          color: #999;
+          position: absolute;
+          bottom: 5px;
+          right: 10px;
+        }
+        
+        .api-attribution {
+          text-align: center;
+          margin-top: 20px;
+          font-size: 0.9rem;
+          color: #999;
+        }
+        
+        /* Стили для индикатора прогресса */
+        .progress-container {
+          margin: 20px auto;
+          max-width: 400px;
+        }
+        
+        .progress-bar {
+          height: 10px;
+          background-color: #ecf0f1;
+          border-radius: 5px;
+          overflow: hidden;
+          margin-bottom: 5px;
+        }
+        
+        .progress-bar-fill {
+          height: 100%;
+          background-color: var(--secondary-color);
+          border-radius: 5px;
+          transition: width 0.3s ease;
+        }
+        
+        .progress-text {
+          font-size: 14px;
+          color: #7f8c8d;
+          text-align: center;
+        }
+        
+        /* Адаптивные стили */
         @media screen and (max-width: 768px) {
           .app {
             padding: 10px;
@@ -708,9 +932,3 @@ const App = () => {
             flex-wrap: wrap;
           }
         }
-      `}</style>
-    </div>
-  );
-};
-
-export default App;
