@@ -585,6 +585,35 @@
         }
       }
 
+      // Функция для получения перевода слова через LibreTranslate API
+      async function fetchTranslation(word) {
+        if (!word) return null;
+
+        try {
+          // Используем LibreTranslate API для перевода
+          const translatedText = await translateText(word, 'cs', 'ru');
+          
+          // Создаем объект в формате, совместимом с приложением
+          return {
+            word: word,
+            translations: [translatedText],
+            samples: [] // LibreTranslate не предоставляет примеры использования
+          };
+        } catch (error) {
+          console.error(`Error fetching translation for word "${word}":`, error);
+          // Возвращаем объект с исходным словом, но без перевода
+          return {
+            word: word,
+            translations: [],
+            samples: [],
+            note: "Не удалось получить перевод."
+          };
+        }
+      }
+
+      // Делаем функцию fetchTranslation доступной глобально для App.js
+      window.fetchTranslation = fetchTranslation;
+
       // Основной код приложения
       const { useState } = React;
 
@@ -598,7 +627,7 @@
         const lowerCaseText = text.toLowerCase();
         
         // Удаляем символы пунктуации и заменяем их пробелами
-        const cleanedText = lowerCaseText.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()«»„"\[\]]/g, ' ');
+        const cleanedText = lowerCaseText.replace(/[.,/#!$%^&*;:{}=\-_`~()«»„"[\]]/g, ' ');
         
         // Разбиваем на слова и убираем лишние пробелы
         const words = cleanedText
@@ -783,32 +812,6 @@
             </div>
           </div>
         );
-      };
-
-      // Функция для получения перевода слова через LibreTranslate API
-      const fetchTranslation = async (word) => {
-        if (!word) return null;
-
-        try {
-          // Используем LibreTranslate API для перевода
-          const translatedText = await translateText(word, 'cs', 'ru');
-          
-          // Создаем объект в формате, совместимом с приложением
-          return {
-            word: word,
-            translations: [translatedText],
-            samples: [] // LibreTranslate не предоставляет примеры использования
-          };
-        } catch (error) {
-          console.error(`Error fetching translation for word "${word}":`, error);
-          // Возвращаем объект с исходным словом, но без перевода
-          return {
-            word: word,
-            translations: [],
-            samples: [],
-            note: "Не удалось получить перевод."
-          };
-        }
       };
 
       // Основной компонент приложения
