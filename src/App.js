@@ -87,14 +87,16 @@ async function getSupportedLanguages() {
 }
 
 // Основной код приложения
+import React, { useState } from 'react';
+
 const App = () => {
-  const [text, setText] = React.useState('');
-  const [uniqueWords, setUniqueWords] = React.useState([]);
-  const [flashcards, setFlashcards] = React.useState([]);
-  const [isLoading, setIsLoading] = React.useState(false);
-  const [currentStep, setCurrentStep] = React.useState('input'); // input, extracted, translated
-  const [progress, setProgress] = React.useState(0);
-  const [error, setError] = React.useState('');
+  const [text, setText] = useState('');
+  const [uniqueWords, setUniqueWords] = useState([]);
+  const [flashcards, setFlashcards] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [currentStep, setCurrentStep] = useState('input'); // input, extracted, translated
+  const [progress, setProgress] = useState(0);
+  const [error, setError] = useState('');
 
   // Функция для извлечения уникальных слов из текста
   const extractUniqueWords = (text) => {
@@ -272,7 +274,7 @@ const App = () => {
 
   // Компонент карточки
   const Flashcard = ({ word, translations, samples, note }) => {
-    const [isFlipped, setIsFlipped] = React.useState(false);
+    const [isFlipped, setIsFlipped] = useState(false);
     
     const handleFlip = () => {
       setIsFlipped(!isFlipped);
@@ -336,7 +338,7 @@ const App = () => {
 
   // Компонент просмотра карточек
   const FlashcardViewer = ({ flashcards }) => {
-    const [currentIndex, setCurrentIndex] = React.useState(0);
+    const [currentIndex, setCurrentIndex] = useState(0);
     
     if (!flashcards || flashcards.length === 0) {
       return <div className="no-cards">Карточки не найдены</div>;
