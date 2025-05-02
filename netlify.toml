@@ -1,22 +1,12 @@
-[build]
-  base = ""
-  publish = "build"
-  command = "npm run build"
+[[headers]]
+  # Определяем заголовки для всех файлов
+  for = "/*"
+    [headers.values]
+    # Разрешаем кросс-доменные запросы
+    Access-Control-Allow-Origin = "*"
 
-[build.environment]
-  NODE_VERSION = "18"
-
+# Перенаправление всех маршрутов на index.html для SPA
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
-
-[[headers]]
-  for = "/*"
-  [headers.values]
-    X-Frame-Options = "DENY"
-    X-XSS-Protection = "1; mode=block"
-    X-Content-Type-Options = "nosniff"
-    Strict-Transport-Security = "max-age=31536000; includeSubDomains"
-    Referrer-Policy = "strict-origin-when-cross-origin"
-    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://api.seznam.cz;"

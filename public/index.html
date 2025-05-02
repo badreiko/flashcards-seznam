@@ -2,20 +2,39 @@
 <html lang="ru">
   <head>
     <meta charset="utf-8" />
-    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
+    <link rel="icon" href="favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#3498db" />
     <meta
       name="description"
       content="Flashcards Seznam - приложение для изучения чешских слов с помощью карточек"
     />
-    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
-    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    <link rel="apple-touch-icon" href="logo192.png" />
+    <link rel="manifest" href="manifest.json" />
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <title>Flashcards Seznam</title>
   </head>
   <body>
     <noscript>Для работы приложения необходимо включить JavaScript.</noscript>
     <div id="root"></div>
+    
+    <!-- Скрипты React -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- Babel для поддержки JSX -->
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+    
+    <!-- Основной скрипт приложения -->
+    <script type="text/babel" src="app.js"></script>
+    
+    <!-- Скрипт инициализации -->
+    <script type="text/babel">
+      ReactDOM.createRoot(document.getElementById('root')).render(
+        <React.StrictMode>
+          <App />
+        </React.StrictMode>
+      );
+    </script>
   </body>
 </html>
