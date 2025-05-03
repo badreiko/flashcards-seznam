@@ -495,10 +495,10 @@
     <!-- Babel для поддержки JSX -->
     <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
     
-    <!-- Основной скрипт приложения -->
-    <script type="text/babel">
+    <!-- Сначала определяем глобальную функцию fetchTranslation -->
+    <script>
       // Функция для получения перевода слова через несколько общедоступных экземпляров LibreTranslate
-      async function fetchTranslation(word) {
+      window.fetchTranslation = async function(word) {
         if (!word) return null;
 
         // Кэш переводов для ускорения работы и снижения нагрузки на API
@@ -572,11 +572,11 @@
           samples: [],
           note: "Не удалось получить перевод. Пожалуйста, попробуйте позже."
         };
-      }
-
-      // Делаем функцию fetchTranslation доступной глобально для App.js
-      window.fetchTranslation = fetchTranslation;
-
+      };
+    </script>
+    
+    <!-- Основной скрипт приложения -->
+    <script type="text/babel">
       // Основной код приложения
       const { useState } = React;
 
@@ -671,14 +671,14 @@
                 
                 <div className="translations">
                   {translations && translations.length > 0 ? (
-                    <>
+                    <div>
                       <h4>Переводы:</h4>
                       <ul>
                         {translations.map((translation, index) => (
                           <li key={index}>{translation}</li>
                         ))}
                       </ul>
-                    </>
+                    </div>
                   ) : (
                     <p className="no-translations">Переводы не найдены</p>
                   )}
@@ -818,7 +818,7 @@
             // Обрабатываем по 3 слова за раз, чтобы не перегружать API
             for (let i = 0; i < uniqueWords.length; i += 3) {
               const batch = uniqueWords.slice(i, i + 3);
-              const batchPromises = batch.map(word => fetchTranslation(word));
+              const batchPromises = batch.map(word => window.fetchTranslation(word));
               
               try {
                 const batchResults = await Promise.all(batchPromises);
@@ -911,7 +911,7 @@
               )}
 
               {currentStep === 'translated' && (
-                <>
+                <div>
                   <FlashcardViewer flashcards={flashcards} />
                   <div className="actions">
                     <button className="btn btn-secondary" onClick={handleReset}>
@@ -921,7 +921,7 @@
                   <div className="api-attribution">
                     Переводы предоставлены API <a href="https://github.com/LibreTranslate/LibreTranslate" target="_blank" rel="noopener noreferrer">LibreTranslate</a>
                   </div>
-                </>
+                </div>
               )}
             </main>
           </div>
