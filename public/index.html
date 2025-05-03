@@ -497,118 +497,81 @@
     
     <!-- Основной скрипт приложения -->
     <script type="text/babel">
-      // api/translator.js
-      // Функции для работы с LibreTranslate API
-      const API_URL = "https://translate.argosopentech.com/translate";
-      const DETECT_URL = "https://translate.argosopentech.com/detect";
-      const LANGUAGES_URL = "https://translate.argosopentech.com/languages";
-
-      async function translateText(text, sourceLang = 'cs', targetLang = 'ru') {
-        if (!text || text.trim() === '') {
-          return '';
-        }
-
-        try {
-          const response = await fetch(API_URL, {
-            method: 'POST',
-            body: JSON.stringify({
-              q: text,
-              source: sourceLang,
-              target: targetLang,
-              format: "text"
-            }),
-            headers: {
-              'Content-Type': 'application/json'
-            }
-          });
-
-          if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(`Translation error: ${errorData.error || response.statusText}`);
-          }
-
-          const data = await response.json();
-          return data.translatedText;
-        } catch (error) {
-          console.error('Translation failed:', error);
-          // Возвращаем исходный текст в случае ошибки
-          return text;
-        }
-      }
-
-      async function detectLanguage(text) {
-        if (!text || text.trim() === '') {
-          return null;
-        }
-
-        try {
-          const response = await fetch(DETECT_URL, {
-            method: 'POST',
-            body: JSON.stringify({
-              q: text
-            }),
-            headers: {
-              'Content-Type': 'application/json'
-            }
-          });
-
-          if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(`Language detection error: ${errorData.error || response.statusText}`);
-          }
-
-          const data = await response.json();
-          if (data && data.length > 0) {
-            // Возвращаем код языка с наивысшей вероятностью
-            return data[0].language;
-          }
-          return null;
-        } catch (error) {
-          console.error('Language detection failed:', error);
-          return null;
-        }
-      }
-
-      async function getSupportedLanguages() {
-        try {
-          const response = await fetch(LANGUAGES_URL);
-          
-          if (!response.ok) {
-            throw new Error(`Failed to get supported languages: ${response.statusText}`);
-          }
-
-          const languages = await response.json();
-          return languages;
-        } catch (error) {
-          console.error('Failed to fetch supported languages:', error);
-          return [];
-        }
-      }
-
-      // Функция для получения перевода слова через LibreTranslate API
+      // Функция для получения перевода слова через несколько общедоступных экземпляров LibreTranslate
       async function fetchTranslation(word) {
         if (!word) return null;
 
-        try {
-          // Используем LibreTranslate API для перевода
-          const translatedText = await translateText(word, 'cs', 'ru');
-          
-          // Создаем объект в формате, совместимом с приложением
-          return {
-            word: word,
-            translations: [translatedText],
-            samples: [] // LibreTranslate не предоставляет примеры использования
-          };
-        } catch (error) {
-          console.error(`Error fetching translation for word "${word}":`, error);
-          // Возвращаем объект с исходным словом, но без перевода
-          return {
-            word: word,
-            translations: [],
-            samples: [],
-            note: "Не удалось получить перевод."
-          };
+        // Кэш переводов для ускорения работы и снижения нагрузки на API
+        if (!window.translationsCache) {
+          window.translationsCache = {};
         }
+        
+        // Если перевод уже в кэше, возвращаем его
+        if (window.translationsCache[word]) {
+          console.log(`Используем кэшированный перевод для "${word}"`);
+          return window.translationsCache[word];
+        }
+
+        // Массив общедоступных API LibreTranslate
+        const translateApis = [
+          "https://libretranslate.de/translate",
+          "https://translate.terraprint.co/translate", 
+          "https://translate.astian.org/translate",
+          "https://translate.fortytwo-it.com/translate"
+        ];
+        
+        // Пробуем каждый API по очереди
+        for (const apiUrl of translateApis) {
+          try {
+            console.log(`Попытка перевода с ${apiUrl}`);
+            
+            const response = await fetch(apiUrl, {
+              method: 'POST',
+              body: JSON.stringify({
+                q: word,
+                source: 'cs',
+                target: 'ru',
+                format: "text"
+              }),
+              headers: {
+                'Content-Type': 'application/json'
+              }
+            });
+
+            if (!response.ok) {
+              console.warn(`API ${apiUrl} вернул статус ${response.status}, пробуем следующий API...`);
+              continue;
+            }
+
+            const data = await response.json();
+            
+            if (data && (data.translatedText || data.translation)) {
+              console.log(`Успешно переведено с ${apiUrl}`);
+              
+              const result = {
+                word: word,
+                translations: [data.translatedText || data.translation],
+                samples: [] // API не предоставляет примеры использования
+              };
+              
+              // Сохраняем в кэш
+              window.translationsCache[word] = result;
+              
+              return result;
+            }
+          } catch (error) {
+            console.error(`Ошибка с API ${apiUrl}:`, error);
+          }
+        }
+        
+        // Если все API не сработали, возвращаем объект с исходным словом
+        console.error('Все API перевода не сработали');
+        return {
+          word: word,
+          translations: [],
+          samples: [],
+          note: "Не удалось получить перевод. Пожалуйста, попробуйте позже."
+        };
       }
 
       // Делаем функцию fetchTranslation доступной глобально для App.js
@@ -852,9 +815,9 @@
             let completed = 0;
             const total = uniqueWords.length;
             
-            // Обрабатываем по 5 слов за раз, чтобы не перегружать API
-            for (let i = 0; i < uniqueWords.length; i += 5) {
-              const batch = uniqueWords.slice(i, i + 5);
+            // Обрабатываем по 3 слова за раз, чтобы не перегружать API
+            for (let i = 0; i < uniqueWords.length; i += 3) {
+              const batch = uniqueWords.slice(i, i + 3);
               const batchPromises = batch.map(word => fetchTranslation(word));
               
               try {
@@ -875,8 +838,8 @@
               setProgress(Math.floor((completed / total) * 100));
               
               // Небольшая задержка, чтобы не перегружать API
-              if (i + 5 < uniqueWords.length) {
-                await new Promise(resolve => setTimeout(resolve, 500));
+              if (i + 3 < uniqueWords.length) {
+                await new Promise(resolve => setTimeout(resolve, 2000)); // 2 секунды задержки
               }
             }
             
@@ -956,7 +919,7 @@
                     </button>
                   </div>
                   <div className="api-attribution">
-                    Переводы предоставлены API <a href="https://libretranslate.com/" target="_blank" rel="noopener noreferrer">LibreTranslate</a>
+                    Переводы предоставлены API <a href="https://github.com/LibreTranslate/LibreTranslate" target="_blank" rel="noopener noreferrer">LibreTranslate</a>
                   </div>
                 </>
               )}
