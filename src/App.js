@@ -1,5 +1,279 @@
 import React, { useState } from 'react';
 
+// Функция для получения перевода слова через несколько общедоступных экземпляров LibreTranslate
+async function fetchTranslation(word) {
+  if (!word) return null;
+
+  // Кэш переводов для ускорения работы и снижения нагрузки на API
+  if (!window.translationsCache) {
+    window.translationsCache = {};
+  }
+  
+  // Если перевод уже в кэше, возвращаем его
+  if (window.translationsCache[word]) {
+    console.log(`Используем кэшированный перевод для "${word}"`);
+    return window.translationsCache[word];
+  }
+
+  // Массив общедоступных API LibreTranslate
+  const translateApis = [
+    "https://libretranslate.de/translate",
+    "https://translate.terraprint.co/translate", 
+    "https://translate.astian.org/translate",
+    "https://translate.fortytwo-it.com/translate"
+  ];
+  
+  // Пробуем каждый API по очереди
+  for (const apiUrl of translateApis) {
+    try {
+      console.log(`Попытка перевода с ${apiUrl}`);
+      
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        body: JSON.stringify({
+          q: word,
+          source: 'cs',
+          target: 'ru',
+          format: "text"
+        }),
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        console.warn(`API ${apiUrl} вернул статус ${response.status}, пробуем следующий API...`);
+        continue;
+      }
+
+      const data = await response.json();
+      
+      if (data && (data.translatedText || data.translation)) {
+        console.log(`Успешно переведено с ${apiUrl}`);
+        
+        const result = {
+          word: word,
+          translations: [data.translatedText || data.translation],
+          samples: [] // API не предоставляет примеры использования
+        };
+        
+        // Сохраняем в кэш
+        window.translationsCache[word] = result;
+        
+        return result;
+      }
+    } catch (error) {
+      console.error(`Ошибка с API ${apiUrl}:`, error);
+    }
+  }
+  
+  // Если все API не сработали, возвращаем объект с исходным словом
+  console.error('Все API перевода не сработали');
+  return {
+    word: word,
+    translations: [],
+    samples: [],
+    note: "Не удалось получить перевод. Пожалуйста, попробуйте позже."
+  };
+}
+
+// Функция для извлечения уникальных слов из текста
+const extractUniqueWords = (text) => {
+  if (!text || typeof text !== 'string') {
+    return [];
+  }
+
+  // Приводим к нижнему регистру
+  const lowerCaseText = text.toLowerCase();
+  
+  // Удаляем символы пунктуации и заменяем их пробелами
+  const cleanedText = lowerCaseText.replace(/[.,/#!$%^&*;:{}=\-_`~()«»„"[\]]/g, ' ');
+  
+  // Разбиваем на слова и убираем лишние пробелы
+  const words = cleanedText
+    .split(/\s+/)
+    .filter(word => word.length > 1); // Исключаем односимвольные слова
+  
+  // Создаем множество (Set) для исключения дубликатов
+  const uniqueWordsSet = new Set(words);
+  
+  // Преобразуем множество обратно в массив
+  return Array.from(uniqueWordsSet).sort();
+};
+
+// Компонент для ввода текста
+const TextInput = ({ text, onTextChange, onExtractWords }) => {
+  return (
+    <div className="text-input">
+      <h2>Введите текст на чешском языке</h2>
+      <p className="instruction">
+        Вставьте текст (статью, рассказ, диалог) на чешском языке, из которого нужно извлечь слова для изучения.
+      </p>
+      
+      <textarea
+        className="text-area"
+        value={text}
+        onChange={(e) => onTextChange(e.target.value)}
+        placeholder="Вставьте текст на чешском языке..."
+        rows={10}
+      />
+      
+      <button 
+        className="btn btn-primary"
+        onClick={onExtractWords}
+        disabled={!text.trim()}
+      >
+        Извлечь слова
+      </button>
+    </div>
+  );
+};
+
+// Компонент индикатора прогресса
+const ProgressIndicator = ({ progress }) => {
+  return (
+    <div className="progress-container">
+      <div className="progress-bar">
+        <div 
+          className="progress-bar-fill" 
+          style={{ width: `${progress}%` }}
+        />
+      </div>
+      <div className="progress-text">{progress}% завершено</div>
+    </div>
+  );
+};
+
+// Компонент карточки
+const Flashcard = ({ word, translations, samples, note }) => {
+  const [isFlipped, setIsFlipped] = useState(false);
+  
+  const handleFlip = () => {
+    setIsFlipped(!isFlipped);
+  };
+  
+  return (
+    <div 
+      className={`flashcard ${isFlipped ? 'flipped' : ''}`} 
+      onClick={handleFlip}
+    >
+      <div className="card-inner">
+        <div className="card-front">
+          <div className="word">{word}</div>
+          <p className="hint">Нажмите, чтобы увидеть перевод</p>
+        </div>
+        
+        <div className="card-back">
+          <h3 className="original-word">{word}</h3>
+          
+          <div className="translations">
+            {translations && translations.length > 0 ? (
+              <div>
+                <h4>Переводы:</h4>
+                <ul>
+                  {translations.map((translation, index) => (
+                    <li key={index}>{translation}</li>
+                  ))}
+                </ul>
+              </div>
+            ) : (
+              <p className="no-translations">Переводы не найдены</p>
+            )}
+          </div>
+          
+          {samples && samples.length > 0 && (
+            <div className="examples">
+              <h4>Примеры:</h4>
+              <ul>
+                {samples.map((sample, index) => (
+                  <li key={index}>
+                    <div className="sample-phrase">{sample.phrase}</div>
+                    <div className="sample-translation">{sample.translation}</div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          
+          {note && <p className="note">{note}</p>}
+          
+          <p className="hint">Нажмите, чтобы вернуться к слову</p>
+          
+          <div className="attribution">
+            Перевод: LibreTranslate
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Компонент просмотра карточек
+const FlashcardViewer = ({ flashcards }) => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  
+  if (!flashcards || flashcards.length === 0) {
+    return <div className="no-cards">Карточки не найдены</div>;
+  }
+  
+  const currentCard = flashcards[currentIndex];
+  
+  const goToPrevious = () => {
+    setCurrentIndex((prevIndex) => 
+      prevIndex === 0 ? flashcards.length - 1 : prevIndex - 1
+    );
+  };
+  
+  const goToNext = () => {
+    setCurrentIndex((prevIndex) => 
+      prevIndex === flashcards.length - 1 ? 0 : prevIndex + 1
+    );
+  };
+  
+  return (
+    <div className="flashcard-viewer">
+      <div className="progress-info">
+        Карточка {currentIndex + 1} из {flashcards.length}
+      </div>
+      
+      <div className="card-container">
+        <button 
+          className="nav-btn prev-btn"
+          onClick={goToPrevious}
+          aria-label="Предыдущая карточка"
+        >
+          &lt;
+        </button>
+        
+        <Flashcard 
+          word={currentCard.word}
+          translations={currentCard.translations}
+          samples={currentCard.samples}
+          note={currentCard.note}
+        />
+        
+        <button 
+          className="nav-btn next-btn"
+          onClick={goToNext}
+          aria-label="Следующая карточка"
+        >
+          &gt;
+        </button>
+      </div>
+      
+      <div className="card-progress">
+        {flashcards.map((_, index) => (
+          <span 
+            key={index} 
+            className={`progress-dot ${index === currentIndex ? 'active' : ''}`}
+            onClick={() => setCurrentIndex(index)}
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
+
 const App = () => {
   const [text, setText] = useState('');
   const [uniqueWords, setUniqueWords] = useState([]);
@@ -8,30 +282,6 @@ const App = () => {
   const [currentStep, setCurrentStep] = useState('input'); // input, extracted, translated
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState('');
-
-  // Функция для извлечения уникальных слов из текста
-  const extractUniqueWords = (text) => {
-    if (!text || typeof text !== 'string') {
-      return [];
-    }
-
-    // Приводим к нижнему регистру
-    const lowerCaseText = text.toLowerCase();
-    
-    // Удаляем символы пунктуации и заменяем их пробелами
-    const cleanedText = lowerCaseText.replace(/[.,/#!$%^&*;:{}=\-_`~()«»„"[\]]/g, ' ');
-    
-    // Разбиваем на слова и убираем лишние пробелы
-    const words = cleanedText
-      .split(/\s+/)
-      .filter(word => word.length > 1); // Исключаем односимвольные слова
-    
-    // Создаем множество (Set) для исключения дубликатов
-    const uniqueWordsSet = new Set(words);
-    
-    // Преобразуем множество обратно в массив
-    return Array.from(uniqueWordsSet).sort();
-  };
 
   // Обработчик изменения текста
   const handleTextChange = (newText) => {
@@ -61,10 +311,10 @@ const App = () => {
       let completed = 0;
       const total = uniqueWords.length;
       
-      // Обрабатываем по 5 слов за раз, чтобы не перегружать API
-      for (let i = 0; i < uniqueWords.length; i += 5) {
-        const batch = uniqueWords.slice(i, i + 5);
-        const batchPromises = batch.map(word => window.fetchTranslation(word));
+      // Обрабатываем по 3 слова за раз, чтобы не перегружать API
+      for (let i = 0; i < uniqueWords.length; i += 3) {
+        const batch = uniqueWords.slice(i, i + 3);
+        const batchPromises = batch.map(word => fetchTranslation(word));
         
         try {
           const batchResults = await Promise.all(batchPromises);
@@ -84,8 +334,8 @@ const App = () => {
         setProgress(Math.floor((completed / total) * 100));
         
         // Небольшая задержка, чтобы не перегружать API
-        if (i + 5 < uniqueWords.length) {
-          await new Promise(resolve => setTimeout(resolve, 500));
+        if (i + 3 < uniqueWords.length) {
+          await new Promise(resolve => setTimeout(resolve, 2000)); // 2 секунды задержки
         }
       }
       
@@ -112,179 +362,6 @@ const App = () => {
     setCurrentStep('input');
     setProgress(0);
     setError('');
-  };
-
-  // Компонент для ввода текста
-  const TextInput = ({ text, onTextChange, onExtractWords }) => {
-    return (
-      <div className="text-input">
-        <h2>Введите текст на чешском языке</h2>
-        <p className="instruction">
-          Вставьте текст (статью, рассказ, диалог) на чешском языке, из которого нужно извлечь слова для изучения.
-        </p>
-        
-        <textarea
-          className="text-area"
-          value={text}
-          onChange={(e) => onTextChange(e.target.value)}
-          placeholder="Вставьте текст на чешском языке..."
-          rows={10}
-        />
-        
-        <button 
-          className="btn btn-primary"
-          onClick={onExtractWords}
-          disabled={!text.trim()}
-        >
-          Извлечь слова
-        </button>
-      </div>
-    );
-  };
-
-  // Компонент индикатора прогресса
-  const ProgressIndicator = ({ progress }) => {
-    return (
-      <div className="progress-container">
-        <div className="progress-bar">
-          <div 
-            className="progress-bar-fill" 
-            style={{ width: `${progress}%` }}
-          />
-        </div>
-        <div className="progress-text">{progress}% завершено</div>
-      </div>
-    );
-  };
-
-  // Компонент карточки
-  const Flashcard = ({ word, translations, samples, note }) => {
-    const [isFlipped, setIsFlipped] = useState(false);
-    
-    const handleFlip = () => {
-      setIsFlipped(!isFlipped);
-    };
-    
-    return (
-      <div 
-        className={`flashcard ${isFlipped ? 'flipped' : ''}`} 
-        onClick={handleFlip}
-      >
-        <div className="card-inner">
-          <div className="card-front">
-            <div className="word">{word}</div>
-            <p className="hint">Нажмите, чтобы увидеть перевод</p>
-          </div>
-          
-          <div className="card-back">
-            <h3 className="original-word">{word}</h3>
-            
-            <div className="translations">
-              {translations && translations.length > 0 ? (
-                <>
-                  <h4>Переводы:</h4>
-                  <ul>
-                    {translations.map((translation, index) => (
-                      <li key={index}>{translation}</li>
-                    ))}
-                  </ul>
-                </>
-              ) : (
-                <p className="no-translations">Переводы не найдены</p>
-              )}
-            </div>
-            
-            {samples && samples.length > 0 && (
-              <div className="examples">
-                <h4>Примеры:</h4>
-                <ul>
-                  {samples.map((sample, index) => (
-                    <li key={index}>
-                      <div className="sample-phrase">{sample.phrase}</div>
-                      <div className="sample-translation">{sample.translation}</div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            
-            {note && <p className="note">{note}</p>}
-            
-            <p className="hint">Нажмите, чтобы вернуться к слову</p>
-            
-            <div className="attribution">
-              Перевод: LibreTranslate
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // Компонент просмотра карточек
-  const FlashcardViewer = ({ flashcards }) => {
-    const [currentIndex, setCurrentIndex] = useState(0);
-    
-    if (!flashcards || flashcards.length === 0) {
-      return <div className="no-cards">Карточки не найдены</div>;
-    }
-    
-    const currentCard = flashcards[currentIndex];
-    
-    const goToPrevious = () => {
-      setCurrentIndex((prevIndex) => 
-        prevIndex === 0 ? flashcards.length - 1 : prevIndex - 1
-      );
-    };
-    
-    const goToNext = () => {
-      setCurrentIndex((prevIndex) => 
-        prevIndex === flashcards.length - 1 ? 0 : prevIndex + 1
-      );
-    };
-    
-    return (
-      <div className="flashcard-viewer">
-        <div className="progress-info">
-          Карточка {currentIndex + 1} из {flashcards.length}
-        </div>
-        
-        <div className="card-container">
-          <button 
-            className="nav-btn prev-btn"
-            onClick={goToPrevious}
-            aria-label="Предыдущая карточка"
-          >
-            &lt;
-          </button>
-          
-          <Flashcard 
-            word={currentCard.word}
-            translations={currentCard.translations}
-            samples={currentCard.samples}
-            note={currentCard.note}
-          />
-          
-          <button 
-            className="nav-btn next-btn"
-            onClick={goToNext}
-            aria-label="Следующая карточка"
-          >
-            &gt;
-          </button>
-        </div>
-        
-        <div className="card-progress">
-          {flashcards.map((_, index) => (
-            <span 
-              key={index} 
-              className={`progress-dot ${index === currentIndex ? 'active' : ''}`}
-              onClick={() => setCurrentIndex(index)}
-            />
-          ))}
-        </div>
-      </div>
-    );
   };
 
   return (
@@ -330,7 +407,7 @@ const App = () => {
         )}
 
         {currentStep === 'translated' && (
-          <>
+          <div>
             <FlashcardViewer flashcards={flashcards} />
             <div className="actions">
               <button className="btn btn-secondary" onClick={handleReset}>
@@ -338,9 +415,9 @@ const App = () => {
               </button>
             </div>
             <div className="api-attribution">
-              Переводы предоставлены API <a href="https://libretranslate.com/" target="_blank" rel="noopener noreferrer">LibreTranslate</a>
+              Переводы предоставлены API <a href="https://github.com/LibreTranslate/LibreTranslate" target="_blank" rel="noopener noreferrer">LibreTranslate</a>
             </div>
-          </>
+          </div>
         )}
       </main>
     </div>
