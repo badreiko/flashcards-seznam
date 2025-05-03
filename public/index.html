@@ -497,7 +497,7 @@
     
     <!-- Сначала определяем глобальную функцию fetchTranslation -->
     <script>
-      // Функция для получения перевода слова через несколько общедоступных экземпляров LibreTranslate
+      // Функция для получения перевода слова через LibreTranslate API
       window.fetchTranslation = async function(word) {
         if (!word) return null;
 
@@ -512,66 +512,56 @@
           return window.translationsCache[word];
         }
 
-        // Массив общедоступных API LibreTranslate
-        const translateApis = [
-          "https://libretranslate.de/translate",
-          "https://translate.terraprint.co/translate", 
-          "https://translate.astian.org/translate",
-          "https://translate.fortytwo-it.com/translate"
-        ];
-        
-        // Пробуем каждый API по очереди
-        for (const apiUrl of translateApis) {
-          try {
-            console.log(`Попытка перевода с ${apiUrl}`);
-            
-            const response = await fetch(apiUrl, {
-              method: 'POST',
-              body: JSON.stringify({
-                q: word,
-                source: 'cs',
-                target: 'ru',
-                format: "text"
-              }),
-              headers: {
-                'Content-Type': 'application/json'
-              }
-            });
-
-            if (!response.ok) {
-              console.warn(`API ${apiUrl} вернул статус ${response.status}, пробуем следующий API...`);
-              continue;
+        try {
+          console.log(`Попытка перевода слова "${word}" через LibreTranslate`);
+          
+          const response = await fetch("https://libretranslate.com/translate", {
+            method: 'POST',
+            body: JSON.stringify({
+              q: word,
+              source: 'cs',
+              target: 'ru',
+              format: "text"
+            }),
+            headers: {
+              'Content-Type': 'application/json',
+              'Origin': window.location.origin
             }
+          });
 
-            const data = await response.json();
-            
-            if (data && (data.translatedText || data.translation)) {
-              console.log(`Успешно переведено с ${apiUrl}`);
-              
-              const result = {
-                word: word,
-                translations: [data.translatedText || data.translation],
-                samples: [] // API не предоставляет примеры использования
-              };
-              
-              // Сохраняем в кэш
-              window.translationsCache[word] = result;
-              
-              return result;
-            }
-          } catch (error) {
-            console.error(`Ошибка с API ${apiUrl}:`, error);
+          if (!response.ok) {
+            throw new Error(`API вернул статус ${response.status}`);
           }
+
+          const data = await response.json();
+          
+          if (data && data.translatedText) {
+            console.log(`Успешно переведено с LibreTranslate`);
+            
+            const result = {
+              word: word,
+              translations: [data.translatedText],
+              samples: [] // API не предоставляет примеры использования
+            };
+            
+            // Сохраняем в кэш
+            window.translationsCache[word] = result;
+            
+            return result;
+          } else {
+            throw new Error('Неверный формат ответа от API');
+          }
+        } catch (error) {
+          console.error(`Ошибка при переводе слова "${word}":`, error);
+          
+          // Возвращаем объект с исходным словом
+          return {
+            word: word,
+            translations: [],
+            samples: [],
+            note: "Не удалось получить перевод. Пожалуйста, попробуйте позже."
+          };
         }
-        
-        // Если все API не сработали, возвращаем объект с исходным словом
-        console.error('Все API перевода не сработали');
-        return {
-          word: word,
-          translations: [],
-          samples: [],
-          note: "Не удалось получить перевод. Пожалуйста, попробуйте позже."
-        };
       };
     </script>
     
@@ -868,68 +858,68 @@
           setError('');
         };
 
-        return (
-          <div className="app">
-            <header className="header">
-              <h1>Flashcards Seznam</h1>
-              <p className="subtitle">Изучение чешских слов с помощью карточек</p>
-            </header>
+return (
+  <div className="app">
+    <header className="header">
+      <h1>Flashcards Seznam</h1>
+      <p className="subtitle">Изучение чешских слов с помощью карточек</p>
+    </header>
 
-            <main className="main-content">
-              {currentStep === 'input' && (
-                <TextInput 
-                  text={text} 
-                  onTextChange={handleTextChange}
-                  onExtractWords={handleExtractWords}
-                />
-              )}
+    <main className="main-content">
+      {currentStep === 'input' && (
+        <TextInput 
+          text={text} 
+          onTextChange={handleTextChange}
+          onExtractWords={handleExtractWords}
+        />
+      )}
 
-              {currentStep === 'extracted' && (
-                <div className="extracted-words">
-                  <h2>Найдено {uniqueWords.length} уникальных слов</h2>
-                  <div className="words-container">
-                    {uniqueWords.map((word, index) => (
-                      <span key={index} className="word-chip">{word}</span>
-                    ))}
-                  </div>
-                  <div className="actions">
-                    <button 
-                      className="btn btn-primary"
-                      onClick={handleGetTranslations}
-                      disabled={isLoading}
-                    >
-                      {isLoading ? 'Загрузка...' : 'Получить переводы'}
-                    </button>
-                    <button className="btn btn-secondary" onClick={handleReset}>
-                      Сбросить
-                    </button>
-                  </div>
-                  
-                  {isLoading && <ProgressIndicator progress={progress} />}
-                  {error && <div className="error-message">{error}</div>}
-                </div>
-              )}
-
-              {currentStep === 'translated' && (
-                <div>
-                  <FlashcardViewer flashcards={flashcards} />
-                  <div className="actions">
-                    <button className="btn btn-secondary" onClick={handleReset}>
-                      Начать заново
-                    </button>
-                  </div>
-                  <div className="api-attribution">
-                    Переводы предоставлены API <a href="https://github.com/LibreTranslate/LibreTranslate" target="_blank" rel="noopener noreferrer">LibreTranslate</a>
-                  </div>
-                </div>
-              )}
-            </main>
+      {currentStep === 'extracted' && (
+        <div className="extracted-words">
+          <h2>Найдено {uniqueWords.length} уникальных слов</h2>
+          <div className="words-container">
+            {uniqueWords.map((word, index) => (
+              <span key={index} className="word-chip">{word}</span>
+            ))}
           </div>
-        );
-      };
+          <div className="actions">
+            <button 
+              className="btn btn-primary"
+              onClick={handleGetTranslations}
+              disabled={isLoading}
+            >
+              {isLoading ? 'Загрузка...' : 'Получить переводы'}
+            </button>
+            <button className="btn btn-secondary" onClick={handleReset}>
+              Сбросить
+            </button>
+          </div>
+          
+          {isLoading && <ProgressIndicator progress={progress} />}
+          {error && <div className="error-message">{error}</div>}
+        </div>
+      )}
 
-      // Рендеринг приложения в корневой элемент
-      ReactDOM.createRoot(document.getElementById('root')).render(<App />);
-    </script>
-  </body>
+      {currentStep === 'translated' && (
+        <div>
+          <FlashcardViewer flashcards={flashcards} />
+          <div className="actions">
+            <button className="btn btn-secondary" onClick={handleReset}>
+              Начать заново
+            </button>
+          </div>
+          <div className="api-attribution">
+            Переводы предоставлены API <a href="https://libretranslate.com/" target="_blank" rel="noopener noreferrer">LibreTranslate</a>
+          </div>
+        </div>
+      )}
+    </main>
+  </div>
+);
+};
+
+// Рендеринг приложения в корневой элемент
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
 </html>
