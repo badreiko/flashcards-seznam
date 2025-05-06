@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   fetchTranslation, 
-  getEntireDictionary, 
-  saveToLocalDictionary, 
-  getFromLocalDictionary,
+  getEntireDictionary,
   exportDictionaryToJson 
 } from './glosbeTranslator';
 

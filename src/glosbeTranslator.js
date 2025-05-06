@@ -1,7 +1,7 @@
 // glosbeTranslator.js - Функции для парсинга переводов с Glosbe и сохранения их в Firebase
 
 import { initializeApp } from 'firebase/app';
-import { getDatabase, ref, set, get, child, push } from 'firebase/database';
+import { getDatabase, ref, set, get } from 'firebase/database';
 
 // Firebase конфигурация
 const firebaseConfig = {
