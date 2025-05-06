@@ -1,81 +1,11 @@
-import React, { useState } from 'react';
-
-// Функция для получения перевода слова через несколько общедоступных экземпляров LibreTranslate
-async function fetchTranslation(word) {
-  if (!word) return null;
-
-  // Кэш переводов для ускорения работы и снижения нагрузки на API
-  if (!window.translationsCache) {
-    window.translationsCache = {};
-  }
-  
-  // Если перевод уже в кэше, возвращаем его
-  if (window.translationsCache[word]) {
-    console.log(`Используем кэшированный перевод для "${word}"`);
-    return window.translationsCache[word];
-  }
-
-  // Массив общедоступных API LibreTranslate
-  const translateApis = [
-    "https://libretranslate.de/translate",
-    "https://translate.terraprint.co/translate", 
-    "https://translate.astian.org/translate",
-    "https://translate.fortytwo-it.com/translate"
-  ];
-  
-  // Пробуем каждый API по очереди
-  for (const apiUrl of translateApis) {
-    try {
-      console.log(`Попытка перевода с ${apiUrl}`);
-      
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        body: JSON.stringify({
-          q: word,
-          source: 'cs',
-          target: 'ru',
-          format: "text"
-        }),
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        console.warn(`API ${apiUrl} вернул статус ${response.status}, пробуем следующий API...`);
-        continue;
-      }
-
-      const data = await response.json();
-      
-      if (data && (data.translatedText || data.translation)) {
-        console.log(`Успешно переведено с ${apiUrl}`);
-        
-        const result = {
-          word: word,
-          translations: [data.translatedText || data.translation],
-          samples: [] // API не предоставляет примеры использования
-        };
-        
-        // Сохраняем в кэш
-        window.translationsCache[word] = result;
-        
-        return result;
-      }
-    } catch (error) {
-      console.error(`Ошибка с API ${apiUrl}:`, error);
-    }
-  }
-  
-  // Если все API не сработали, возвращаем объект с исходным словом
-  console.error('Все API перевода не сработали');
-  return {
-    word: word,
-    translations: [],
-    samples: [],
-    note: "Не удалось получить перевод. Пожалуйста, попробуйте позже."
-  };
-}
+import React, { useState, useEffect } from 'react';
+import { 
+  fetchTranslation, 
+  getEntireDictionary, 
+  saveToLocalDictionary, 
+  getFromLocalDictionary,
+  exportDictionaryToJson 
+} from './glosbeTranslator';
 
 // Функция для извлечения уникальных слов из текста
 const extractUniqueWords = (text) => {
@@ -200,7 +130,7 @@ const Flashcard = ({ word, translations, samples, note }) => {
           <p className="hint">Нажмите, чтобы вернуться к слову</p>
           
           <div className="attribution">
-            Перевод: LibreTranslate
+            Источник: Glosbe
           </div>
         </div>
       </div>
@@ -274,12 +204,115 @@ const FlashcardViewer = ({ flashcards }) => {
   );
 };
 
+// Компонент для отображения статистики словаря
+const DictionaryStats = ({ onViewDictionary }) => {
+  const [wordCount, setWordCount] = useState(0);
+  
+  useEffect(() => {
+    async function loadStats() {
+      try {
+        const dictionary = await getEntireDictionary();
+        setWordCount(dictionary.length);
+      } catch (error) {
+        console.error('Ошибка при загрузке статистики словаря:', error);
+      }
+    }
+    
+    loadStats();
+  }, []);
+  
+  const handleExportDictionary = async () => {
+    try {
+      const dictionary = await getEntireDictionary();
+      if (dictionary.length > 0) {
+        exportDictionaryToJson(dictionary);
+      } else {
+        alert('Словарь пуст. Нечего экспортировать.');
+      }
+    } catch (error) {
+      console.error('Ошибка при экспорте словаря:', error);
+      alert('Произошла ошибка при экспорте словаря.');
+    }
+  };
+  
+  return (
+    <div className="dictionary-stats">
+      <p>В вашем локальном словаре: <strong>{wordCount}</strong> слов</p>
+      <div style={{ marginTop: '10px' }}>
+        <button className="dictionary-button" onClick={onViewDictionary}>
+          Просмотреть словарь
+        </button>
+        <button className="dictionary-button" onClick={handleExportDictionary}>
+          Экспорт словаря
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// Компонент для просмотра словаря
+const DictionaryViewer = ({ onClose }) => {
+  const [dictionary, setDictionary] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  useEffect(() => {
+    async function loadDictionary() {
+      setIsLoading(true);
+      try {
+        const dict = await getEntireDictionary();
+        // Сортируем слова по алфавиту
+        dict.sort((a, b) => a.word.localeCompare(b.word));
+        setDictionary(dict);
+      } catch (error) {
+        console.error('Ошибка при загрузке словаря:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    
+    loadDictionary();
+  }, []);
+  
+  if (isLoading) {
+    return <div className="dictionary-view">Загрузка словаря...</div>;
+  }
+  
+  if (dictionary.length === 0) {
+    return (
+      <div className="dictionary-view">
+        <p>Словарь пуст. Добавьте слова, используя текст для перевода.</p>
+        <button className="btn btn-secondary" onClick={onClose} style={{ marginTop: '15px' }}>
+          Закрыть
+        </button>
+      </div>
+    );
+  }
+  
+  return (
+    <div>
+      <div className="dictionary-view">
+        {dictionary.map((entry, index) => (
+          <div key={index} className="dict-word-item">
+            <div className="dict-word">{entry.word}</div>
+            <div className="dict-translations">
+              {entry.translations.join(', ')}
+            </div>
+          </div>
+        ))}
+      </div>
+      <button className="btn btn-secondary" onClick={onClose} style={{ marginTop: '15px' }}>
+        Закрыть
+      </button>
+    </div>
+  );
+};
+
 const App = () => {
   const [text, setText] = useState('');
   const [uniqueWords, setUniqueWords] = useState([]);
   const [flashcards, setFlashcards] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [currentStep, setCurrentStep] = useState('input'); // input, extracted, translated
+  const [currentStep, setCurrentStep] = useState('input'); // input, extracted, translated, dictionary
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState('');
 
@@ -311,9 +344,9 @@ const App = () => {
       let completed = 0;
       const total = uniqueWords.length;
       
-      // Обрабатываем по 3 слова за раз, чтобы не перегружать API
-      for (let i = 0; i < uniqueWords.length; i += 3) {
-        const batch = uniqueWords.slice(i, i + 3);
+      // Обрабатываем по 2 слова за раз, чтобы не перегружать сервер
+      for (let i = 0; i < uniqueWords.length; i += 2) {
+        const batch = uniqueWords.slice(i, i + 2);
         const batchPromises = batch.map(word => fetchTranslation(word));
         
         try {
@@ -333,9 +366,9 @@ const App = () => {
         completed += batch.length;
         setProgress(Math.floor((completed / total) * 100));
         
-        // Небольшая задержка, чтобы не перегружать API
-        if (i + 3 < uniqueWords.length) {
-          await new Promise(resolve => setTimeout(resolve, 2000)); // 2 секунды задержки
+        // Небольшая задержка, чтобы не перегружать сервер
+        if (i + 2 < uniqueWords.length) {
+          await new Promise(resolve => setTimeout(resolve, 3000)); // 3 секунды задержки
         }
       }
       
@@ -363,6 +396,16 @@ const App = () => {
     setProgress(0);
     setError('');
   };
+  
+  // Просмотр словаря
+  const handleViewDictionary = () => {
+    setCurrentStep('dictionary');
+  };
+  
+  // Возврат из просмотра словаря
+  const handleCloseDictionary = () => {
+    setCurrentStep('input');
+  };
 
   return (
     <div className="app">
@@ -373,11 +416,14 @@ const App = () => {
 
       <main className="main-content">
         {currentStep === 'input' && (
-          <TextInput 
-            text={text} 
-            onTextChange={handleTextChange}
-            onExtractWords={handleExtractWords}
-          />
+          <React.Fragment>
+            <TextInput 
+              text={text} 
+              onTextChange={handleTextChange}
+              onExtractWords={handleExtractWords}
+            />
+            <DictionaryStats onViewDictionary={handleViewDictionary} />
+          </React.Fragment>
         )}
 
         {currentStep === 'extracted' && (
@@ -413,11 +459,18 @@ const App = () => {
               <button className="btn btn-secondary" onClick={handleReset}>
                 Начать заново
               </button>
+              <button className="btn btn-primary" onClick={handleViewDictionary}>
+                Просмотреть словарь
+              </button>
             </div>
             <div className="api-attribution">
-              Переводы предоставлены API <a href="https://github.com/LibreTranslate/LibreTranslate" target="_blank" rel="noopener noreferrer">LibreTranslate</a>
+              Переводы предоставлены словарем <a href="https://glosbe.com" target="_blank" rel="noopener noreferrer">Glosbe</a>
             </div>
           </div>
+        )}
+        
+        {currentStep === 'dictionary' && (
+          <DictionaryViewer onClose={handleCloseDictionary} />
         )}
       </main>
     </div>
