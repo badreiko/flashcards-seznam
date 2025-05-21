@@ -1,24 +1,9 @@
 // glosbeTranslator.js - Функции для парсинга переводов с Glosbe и сохранения их в Firebase
 
-import { initializeApp } from 'firebase/app';
-import { getDatabase, ref, set, get } from 'firebase/database';
+import { ref, set, get } from 'firebase/database';
+import { database } from './firebase';
 
-// Firebase конфигурация
-const firebaseConfig = {
-  apiKey: "AIzaSyAPZIHxaLt92McIvbIcYE-tSYp2Li2jxs4",
-  authDomain: "flashcards-seznam-6652a.firebaseapp.com",
-  projectId: "flashcards-seznam-6652a",
-  storageBucket: "flashcards-seznam-6652a.firebasestorage.app",
-  messagingSenderId: "99460986155",
-  appId: "1:99460986155:web:e5ca466e3d07c20cde016e",
-  measurementId: "G-ZFM0YW70ZD",
-  // Явное указание URL базы данных
-  databaseURL: "https://flashcards-seznam-6652a-default-rtdb.europe-west1.firebasedatabase.app"
-};
-
-// Инициализация Firebase
-const app = initializeApp(firebaseConfig);
-const database = getDatabase(app);
+// Используем централизованную инициализацию Firebase из firebase.js
 
 /**
  * Функции для локального кэширования переводов
