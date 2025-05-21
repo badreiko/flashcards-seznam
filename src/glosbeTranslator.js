@@ -99,6 +99,133 @@ const localCache = {
 };
 
 /**
+ * Новая функция: Парсит HTML-строку и извлекает данные перевода
+ * @param {string} htmlContent - Содержимое HTML-файла
+ * @param {string} word - Исходное слово
+ * @returns {Object} - Объект с данными перевода
+ */
+function parseHtmlContent(htmlContent, word, from_lang = 'cs', to_lang = 'ru') {
+  // Создаем DOM-парсер
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(htmlContent, 'text/html');
+  
+  // Извлекаем переводы
+  const translations = [];
+  
+  // Метод 1: Основные переводы
+  const translationItems = doc.querySelectorAll('li.translation__item');
+  translationItems.forEach(item => {
+    const wordElement = item.querySelector('.translation__item__pharse');
+    if (wordElement) {
+      const text = wordElement.textContent.trim();
+      if (text && !translations.includes(text)) {
+        translations.push(text);
+      }
+    }
+  });
+  
+  // Метод 2: Менее частые переводы
+  const lessFrequentContainer = doc.querySelector('#less-frequent-translations-container-0');
+  if (lessFrequentContainer) {
+    const items = lessFrequentContainer.querySelectorAll('li');
+    items.forEach(item => {
+      const text = item.textContent.trim();
+      if (text && !translations.includes(text)) {
+        translations.push(text);
+      }
+    });
+  }
+  
+  // Извлекаем примеры использования
+  const samples = [];
+  const exampleItems = doc.querySelectorAll('.translation__example');
+  
+  exampleItems.forEach(example => {
+    const csText = example.querySelector('[lang="cs"]');
+    const ruText = example.querySelector('.w-1/2.px-1.ml-2');
+    
+    if (csText && ruText) {
+      samples.push({
+        phrase: csText.textContent.trim(),
+        translation: ruText.textContent.trim()
+      });
+    }
+  });
+  
+  // Если не нашли примеры в первом блоке, ищем в блоке TM
+  if (samples.length === 0) {
+    const tmExamples = doc.querySelectorAll('#tmem_first_examples .odd\\:bg-slate-100');
+    tmExamples.forEach(example => {
+      const csText = example.querySelector('.w-1/2.dir-aware-pr-1');
+      const ruText = example.querySelector('.w-1/2.dir-aware-pl-1');
+      
+      if (csText && ruText) {
+        samples.push({
+          phrase: csText.textContent.trim(),
+          translation: ruText.textContent.trim()
+        });
+      }
+    });
+  }
+  
+  // Формируем результат
+  return {
+    word: word,
+    from_lang: from_lang,
+    to_lang: to_lang,
+    translations: translations,
+    samples: samples.slice(0, 3), // Ограничиваем количество примеров
+    source: 'glosbe',
+    timestamp: new Date().toISOString()
+  };
+}
+
+/**
+ * Новая функция: Проверяет наличие локальных HTML-файлов для слова
+ * @param {string} word - Слово для поиска
+ * @param {string} from_lang - Исходный язык
+ * @param {string} to_lang - Целевой язык
+ * @returns {Promise<Object|null>} - Данные перевода или null, если файл не найден
+ */
+async function checkLocalHtmlFiles(word, from_lang = 'cs', to_lang = 'ru') {
+  try {
+    // Формируем запрос к нашему API
+    const response = await fetch(`/api/translate?word=${encodeURIComponent(word)}&from=${from_lang}&to=${to_lang}&checkLocal=true`);
+    
+    if (!response.ok) {
+      throw new Error(`Ошибка при проверке локальных файлов: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    // Если API нашел и обработал локальный файл
+    if (data.success && data.translations && data.translations.fromLocalFile) {
+      console.log(`Найден и обработан локальный HTML-файл для слова "${word}"`);
+      
+      // Преобразуем данные в нужный формат
+      const result = {
+        word: word,
+        translations: data.translations.directTranslations.map(t => t.text),
+        samples: data.translations.examples.slice(0, 3).map(e => ({
+          phrase: e.original,
+          translation: e.translated
+        })),
+        source: 'glosbe',
+        timestamp: new Date().toISOString(),
+        fromLocalFile: true
+      };
+      
+      return result;
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Ошибка при проверке локальных HTML-файлов:', error);
+    return null;
+  }
+}
+
+/**
  * Получает перевод слова с сайта Glosbe с расширенной обработкой ошибок
  * @param {string} word - Слово для перевода
  * @returns {Promise<Object>} - Объект с переводом и примерами
@@ -145,297 +272,62 @@ export async function fetchTranslation(word) {
     // Продолжаем выполнение и пробуем получить из Glosbe
   }
   
-  // 4. Получаем из Glosbe
+  // 4. НОВЫЙ ШАГ: Проверяем наличие локальных HTML-файлов
   try {
-    console.log(`Запрашиваем перевод для слова "${word}" из Glosbe`);
-    
-    // Различные CORS-прокси для надежности
-    const corsProxies = [
-      `https://corsproxy.io/?`,
-      `https://cors-anywhere.herokuapp.com/`,
-      `https://api.allorigins.win/raw?url=`,
-      `https://proxy.cors.sh/`
-    ];
-    
-    const url = `https://ru.glosbe.com/словарь-чешский-русский/${encodeURIComponent(word)}`;
-    
-    let html = null;
-    let proxyUsed = null;
-    let retryCount = 0;
-    const maxRetries = 3;
-    
-    // Пробуем получить HTML с разных прокси
-    while (!html && retryCount < maxRetries) {
-      for (const proxy of corsProxies) {
-        try {
-          const proxyUrl = `${proxy}${encodeURIComponent(url)}`;
-          const response = await fetch(proxyUrl, {
-            method: 'GET',
-            headers: {
-              'Accept': 'text/html',
-              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-            },
-            // Таймаут 8 секунд
-            signal: AbortSignal.timeout(8000)
-          });
-          
-          if (response.ok) {
-            html = await response.text();
-            proxyUsed = proxy;
-            break;
-          }
-        } catch (proxyError) {
-          console.warn(`Прокси ${proxy} недоступен:`, proxyError);
-          // Пробуем следующий прокси
-        }
+    const localFileData = await checkLocalHtmlFiles(word);
+    if (localFileData) {
+      console.log(`Использован локальный HTML-файл для слова "${word}"`);
+      
+      // Сохраняем в кэш
+      window.translationsCache[word] = localFileData;
+      localCache.save(word, localFileData);
+      
+      // Сохраняем в Firebase для будущего использования
+      try {
+        await saveToCloudDictionary(localFileData);
+      } catch (saveError) {
+        console.warn('Ошибка при сохранении в Firebase:', saveError);
       }
       
-      retryCount++;
-      if (!html && retryCount < maxRetries) {
-        // Ждем перед следующей попыткой
-        await new Promise(resolve => setTimeout(resolve, 1000));
-      }
+      return localFileData;
+    }
+  } catch (localFileError) {
+    console.warn('Ошибка при проверке локальных файлов:', localFileError);
+    // Продолжаем выполнение и пробуем получить из Glosbe напрямую
+  }
+  
+  // 5. Получаем из Glosbe через API
+  try {
+    console.log(`Запрашиваем перевод для слова "${word}" из Glosbe через API`);
+    
+    // Используем наш локальный API для получения перевода
+    const apiUrl = `/api/translate?word=${encodeURIComponent(word)}&from=cs&to=ru`;
+    const response = await fetch(apiUrl);
+    
+    if (!response.ok) {
+      throw new Error(`Ошибка при запросе к API: ${response.status}`);
     }
     
-    if (!html) {
-      throw new Error('Все прокси-серверы недоступны или не удалось получить HTML');
+    const data = await response.json();
+    
+    if (!data.success) {
+      throw new Error(data.error || 'Неизвестная ошибка при получении перевода');
     }
     
-    console.log(`Использован прокси: ${proxyUsed}`);
-    
-    // Парсинг HTML - используем несколько стратегий
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(html, 'text/html');
-    
-    // Проверяем, есть ли ошибки в документе
-    const errorNode = doc.querySelector('parsererror');
-    if (errorNode) {
-      throw new Error(`Ошибка при парсинге HTML: ${errorNode.textContent}`);
-    }
-    
-    // СТРАТЕГИЯ 1: Извлечение переводов
-    const translations = [];
-    
-    // Метод 1: Основные переводы
-    const translationItems = doc.querySelectorAll('li.translation__item');
-    translationItems.forEach(item => {
-      const wordElement = item.querySelector('.translation__item__pharse');
-      if (wordElement) {
-        const text = wordElement.textContent.trim();
-        if (text && !translations.includes(text)) {
-          translations.push(text);
-        }
-      }
-    });
-    
-    // Метод 2: Менее частые переводы
-    if (translations.length === 0) {
-      const containerSelectors = [
-        '#less-frequent-translations-container-0',
-        '#less-frequent-translations-container-1',
-        '[id^="less-frequent-translations-container-"]'
-      ];
-      
-      for (const selector of containerSelectors) {
-        const containers = doc.querySelectorAll(selector);
-        containers.forEach(container => {
-          const items = container.querySelectorAll('li');
-          items.forEach(item => {
-            const text = item.textContent.trim();
-            if (text && !translations.includes(text)) {
-              translations.push(text);
-            }
-          });
-        });
-        
-        if (translations.length > 0) break;
-      }
-    }
-    
-    // Метод 3: Альтернативные селекторы для переводов
-    if (translations.length === 0) {
-      const altSelectors = [
-        '.translation',
-        '.translate-target',
-        '.word-translation',
-        '.pharse',
-        '[data-translation]'
-      ];
-      
-      for (const selector of altSelectors) {
-        const elements = doc.querySelectorAll(selector);
-        elements.forEach(elem => {
-          const text = elem.textContent.trim();
-          if (text && text.length < 50 && !translations.includes(text)) {
-            translations.push(text);
-          }
-        });
-        
-        if (translations.length > 0) break;
-      }
-    }
-    
-    // Метод 4: Поиск по всему документу для текстовых узлов со словами на кириллице
-    if (translations.length === 0) {
-      // Регулярное выражение для проверки наличия кириллицы
-      const cyrillicRegex = /[а-яА-ЯёЁ]{3,}/;
-      
-      // Функция для рекурсивного обхода текстовых узлов
-      function findCyrillicTextNodes(node, results = []) {
-        if (node.nodeType === Node.TEXT_NODE) {
-          const text = node.textContent.trim();
-          if (text && cyrillicRegex.test(text) && text.length < 50) {
-            results.push(text);
-          }
-        } else if (node.nodeType === Node.ELEMENT_NODE) {
-          for (const child of node.childNodes) {
-            findCyrillicTextNodes(child, results);
-          }
-        }
-        return results;
-      }
-      
-      // Ищем в основном контейнере со словами
-      const mainContainer = doc.querySelector('#dictionary-content, .translations-container, .main-content');
-      if (mainContainer) {
-        const cyrillicTexts = findCyrillicTextNodes(mainContainer);
-        
-        // Фильтруем тексты, которые похожи на словарные статьи
-        cyrillicTexts
-          .filter(text => text.length > 2 && text.length < 30)
-          .forEach(text => {
-            if (!translations.includes(text)) {
-              translations.push(text);
-            }
-          });
-      }
-    }
-    
-    // СТРАТЕГИЯ 2: Извлечение примеров использования
-    const samples = [];
-    
-    // Метод 1: Основные примеры
-    const exampleItems = doc.querySelectorAll('.translation__example');
-    exampleItems.forEach(example => {
-      const sourceSelectors = ['[lang="cs"]', '.source-text', '.original-text'];
-      const targetSelectors = ['.w-1/2.px-1.ml-2', '.target-text', '.translation-text'];
-      
-      let sourceText = null;
-      let targetText = null;
-      
-      for (const selector of sourceSelectors) {
-        const element = example.querySelector(selector);
-        if (element) {
-          sourceText = element.textContent.trim();
-          break;
-        }
-      }
-      
-      for (const selector of targetSelectors) {
-        const element = example.querySelector(selector);
-        if (element) {
-          targetText = element.textContent.trim();
-          break;
-        }
-      }
-      
-      if (sourceText && targetText) {
-        samples.push({
-          phrase: sourceText,
-          translation: targetText
-        });
-      }
-    });
-    
-    // Метод 2: TM примеры
-    if (samples.length === 0) {
-      const tmContainerSelectors = [
-        '#tmem_first_examples',
-        '#tmem_examples',
-        '.tm-examples'
-      ];
-      
-      for (const containerSelector of tmContainerSelectors) {
-        const container = doc.querySelector(containerSelector);
-        if (container) {
-          const rowSelectors = ['.odd\\:bg-slate-100', '.example-row', 'tr'];
-          const rows = container.querySelectorAll(rowSelectors.join(', '));
-          
-          rows.forEach(row => {
-            const sourceSelectors = ['.w-1/2.dir-aware-pr-1', '.source', '[lang="cs"]'];
-            const targetSelectors = ['.w-1/2.dir-aware-pl-1', '.target', '[lang="ru"]'];
-            
-            let sourceText = null;
-            let targetText = null;
-            
-            for (const selector of sourceSelectors) {
-              const element = row.querySelector(selector);
-              if (element) {
-                sourceText = element.textContent.trim();
-                break;
-              }
-            }
-            
-            for (const selector of targetSelectors) {
-              const element = row.querySelector(selector);
-              if (element) {
-                targetText = element.textContent.trim();
-                break;
-              }
-            }
-            
-            if (sourceText && targetText) {
-              // Проверяем, что пример содержит искомое слово
-              if (sourceText.toLowerCase().includes(word.toLowerCase())) {
-                samples.push({
-                  phrase: sourceText,
-                  translation: targetText
-                });
-              }
-            }
-          });
-        }
-        
-        if (samples.length > 0) break;
-      }
-    }
-    
-    // Метод 3: Поиск таблиц с примерами
-    if (samples.length === 0) {
-      const tables = doc.querySelectorAll('table');
-      tables.forEach(table => {
-        const rows = table.querySelectorAll('tr');
-        rows.forEach(row => {
-          const cells = row.querySelectorAll('td');
-          if (cells.length >= 2) {
-            const sourceText = cells[0].textContent.trim();
-            const targetText = cells[1].textContent.trim();
-            
-            if (sourceText && targetText && sourceText.toLowerCase().includes(word.toLowerCase())) {
-              samples.push({
-                phrase: sourceText,
-                translation: targetText
-              });
-            }
-          }
-        });
-      });
-    }
-    
-    // Формируем результат
+    // Преобразуем данные в нужный формат
     const result = {
       word: word,
-      translations: translations.length > 0 ? translations : [],
-      samples: samples.length > 0 ? samples.slice(0, 3) : [], // Ограничиваем количество примеров
+      translations: data.translations.directTranslations.map(t => t.text || t),
+      samples: data.translations.examples ? data.translations.examples.slice(0, 3).map(e => ({
+        phrase: e.original || e.phrase,
+        translation: e.translated || e.translation
+      })) : [],
       source: 'glosbe',
-      timestamp: new Date().toISOString(),
-      proxyUsed: proxyUsed
+      timestamp: new Date().toISOString()
     };
     
-    // Сохраняем в сессионный кэш
+    // Сохраняем результат
     window.translationsCache[word] = result;
-    
-    // Сохраняем в локальный кэш
     localCache.save(word, result);
     
     // Сохраняем в Firebase
@@ -443,27 +335,122 @@ export async function fetchTranslation(word) {
       await saveToCloudDictionary(result);
     } catch (saveError) {
       console.warn('Ошибка при сохранении в Firebase:', saveError);
-      // Продолжаем выполнение, т.к. данные уже получены и сохранены локально
     }
     
     return result;
-  } catch (error) {
-    console.error(`Ошибка при получении перевода для "${word}":`, error);
+  } catch (apiError) {
+    console.warn('Ошибка при получении перевода через API:', apiError);
     
-    // Помечаем ошибку в кэше для предотвращения повторных запросов
-    const fallbackResult = {
-      word: word,
-      translations: [],
-      samples: [],
-      note: "Не удалось получить перевод. Возможно, слово отсутствует в словаре или возникла проблема с подключением.",
-      error: error.message,
-      timestamp: new Date().toISOString()
-    };
-    
-    // Сохраняем в сессионный кэш с меткой ошибки
-    window.translationsCache[word] = fallbackResult;
-    
-    return fallbackResult;
+    // 6. Запрашиваем напрямую с Glosbe через CORS-прокси (как в оригинале)
+    try {
+      console.log(`Запрашиваем перевод для слова "${word}" из Glosbe через CORS-прокси`);
+      
+      // Различные CORS-прокси для надежности
+      const corsProxies = [
+        `https://corsproxy.io/?`,
+        `https://cors-anywhere.herokuapp.com/`,
+        `https://api.allorigins.win/raw?url=`,
+        `https://proxy.cors.sh/`
+      ];
+      
+      const url = `https://ru.glosbe.com/словарь-чешский-русский/${encodeURIComponent(word)}`;
+      
+      let html = null;
+      let proxyUsed = null;
+      let retryCount = 0;
+      const maxRetries = 3;
+      
+      // Пробуем получить HTML с разных прокси
+      while (!html && retryCount < maxRetries) {
+        for (const proxy of corsProxies) {
+          try {
+            const proxyUrl = `${proxy}${encodeURIComponent(url)}`;
+            const response = await fetch(proxyUrl, {
+              method: 'GET',
+              headers: {
+                'Accept': 'text/html',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+              },
+              // Таймаут 8 секунд
+              signal: AbortSignal.timeout(8000)
+            });
+            
+            if (response.ok) {
+              html = await response.text();
+              proxyUsed = proxy;
+              break;
+            }
+          } catch (proxyError) {
+            console.warn(`Прокси ${proxy} недоступен:`, proxyError);
+            // Пробуем следующий прокси
+          }
+        }
+        
+        retryCount++;
+        if (!html && retryCount < maxRetries) {
+          // Ждем перед следующей попыткой
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      }
+      
+      if (!html) {
+        throw new Error('Все прокси-серверы недоступны или не удалось получить HTML');
+      }
+      
+      console.log(`Использован прокси: ${proxyUsed}`);
+      
+      // Сохраняем HTML для будущего использования
+      try {
+        // Сохраняем HTML с помощью FormData и fetch
+        const formData = new FormData();
+        formData.append('html', new Blob([html], { type: 'text/html' }));
+        formData.append('word', word);
+        formData.append('from_lang', 'cs');
+        formData.append('to_lang', 'ru');
+        
+        fetch('/api/save-html', {
+          method: 'POST',
+          body: formData
+        }).catch(saveError => {
+          console.warn('Ошибка при сохранении HTML:', saveError);
+        });
+      } catch (saveError) {
+        console.warn('Ошибка при сохранении HTML:', saveError);
+      }
+      
+      // Парсим HTML
+      const result = parseHtmlContent(html, word);
+      
+      // Сохраняем результат
+      window.translationsCache[word] = result;
+      localCache.save(word, result);
+      
+      // Сохраняем в Firebase
+      try {
+        await saveToCloudDictionary(result);
+      } catch (saveError) {
+        console.warn('Ошибка при сохранении в Firebase:', saveError);
+      }
+      
+      return result;
+    } catch (error) {
+      console.error(`Ошибка при получении перевода для "${word}":`, error);
+      
+      // Помечаем ошибку в кэше для предотвращения повторных запросов
+      const fallbackResult = {
+        word: word,
+        translations: [],
+        samples: [],
+        note: "Не удалось получить перевод. Возможно, слово отсутствует в словаре или возникла проблема с подключением.",
+        error: error.message,
+        timestamp: new Date().toISOString()
+      };
+      
+      // Сохраняем в сессионный кэш с меткой ошибки
+      window.translationsCache[word] = fallbackResult;
+      
+      return fallbackResult;
+    }
   }
 }
 
@@ -886,9 +873,22 @@ export async function getDictionaryStats() {
       console.warn('Ошибка при получении статистики из локального кэша:', localError);
     }
     
+    // Статистика локальных HTML-файлов
+    let htmlFilesCount = 0;
+    try {
+      const response = await fetch('/api/html-files-count');
+      if (response.ok) {
+        const data = await response.json();
+        htmlFilesCount = data.count || 0;
+      }
+    } catch (htmlCountError) {
+      console.warn('Ошибка при получении количества HTML-файлов:', htmlCountError);
+    }
+    
     return {
       cloudSize,
       localSize,
+      htmlFilesCount,
       mostCommonTranslations,
       lastUpdated: new Date().toISOString()
     };
@@ -897,6 +897,7 @@ export async function getDictionaryStats() {
     return {
       cloudSize: 0,
       localSize: 0,
+      htmlFilesCount: 0,
       mostCommonTranslations: [],
       error: error.message,
       lastUpdated: new Date().toISOString()
@@ -948,6 +949,76 @@ export async function syncLocalCacheToFirebase() {
       error: error.message,
       timestamp: new Date().toISOString()
     };
+  }
+}
+
+/**
+ * Обрабатывает все локальные HTML-файлы и добавляет их данные в словарь
+ * @returns {Promise<Object>} - Результат операции
+ */
+export async function processAllLocalHtmlFiles() {
+  try {
+    // Запрашиваем обработку всех HTML-файлов на сервере
+    const response = await fetch('/api/process-all-html-files');
+    
+    if (!response.ok) {
+      throw new Error(`Ошибка при обработке HTML-файлов: ${response.status}`);
+    }
+    
+    const result = await response.json();
+    
+    if (result.success) {
+      // Обновляем локальный кэш новыми данными
+      result.processedWords.forEach(wordData => {
+        localCache.save(wordData.word, wordData);
+        if (window.translationsCache) {
+          window.translationsCache[wordData.word] = wordData;
+        }
+      });
+      
+      console.log(`Обработано ${result.processedCount} HTML-файлов`);
+      
+      return {
+        processedCount: result.processedCount,
+        errorCount: result.errorCount,
+        success: true,
+        timestamp: new Date().toISOString()
+      };
+    } else {
+      throw new Error(result.error || 'Неизвестная ошибка при обработке HTML-файлов');
+    }
+  } catch (error) {
+    console.error('Ошибка при обработке HTML-файлов:', error);
+    return {
+      processedCount: 0,
+      errorCount: 1,
+      success: false,
+      error: error.message,
+      timestamp: new Date().toISOString()
+    };
+  }
+}
+
+/**
+ * Удаляет HTML-файл после его обработки
+ * @param {string} filePath - Путь к файлу
+ * @returns {Promise<boolean>} - Результат операции
+ */
+export async function deleteHtmlFile(filePath) {
+  try {
+    const response = await fetch(`/api/delete-file?path=${encodeURIComponent(filePath)}`, {
+      method: 'DELETE'
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Ошибка при удалении файла: ${response.status}`);
+    }
+    
+    const result = await response.json();
+    return result.success;
+  } catch (error) {
+    console.error('Ошибка при удалении HTML-файла:', error);
+    return false;
   }
 }
 
