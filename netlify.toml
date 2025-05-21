@@ -1,3 +1,11 @@
+[build]
+  command = "npm run build"
+  publish = "build"
+
+[build.environment]
+  NODE_VERSION = "16.14.0"
+  NODE_OPTIONS = "--openssl-legacy-provider"
+
 [[headers]]
   # Определяем заголовки для всех файлов
   for = "/*"
