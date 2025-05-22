@@ -260,13 +260,86 @@ export async function fetchTranslation(word) {
     console.warn('⚠️ Ошибка при получении из Firebase:', dbError);
   }
 
-  // 4. ⭐ НОВОЕ: Получаем ВСЕ варианты нормализации с помощью полной системы
+  // 4. Сначала пробуем получить перевод для исходного слова через API
+  try {
+    console.log(`🔍 Попытка перевода исходного слова: "${word}" через API`);
+    
+    // Проверяем локальные HTML-файлы
+    let localHtmlResult = null;
+    try {
+      localHtmlResult = await checkLocalHtmlFiles(word, 'cs', 'ru');
+    } catch (htmlError) {
+      console.error('Ошибка при проверке локальных HTML-файлов:', htmlError);
+    }
+    
+    if (localHtmlResult && localHtmlResult.success) {
+      console.log('✅ Найден перевод в локальных HTML-файлах для "' + word + '"');
+      const result = {
+        word: word,
+        originalWord: word,
+        normalizedWord: word,
+        usedNormalization: false,
+        translations: localHtmlResult.translations,
+        success: true,
+        source: 'local-html'
+      };
+      window.translationsCache[word] = result;
+      localCache.save(word, result);
+      saveToCloudDictionary(word, result);
+      return result;
+    }
+    
+    // Запрашиваем перевод через API
+    const API_URL = window.location.hostname === 'localhost'
+      ? 'http://localhost:3001'
+      : 'https://flashcards-seznam-production.up.railway.app';
+      
+    const response = await fetch(`${API_URL}/api/translate?word=${encodeURIComponent(word)}&from=cs&to=ru`, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      signal: AbortSignal.timeout ? AbortSignal.timeout(30000) : undefined
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      
+      if (data.success && data.translations &&
+        (data.translations.translations && data.translations.translations.length > 0 ||
+         data.translations.length > 0)) {
+        
+        const result = {
+          word: word,
+          originalWord: word,
+          normalizedWord: word,
+          usedNormalization: false,
+          translations: data.translations,
+          success: true,
+          source: 'api'
+        };
+        
+        window.translationsCache[word] = result;
+        localCache.save(word, result);
+        saveToCloudDictionary(word, result);
+        return result;
+      }
+    }
+  } catch (apiError) {
+    console.warn('⚠️ Ошибка при запросе API для "' + word + '":', apiError);
+  }
+  
+  // 5. Если не нашли перевод для исходного слова, применяем нормализацию
   console.log('🔄 Применяем полную систему нормализации...');
   const allVariants = czechNormalizer.normalize(word);
   console.log(`📝 Варианты нормализации для "${word}": [${allVariants.join(', ')}]`);
-
-  // 5. Пробуем найти перевод для каждого варианта
-  for (const wordToTry of allVariants) {
+  
+  // Удаляем исходное слово из списка вариантов, так как мы уже проверили его
+  const normalizedVariants = allVariants.filter(variant => variant !== word);
+  
+  // 6. Пробуем найти перевод для каждого нормализованного варианта
+  for (const wordToTry of normalizedVariants) {
     try {
       console.log(`🔍 Попытка перевода: "${wordToTry}"`);
 
