@@ -282,7 +282,7 @@
       transform: scale(1.3);
       box-shadow: 0 3px 10px rgba(102, 126, 234, 0.4);
     }
-    
+
     /* Анимация появления */
     .flashcard {
       animation: slideIn 0.6s ease-out;
@@ -293,6 +293,7 @@
         opacity: 0;
         transform: translateY(30px);
       }
+
       to {
         opacity: 1;
         transform: translateY(0);
@@ -311,8 +312,10 @@
     /* Стили для Flashcard */
     .flashcard {
       width: 100%;
-      max-width: 450px; /* Увеличили ширину */
-      height: 350px; /* Увеличили высоту */
+      max-width: 450px;
+      /* Увеличили ширину */
+      height: 350px;
+      /* Увеличили высоту */
       perspective: 1000px;
       cursor: pointer;
       margin: 0 auto;
@@ -322,10 +325,13 @@
       position: relative;
       width: 100%;
       height: 100%;
-      transition: transform 0.8s ease; /* Плавнее анимация */
+      transition: transform 0.8s ease;
+      /* Плавнее анимация */
       transform-style: preserve-3d;
-      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15); /* Более красивая тень */
-      border-radius: 15px; /* Более округлые углы */
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+      /* Более красивая тень */
+      border-radius: 15px;
+      /* Более округлые углы */
     }
 
     .flashcard.flipped .card-inner {
@@ -348,13 +354,15 @@
     }
 
     .card-front {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); /* Градиент */
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      /* Градиент */
       color: white;
       text-align: center;
     }
 
     .card-back {
-      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); /* Другой градиент */
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      /* Другой градиент */
       color: white;
       transform: rotateY(180deg);
       overflow-y: auto;
@@ -365,7 +373,8 @@
 
     /* Стили для текста на лицевой стороне */
     .word {
-      font-size: 3rem; /* Больше размер */
+      font-size: 3rem;
+      /* Больше размер */
       margin-bottom: 20px;
       text-align: center;
       font-weight: 800;
@@ -456,7 +465,7 @@
       font-size: 1rem;
       line-height: 1.4;
     }
-    
+
     .no-translations {
       color: rgba(255, 255, 255, 0.8);
       text-align: center;
@@ -506,21 +515,21 @@
       box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
     }
 
-    .normalization-info > div:first-child {
+    .normalization-info>div:first-child {
       font-size: 0.85rem !important;
       color: rgba(255, 255, 255, 0.9) !important;
       font-weight: 600 !important;
       margin-bottom: 6px !important;
     }
 
-    .normalization-info > div:nth-child(2) {
+    .normalization-info>div:nth-child(2) {
       font-size: 1.1rem !important;
       color: white !important;
       font-weight: 700 !important;
       text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
     }
 
-    .normalization-info > div:last-child {
+    .normalization-info>div:last-child {
       font-size: 0.75rem !important;
       color: rgba(255, 255, 255, 0.8) !important;
       margin-top: 6px !important;
@@ -647,58 +656,59 @@
       .text-area {
         min-height: 150px;
       }
-      
+
       .flashcard {
         max-width: 350px;
         height: 320px;
       }
-      
+
       .word {
         font-size: 2.5rem;
       }
-      
+
       .original-word {
         font-size: 1.8rem;
       }
-      
+
       .card-container {
         flex-direction: column;
         gap: 20px;
       }
-      
+
       .nav-btn {
         width: 50px;
         height: 50px;
         font-size: 2rem;
       }
-      
+
       .progress-dot {
         width: 12px;
         height: 12px;
       }
-      
+
       .card-progress {
         gap: 8px;
       }
-      
+
       .normalization-info {
         padding: 10px 12px;
         font-size: 0.85rem;
       }
-      
-      .translations h4, .examples h4 {
+
+      .translations h4,
+      .examples h4 {
         font-size: 1.1rem;
       }
-      
+
       .translations li {
         font-size: 1rem;
         padding: 6px 10px;
       }
-      
+
       .sample-phrase {
         font-size: 1rem;
       }
-      
+
       .sample-translation {
         font-size: 0.9rem;
       }
@@ -1334,7 +1344,7 @@
           // Пробуем получить через API
           const API_URL = window.location.hostname === 'localhost'
             ? 'http://localhost:3001'
-            : 'https://flashcards-seznam.railway.internal';
+            : 'https://flashcards-seznam-production.up.railway.app';
 
           const response = await fetch(`${API_URL}/api/translate?word=${encodeURIComponent(wordToTry)}&from=cs&to=ru`, {
             method: 'GET',

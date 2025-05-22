@@ -15,6 +15,7 @@ const PORT = process.env.PORT || 3001;
 app.use(cors({
   origin: [
     'https://flashcards-seznam.netlify.app',
+    'https://flashcards-seznam-production.up.railway.app',
     'http://localhost:3000',
     'http://localhost:3001'
   ],
