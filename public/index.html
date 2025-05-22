@@ -1447,15 +1447,82 @@
         return [];
       }
 
+      // Приводим к нижнему регистру
       const lowerCaseText = text.toLowerCase();
-      const cleanedText = lowerCaseText.replace(/[.,/#!$%^&*;:{}=\-_`~()«»„"[\]]/g, ' ');
+
+      // РАСШИРЕННАЯ очистка от знаков препинания и цифр
+      const cleanedText = lowerCaseText
+        // Убираем все знаки препинания (включая чешские кавычки)
+        .replace(/[.,/#!$%^&*;:{}=\-_`~()«»„""''\[\]?¿¡!@#$%^&*+=|\\<>]/g, ' ')
+        // Убираем все цифры и числа
+        .replace(/\d+/g, ' ')
+        // Убираем специальные символы
+        .replace(/[^\p{L}\s]/gu, ' ')
+        // Заменяем множественные пробелы на одинарные
+        .replace(/\s+/g, ' ');
+
+      // Разбиваем на слова и фильтруем
       const words = cleanedText
         .split(/\s+/)
-        .filter(function (word) { return word.length > 1; });
+        .filter(function (word) {
+          return word.length > 1 &&           // Исключаем односимвольные слова
+            !isNumeric(word) &&          // Исключаем чистые числа
+            !isSpecialChar(word) &&      // Исключаем специальные символы
+            isValidCzechWord(word);      // Проверяем, что это похоже на чешское слово
+        });
 
+      // Создаем множество (Set) для исключения дубликатов
       const uniqueWordsSet = new Set(words);
+
+      // Преобразуем множество обратно в массив и сортируем
       return Array.from(uniqueWordsSet).sort();
     };
+
+    // Вспомогательная функция: проверка на число
+    function isNumeric(str) {
+      return /^\d+$/.test(str);
+    }
+
+    // Вспомогательная функция: проверка на специальные символы
+    function isSpecialChar(str) {
+      return /^[^\p{L}]+$/u.test(str);
+    }
+
+    // Вспомогательная функция: проверка на валидное чешское слово
+    function isValidCzechWord(word) {
+      // Проверяем, что слово содержит хотя бы одну букву
+      if (!/\p{L}/u.test(word)) {
+        return false;
+      }
+
+      // Список чешских букв (включая диакритику)
+      const czechLetters = /^[a-záčďéěíňóřšťúůýž]+$/i;
+
+      // Проверяем, что слово состоит только из чешских букв
+      return czechLetters.test(word);
+    }
+
+    // ДОПОЛНИТЕЛЬНАЯ функция для предварительной очистки текста
+    function preprocessText(text) {
+      if (!text || typeof text !== 'string') {
+        return '';
+      }
+
+      return text
+        // Убираем HTML теги, если есть
+        .replace(/<[^>]*>/g, ' ')
+        // Убираем URL-адреса
+        .replace(/https?:\/\/[^\s]+/g, ' ')
+        // Убираем email-адреса
+        .replace(/\S+@\S+\.\S+/g, ' ')
+        // Нормализуем кавычки
+        .replace(/[""'']/g, '"')
+        // Нормализуем тире
+        .replace(/[–—]/g, '-')
+        // Убираем избыточные пробелы
+        .replace(/\s+/g, ' ')
+        .trim();
+    }
 
     // Заменяем старую функцию на новую с нормализацией
     window.fetchTranslation = window.fetchTranslationWithNormalization;
