@@ -14,7 +14,7 @@
     <title>Flashcards Seznam</title>
     
     <style>
-      /* Основные стили CSS - без изменений из предыдущего файла */
+      /* Основные стили CSS */
       :root {
         --primary-color: #2c3e50;
         --secondary-color: #3498db;
@@ -550,69 +550,55 @@
     
     <!-- Firebase SDK v9 -->
     <script type="module">
-      // Импорт Firebase SDK из CDN
+      // Импорт Firebase SDK из CDN  
       import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js';
-      import { getDatabase, ref, set, get, child } from 'https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js';
-      import { getAnalytics } from 'https://www.gstatic.com/firebasejs/10.8.1/firebase-analytics.js';
+      import { getDatabase, ref, set, get } from 'https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js';
       
-      // Исправленная Firebase конфигурация
+      // Исправленная Firebase конфигурация БЕЗ ANALYTICS
       const firebaseConfig = {
         apiKey: "AIzaSyAPZIHxaLt92McIvbIcYE-tSYp2Li2jxs4",
         authDomain: "flashcards-seznam-6652a.firebaseapp.com",
-        projectId: "flashcards-seznam-6652a",
+        projectId: "flashcards-seznam-6652a", 
         storageBucket: "flashcards-seznam-6652a.firebasestorage.app",
         messagingSenderId: "99460986155",
         appId: "1:99460986155:web:e5ca466e3d07c20cde016e",
-        measurementId: "G-ZFM0YW70ZD",
-        // Исправленный URL базы данных
-        databaseURL: "https://flashcards-seznam-6652a-default-rtdb.europe-west1.firebasedatabase.app/"
+        // Исправленный URL базы данных БЕЗ слэша в конце
+        databaseURL: "https://flashcards-seznam-6652a-default-rtdb.europe-west1.firebasedatabase.app"
       };
       
       // Инициализируем Firebase
-      let app, database, analytics;
+      let app, database;
       
       try {
+        console.log('Инициализация Firebase...');
         app = initializeApp(firebaseConfig);
         database = getDatabase(app);
         
-        // Инициализируем аналитику только если нужно
-        if (window.location.hostname !== 'localhost') {
-          try {
-            analytics = getAnalytics(app);
-          } catch (analyticsError) {
-            console.warn('Не удалось инициализировать Analytics:', analyticsError);
-          }
-        }
+        console.log('Firebase успешно инициализирован');
         
-        // Проверяем соединение
-        const connectedRef = ref(database, '.info/connected');
-        get(connectedRef).then((snapshot) => {
-          if (snapshot.exists()) {
-            console.log('Firebase успешно подключен');
-          } else {
-            console.warn('Firebase подключен, но статус соединения неопределен');
-          }
+        // Простая проверка соединения БЕЗ .info/connected 
+        const testRef = ref(database, 'test');
+        get(testRef).then(() => {
+          console.log('Соединение с Firebase Database установлено');
         }).catch((error) => {
-          console.error('Ошибка при проверке соединения Firebase:', error);
+          console.warn('Проблема с соединением Firebase Database:', error);
         });
         
       } catch (error) {
         console.error('Ошибка инициализации Firebase:', error);
         // Создаем заглушки для работы в offline режиме
         database = null;
-        analytics = null;
       }
       
-      // Делаем Firebase доступным глобально для использования
+      // Делаем Firebase доступным глобально
       window.firebaseApp = app;
       window.firebaseDB = database;
       window.firebaseRef = ref;
       window.firebaseSet = set;
       window.firebaseGet = get;
-      window.firebaseAnalytics = analytics;
     </script>
     
-    <!-- Основное приложение без Babel -->
+    <!-- Основное приложение -->
     <script>
       // Основной код приложения (ES5 для совместимости)
       const { useState, useEffect, createElement: h } = React;
@@ -623,21 +609,13 @@
           return [];
         }
 
-        // Приводим к нижнему регистру
         const lowerCaseText = text.toLowerCase();
-        
-        // Удаляем символы пунктуации и заменяем их пробелами
         const cleanedText = lowerCaseText.replace(/[.,/#!$%^&*;:{}=\-_`~()«»„"[\]]/g, ' ');
-        
-        // Разбиваем на слова и убираем лишние пробелы
         const words = cleanedText
           .split(/\s+/)
           .filter(function(word) { return word.length > 1; });
         
-        // Создаем множество (Set) для исключения дубликатов
         const uniqueWordsSet = new Set(words);
-        
-        // Преобразуем множество обратно в массив
         return Array.from(uniqueWordsSet).sort();
       };
       
@@ -645,12 +623,10 @@
       window.fetchTranslation = async function(word) {
         if (!word) return null;
         
-        // Кэш переводов для ускорения работы и снижения нагрузки на сервер
         if (!window.translationsCache) {
           window.translationsCache = {};
         }
         
-        // Если перевод уже в кэше, возвращаем его
         if (window.translationsCache[word]) {
           console.log('Используем кэшированный перевод для "' + word + '"');
           return window.translationsCache[word];
@@ -671,13 +647,9 @@
         try {
           console.log('Запрашиваем перевод для слова "' + word + '" из Glosbe');
           
-          // Создаем URL для запроса
           const url = 'https://ru.glosbe.com/словарь-чешский-русский/' + encodeURIComponent(word);
-          
-          // Используем прокси, чтобы обойти ограничения CORS
           const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(url);
           
-          // Запрашиваем HTML-страницу словаря
           const response = await fetch(proxyUrl, {
             method: 'GET',
             headers: {
@@ -691,8 +663,6 @@
           }
           
           const html = await response.text();
-          
-          // Создаем DOM-дерево для парсинга
           const parser = new DOMParser();
           const doc = parser.parseFromString(html, 'text/html');
           
@@ -748,7 +718,6 @@
             });
           }
           
-          // Формируем результат
           const result = {
             word: word,
             translations: translations.length > 0 ? translations : [],
@@ -757,7 +726,6 @@
             timestamp: new Date().toISOString()
           };
           
-          // Сохраняем в кэш
           window.translationsCache[word] = result;
           
           // Сохраняем в Firebase
@@ -771,7 +739,6 @@
         } catch (error) {
           console.error('Ошибка при получении перевода для "' + word + '":', error);
           
-          // Если не удалось получить перевод, возвращаем объект с исходным словом
           const fallbackResult = {
             word: word,
             translations: [],
@@ -791,39 +758,30 @@
         }
         
         try {
-          // Используем нормализованное слово в качестве ключа
           const wordKey = wordData.word.toLowerCase();
-          
-          // Получаем ссылки на Firebase из глобальной области видимости
           const database = window.firebaseDB;
           const dbRef = window.firebaseRef;
           const dbSet = window.firebaseSet;
           const dbGet = window.firebaseGet;
           
-          // Проверим, есть ли уже это слово в словаре
           try {
             const snapshot = await dbGet(dbRef(database, 'dictionary/' + wordKey));
             
             if (snapshot.exists()) {
-              // Объединяем существующие данные с новыми
               const existingData = snapshot.val();
               
-              // Объединяем переводы без дубликатов
               const allTranslations = Array.from(new Set([].concat(
                 existingData.translations || [],
                 wordData.translations || []
               )));
               
-              // Объединяем примеры без дубликатов
               const samplesMap = {};
               
-              // Добавляем существующие примеры
               (existingData.samples || []).forEach(function(sample) {
                 const key = sample.phrase + '|' + sample.translation;
                 samplesMap[key] = sample;
               });
               
-              // Добавляем новые примеры
               (wordData.samples || []).forEach(function(sample) {
                 const key = sample.phrase + '|' + sample.translation;
                 samplesMap[key] = sample;
@@ -831,24 +789,20 @@
               
               const allSamples = Object.values(samplesMap);
               
-              // Создаем обновленные данные
               const updatedData = Object.assign({}, existingData, {
                 translations: allTranslations,
                 samples: allSamples,
                 lastUpdated: new Date().toISOString()
               });
               
-              // Сохраняем обновленные данные
               await dbSet(dbRef(database, 'dictionary/' + wordKey), updatedData);
             } else {
-              // Добавляем новое слово
               await dbSet(dbRef(database, 'dictionary/' + wordKey), Object.assign({}, wordData, {
                 created: new Date().toISOString(),
                 lastUpdated: new Date().toISOString()
               }));
             }
           } catch (getError) {
-            // Если не удалось получить существующие данные, добавляем новые
             await dbSet(dbRef(database, 'dictionary/' + wordKey), Object.assign({}, wordData, {
               created: new Date().toISOString(),
               lastUpdated: new Date().toISOString()
@@ -903,7 +857,6 @@
           const snapshot = await dbGet(dbRef(database, 'dictionary'));
           
           if (snapshot.exists()) {
-            // Преобразуем объект в массив для удобства
             const dictionary = snapshot.val();
             return Object.values(dictionary);
           } else {
@@ -992,7 +945,6 @@
             setIsLoading(true);
             try {
               const dict = await getEntireDictionary();
-              // Сортируем слова по алфавиту
               dict.sort(function(a, b) { return a.word.localeCompare(b.word); });
               setDictionary(dict);
             } catch (error) {
@@ -1369,20 +1321,6 @@
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(h(App));
       }
-    </script>
-    
-    <!-- Google Analytics без строгих ограничений -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZFM0YW70ZD"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      
-      // Более мягкая конфигурация Google Analytics
-      gtag('config', 'G-ZFM0YW70ZD', {
-        'cookie_domain': 'auto',
-        'anonymize_ip': true
-      });
     </script>
   </body>
 </html>
