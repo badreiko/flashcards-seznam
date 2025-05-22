@@ -4,6 +4,17 @@
   command = "npm run build"
   publish = "build"
 
+# Прокси-редирект для API на Railway
+[[redirects]]
+  from = "/api/*"
+  to = "https://flashcards-seznam-production.up.railway.app/api/:splat"
+  status = 200
+  force = true
+  [redirects.headers]
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Methods = "GET, POST, PUT, DELETE, OPTIONS"
+    Access-Control-Allow-Headers = "Content-Type, Authorization"
+
 # Настройки для SPA маршрутизации
 [[redirects]]
   from = "/*"

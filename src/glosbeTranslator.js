@@ -403,9 +403,10 @@ export async function fetchTranslation(word) {
       }
 
       // 7. Пробуем получить через API
+      // Используем локальный путь /api/ для прокси-редиректа на Netlify
       const API_URL = window.location.hostname === 'localhost'
         ? 'http://localhost:3001'
-        : 'https://flashcards-seznam-production.up.railway.app';
+        : '';  // Пустой URL означает использование относительного пути
 
       try {
         const response = await fetch(`${API_URL}/api/translate?word=${encodeURIComponent(wordToTry)}&from=cs&to=ru`, {
