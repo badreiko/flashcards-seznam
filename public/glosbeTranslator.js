@@ -421,7 +421,11 @@ async function fetchTranslation(word) {
         : '';  // Пустой URL означает использование относительного пути
 
       try {
-        const response = await fetch(`${API_URL}/api/translate?word=${encodeURIComponent(wordToTry)}&from=cs&to=ru`, {
+        // Добавляем логирование URL для отладки
+        const apiUrl = `/api/translate?word=${encodeURIComponent(wordToTry)}&from=cs&to=ru`;
+        console.log(`🔍 Отправляем запрос к: ${apiUrl}`);
+        
+        const response = await fetch(apiUrl, {
           method: 'GET',
           headers: {
             'Accept': 'application/json',
@@ -431,7 +435,16 @@ async function fetchTranslation(word) {
         });
 
         if (response.ok) {
-          const data = await response.json();
+          // Добавляем обработку ошибок при парсинге JSON
+          let data;
+          try {
+            const responseText = await response.text();
+            console.log(`ℹ️ Ответ от API: ${responseText.substring(0, 100)}...`);
+            data = JSON.parse(responseText);
+          } catch (jsonError) {
+            console.error(`⚠️ Ошибка при парсинге JSON: ${jsonError.message}`);
+            throw new Error(`Ошибка при парсинге ответа от API: ${jsonError.message}`);
+          }
 
           if (data.success && data.translations &&
             (data.translations.translations && data.translations.translations.length > 0 ||
