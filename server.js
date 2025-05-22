@@ -11,10 +11,6 @@ const multer = require('multer');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Инициализация приложения Express
-const app = express();
-const PORT = process.env.PORT || 3001;
-
 // Настраиваем CORS для конкретных доменов
 app.use(cors({
   origin: [
