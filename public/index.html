@@ -8,11 +8,13 @@
       name="description"
       content="Flashcards Seznam - приложение для изучения чешских слов с помощью карточек"
     />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="manifest" href="/manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <title>Flashcards Seznam</title>
     
     <style>
-      /* Основные стили CSS */
+      /* Основные стили CSS - без изменений из предыдущего файла */
       :root {
         --primary-color: #2c3e50;
         --secondary-color: #3498db;
@@ -488,6 +490,13 @@
         font-size: 0.9rem;
       }
       
+      /* Загрузочный индикатор */
+      .loading {
+        text-align: center;
+        padding: 20px;
+        color: var(--dark-color);
+      }
+      
       /* Адаптивные стили */
       @media screen and (max-width: 768px) {
         .app {
@@ -531,7 +540,9 @@
   </head>
   <body>
     <noscript>Для работы приложения необходимо включить JavaScript.</noscript>
-    <div id="root"></div>
+    <div id="root">
+      <div class="loading">Загрузка приложения...</div>
+    </div>
     
     <!-- React из CDN для продакшена -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -540,8 +551,9 @@
     <!-- Firebase SDK v9 -->
     <script type="module">
       // Импорт Firebase SDK из CDN
-      import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js';
-      import { getDatabase, ref, set, get, child } from 'https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js';
+      import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js';
+      import { getDatabase, ref, set, get, child } from 'https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js';
+      import { getAnalytics } from 'https://www.gstatic.com/firebasejs/10.8.1/firebase-analytics.js';
       
       // Исправленная Firebase конфигурация
       const firebaseConfig = {
@@ -557,10 +569,20 @@
       };
       
       // Инициализируем Firebase
-      let app, database;
+      let app, database, analytics;
+      
       try {
         app = initializeApp(firebaseConfig);
         database = getDatabase(app);
+        
+        // Инициализируем аналитику только если нужно
+        if (window.location.hostname !== 'localhost') {
+          try {
+            analytics = getAnalytics(app);
+          } catch (analyticsError) {
+            console.warn('Не удалось инициализировать Analytics:', analyticsError);
+          }
+        }
         
         // Проверяем соединение
         const connectedRef = ref(database, '.info/connected');
@@ -578,6 +600,7 @@
         console.error('Ошибка инициализации Firebase:', error);
         // Создаем заглушки для работы в offline режиме
         database = null;
+        analytics = null;
       }
       
       // Делаем Firebase доступным глобально для использования
@@ -586,6 +609,7 @@
       window.firebaseRef = ref;
       window.firebaseSet = set;
       window.firebaseGet = get;
+      window.firebaseAnalytics = analytics;
     </script>
     
     <!-- Основное приложение без Babel -->
@@ -1335,22 +1359,29 @@
         );
       };
 
-      // Рендеринг приложения в корневой элемент
-      const root = ReactDOM.createRoot(document.getElementById('root'));
-      root.render(h(App));
+      // Запускаем приложение после загрузки DOM
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() {
+          const root = ReactDOM.createRoot(document.getElementById('root'));
+          root.render(h(App));
+        });
+      } else {
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(h(App));
+      }
     </script>
     
-    <!-- Google Analytics с правильной конфигурацией -->
+    <!-- Google Analytics без строгих ограничений -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZFM0YW70ZD"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
       
-      // Конфигурируем Google Analytics для правильного домена
+      // Более мягкая конфигурация Google Analytics
       gtag('config', 'G-ZFM0YW70ZD', {
-        'cookie_domain': 'flashcards-seznam.netlify.app',
-        'cookie_flags': 'SameSite=None;Secure'
+        'cookie_domain': 'auto',
+        'anonymize_ip': true
       });
     </script>
   </body>
