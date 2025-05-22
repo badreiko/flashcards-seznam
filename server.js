@@ -1,12 +1,10 @@
-// server.js - Сервер на Express.js для доступа к Glosbe
-
+// server.js - Обновленный сервер с парсингом Glosbe для Flashcards Seznam
 const express = require('express');
 const axios = require('axios');
 const cheerio = require('cheerio');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
-const glob = require('glob');
 
 // Инициализация приложения Express
 const app = express();
@@ -14,124 +12,160 @@ const PORT = process.env.PORT || 3001;
 
 // Включаем CORS для доступа с фронтенда
 app.use(cors());
-
-// Middleware для парсинга JSON
 app.use(express.json());
 
-// Папка с HTML-файлами
+// Папка с HTML-файлами (как в вашем оригинальном коде)
 const parsedWordsFolder = path.join(__dirname, 'parsed_glosbe_words');
-
-// Проверяем, существует ли папка, и создаем, если нет
 if (!fs.existsSync(parsedWordsFolder)) {
   fs.mkdirSync(parsedWordsFolder, { recursive: true });
 }
 
-// Обслуживание статических файлов из папки build (после сборки React-приложения)
-app.use(express.static(path.join(__dirname, '../build')));
+// Обслуживание статических файлов
+app.use(express.static(path.join(__dirname, 'build')));
 
-// Обслуживание статических файлов из папки с HTML-файлами
-app.use('/parsed_glosbe_words', express.static(parsedWordsFolder));
+// Новый класс для парсинга Glosbe (аналог вашего Python кода)
+class GlosbeParser {
+  constructor() {
+    this.requestDelay = 1000; // Задержка между запросами
+    this.lastRequestTime = 0;
+  }
 
-// API для поиска файлов по маске
-app.get('/api/find-files', (req, res) => {
-  const pattern = req.query.pattern;
-  
-  if (!pattern) {
-    return res.status(400).json({ error: 'Не указан шаблон поиска' });
-  }
-  
-  try {
-    // Используем glob для поиска файлов по маске
-    const files = glob.sync(pattern);
-    return res.json(files);
-  } catch (error) {
-    console.error('Ошибка при поиске файлов:', error);
-    return res.status(500).json({ error: 'Ошибка при поиске файлов' });
-  }
-});
+  async parseWord(word, fromLang = 'cs', toLang = 'ru') {
+    try {
+      // Добавляем задержку между запросами
+      const now = Date.now();
+      const timeSinceLastRequest = now - this.lastRequestTime;
+      if (timeSinceLastRequest < this.requestDelay) {
+        await new Promise(resolve => setTimeout(resolve, this.requestDelay - timeSinceLastRequest));
+      }
+      this.lastRequestTime = Date.now();
 
-// API для удаления файла
-app.delete('/api/delete-file', (req, res) => {
-  const filePath = req.query.path;
-  
-  if (!filePath) {
-    return res.status(400).json({ error: 'Не указан путь к файлу' });
-  }
-  
-  try {
-    // Проверяем, что файл существует и находится в разрешенной папке
-    const normalizedPath = path.normalize(filePath);
-    const parsedWordsPath = path.normalize(parsedWordsFolder);
-    
-    if (!normalizedPath.startsWith(parsedWordsPath)) {
-      return res.status(403).json({ error: 'Доступ к файлу запрещен' });
+      console.log(`[${new Date().toLocaleTimeString()}] Парсим слово: "${word}"`);
+      
+      // Формируем URL точно как в вашем Python коде
+      const encodedWord = encodeURIComponent(word);
+      const url = `https://glosbe.com/${fromLang}/${toLang}/${encodedWord}`;
+      
+      console.log(`Запрос к URL: ${url}`);
+      
+      // Выполняем HTTP запрос с теми же заголовками что в Python
+      const response = await axios.get(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+          'Accept-Language': 'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7,cs;q=0.6',
+          'Accept-Encoding': 'gzip, deflate, br',
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        },
+        timeout: 15000,
+        maxRedirects: 5
+      });
+
+      if (response.status !== 200) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      // Сохраняем HTML файл точно как в Python коде
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const filename = `${fromLang}_${toLang}_${word}_${timestamp}.htm`;
+      const filepath = path.join(parsedWordsFolder, filename);
+      
+      fs.writeFileSync(filepath, response.data, 'utf8');
+      console.log(`Сохранен HTML файл: ${filename}`);
+
+      // Парсим HTML
+      const parsedData = this.parseHtmlContent(response.data, word);
+      
+      // Можем удалить HTML файл после парсинга (как опция)
+      // fs.unlinkSync(filepath);
+      
+      return {
+        success: true,
+        word: word,
+        data: parsedData,
+        savedFile: filename
+      };
+
+    } catch (error) {
+      console.error(`Ошибка при парсинге "${word}":`, error.message);
+      return {
+        success: false,
+        word: word,
+        error: error.message
+      };
     }
-    
-    // Удаляем файл
-    fs.unlinkSync(normalizedPath);
-    return res.json({ success: true });
-  } catch (error) {
-    console.error('Ошибка при удалении файла:', error);
-    return res.status(500).json({ error: 'Ошибка при удалении файла' });
   }
-});
 
-// API эндпоинт для извлечения данных из локального HTML-файла
-app.post('/api/parse-html', (req, res) => {
-  try {
-    const { filePath, word, from = 'cs', to = 'ru' } = req.body;
+  parseHtmlContent(htmlContent, word) {
+    const $ = cheerio.load(htmlContent);
     
-    if (!filePath) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Путь к файлу не указан' 
+    // Извлекаем переводы (аналогично парсингу в вашем оригинальном коде)
+    const translations = [];
+    
+    // Метод 1: Основные переводы
+    $('li.translation__item').each((i, elem) => {
+      const translationText = $(elem).find('.translation__item__pharse').text().trim();
+      if (translationText) {
+        translations.push(translationText);
+      }
+    });
+    
+    // Метод 2: Менее частые переводы
+    if (translations.length === 0) {
+      $('#less-frequent-translations-container-0 ul li').each((i, elem) => {
+        const text = $(elem).text().trim();
+        if (text && !text.includes('Less frequent translations')) {
+          translations.push(text);
+        }
       });
     }
     
-    // Проверяем, что файл существует и находится в разрешенной папке
-    const fullPath = path.join(parsedWordsFolder, filePath);
-    if (!fs.existsSync(fullPath)) {
-      return res.status(404).json({ 
-        success: false, 
-        error: 'Файл не найден' 
+    // Извлекаем примеры использования
+    const samples = [];
+    
+    // Примеры в переводах
+    $('.translation__example').each((i, elem) => {
+      const csText = $(elem).find('[lang="cs"]').text().trim();
+      const ruText = $(elem).find('.w-1/2.px-1.ml-2').text().trim();
+      
+      if (csText && ruText) {
+        samples.push({
+          phrase: csText,
+          translation: ruText
+        });
+      }
+    });
+    
+    // Примеры в блоке tmem
+    if (samples.length === 0) {
+      $('#tmem_first_examples .odd\\:bg-slate-100').each((i, elem) => {
+        const csText = $(elem).find('.w-1/2.dir-aware-pr-1').text().trim();
+        const ruText = $(elem).find('.w-1/2.dir-aware-pl-1').text().trim();
+        
+        if (csText && ruText) {
+          samples.push({
+            phrase: csText,
+            translation: ruText
+          });
+        }
       });
     }
     
-    // Читаем HTML-файл
-    const html = fs.readFileSync(fullPath, 'utf-8');
-    
-    // Парсим HTML
-    const parsedData = parseGlosbeHTML(html, word || path.basename(filePath, '.htm'));
-    
-    // Приводим данные к формату, ожидаемому приложением
-    const result = {
-      word: parsedData.word,
-      from_lang: from,
-      to_lang: to,
-      translations: parsedData.directTranslations.map(t => t.text),
-      samples: parsedData.examples.slice(0, 3).map(e => ({
-        phrase: e.original,
-        translation: e.translated
-      })),
-      source: 'glosbe',
+    return {
+      word: word,
+      translations: translations.slice(0, 10), // Ограничиваем количество
+      samples: samples.slice(0, 3), // Ограничиваем примеры
+      source: 'glosbe_direct',
       timestamp: new Date().toISOString()
     };
-    
-    return res.json({
-      success: true,
-      data: result
-    });
-  } catch (error) {
-    console.error('Ошибка при парсинге HTML-файла:', error);
-    return res.status(500).json({ 
-      success: false, 
-      error: 'Ошибка при парсинге HTML-файла',
-      message: error.message
-    });
   }
-});
+}
 
-// API эндпоинт для перевода слов
+// Создаем экземпляр парсера
+const glosbeParser = new GlosbeParser();
+
+// API эндпоинт для перевода слов (обновленный)
 app.get('/api/translate', async (req, res) => {
   try {
     const { word, from = 'cs', to = 'ru' } = req.query;
@@ -142,325 +176,163 @@ app.get('/api/translate', async (req, res) => {
         error: 'Слово для перевода не указано' 
       });
     }
-    
-    // Проверяем, есть ли уже сохраненный HTML-файл для этого слова
-    const possibleFilePaths = [
-      `${from}_${to}_${word}.htm`,
-      `${from}_${to}_${word}_*.htm`
-    ];
-    
-    let localFilePath = null;
-    
-    // Ищем подходящий файл
-    for (const pattern of possibleFilePaths) {
-      const files = glob.sync(path.join(parsedWordsFolder, pattern));
-      if (files.length > 0) {
-        localFilePath = files[0];
-        break;
-      }
-    }
-    
-    if (localFilePath) {
-      console.log(`Найден локальный HTML-файл для слова "${word}": ${localFilePath}`);
-      
-      // Читаем и парсим HTML-файл
-      const html = fs.readFileSync(localFilePath, 'utf-8');
-      const parsedData = parseGlosbeHTML(html, word);
-      
-      // Форматируем данные
-      const result = {
-        word: word,
-        directTranslations: parsedData.directTranslations,
-        examples: parsedData.examples,
-        baseForms: parsedData.baseForms,
-        similarPhrases: parsedData.similarPhrases,
-        extractedTranslations: parsedData.extractedTranslations,
-        fromLocalFile: true
-      };
+
+    console.log(`API запрос на перевод: "${word}" (${from} -> ${to})`);
+
+    // Сначала проверяем, есть ли уже сохраненный HTML файл
+    const existingFiles = fs.readdirSync(parsedWordsFolder)
+      .filter(file => file.includes(`${from}_${to}_${word}_`) && file.endsWith('.htm'));
+
+    if (existingFiles.length > 0) {
+      console.log(`Найден существующий HTML файл для "${word}"`);
+      const filepath = path.join(parsedWordsFolder, existingFiles[0]);
+      const html = fs.readFileSync(filepath, 'utf8');
+      const parsedData = glosbeParser.parseHtmlContent(html, word);
       
       return res.json({
         success: true,
-        word,
-        translations: result
+        word: word,
+        translations: parsedData,
+        fromCache: true
       });
     }
+
+    // Если файла нет, парсим с сайта
+    const result = await glosbeParser.parseWord(word, from, to);
     
-    // Если локальный файл не найден, выполняем запрос к Glosbe
-    console.log(`Локальный файл не найден, выполняем запрос к Glosbe для слова "${word}"`);
-    const translations = await fetchTranslationsFromGlosbe(word, from, to);
-    
-    return res.json({
-      success: true,
-      word,
-      translations
-    });
+    if (result.success) {
+      return res.json({
+        success: true,
+        word: word,
+        translations: result.data,
+        fromCache: false
+      });
+    } else {
+      return res.status(500).json(result);
+    }
+
   } catch (error) {
-    console.error('Ошибка при получении перевода:', error);
+    console.error('Ошибка в API:', error);
     return res.status(500).json({ 
       success: false, 
-      error: 'Ошибка при получении перевода',
+      error: 'Внутренняя ошибка сервера',
       message: error.message
     });
   }
 });
 
-// Функция для получения переводов с Glosbe
-async function fetchTranslationsFromGlosbe(word, from, to) {
+// API для массового перевода
+app.post('/api/translate/batch', async (req, res) => {
   try {
-    // Формируем URL для запроса
-    const url = `https://ru.glosbe.com/${from}/${to}/${encodeURIComponent(word)}`;
+    const { words, from = 'cs', to = 'ru' } = req.body;
     
-    // Выполняем HTTP-запрос с имитацией браузера
-    const response = await axios.get(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-        'Accept-Language': 'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8'
-      }
-    });
-    
-    // Сохраняем HTML в файл для будущего использования
-    const timestamp = new Date().getTime();
-    const fileName = `${from}_${to}_${word}_${timestamp}.htm`;
-    const filePath = path.join(parsedWordsFolder, fileName);
-    
-    fs.writeFileSync(filePath, response.data, 'utf-8');
-    console.log(`Сохранен HTML-файл: ${filePath}`);
-    
-    // Парсим HTML
-    const translations = parseGlosbeHTML(response.data, word);
-    
-    // Проверяем, нужно ли выполнить запрос к базовой форме слова
-    if (translations.baseForms && translations.baseForms.length > 0) {
-      for (const baseForm of translations.baseForms) {
-        if (baseForm !== word) { // Избегаем повторных запросов для того же слова
-          console.log(`Найдена базовая форма: ${baseForm}, выполняем дополнительный запрос`);
-          
-          try {
-            // Получаем переводы для базовой формы
-            const baseFormUrl = `https://ru.glosbe.com/${from}/${to}/${encodeURIComponent(baseForm)}`;
-            const baseFormResponse = await axios.get(baseFormUrl, {
-              headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-                'Accept-Language': 'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7',
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8'
-              }
-            });
-            
-            // Сохраняем HTML базовой формы
-            const baseFormFileName = `${from}_${to}_${baseForm}_${timestamp}.htm`;
-            const baseFormFilePath = path.join(parsedWordsFolder, baseFormFileName);
-            fs.writeFileSync(baseFormFilePath, baseFormResponse.data, 'utf-8');
-            console.log(`Сохранен HTML-файл базовой формы: ${baseFormFilePath}`);
-            
-            // Парсим HTML базовой формы
-            const baseFormTranslations = parseGlosbeHTML(baseFormResponse.data, baseForm);
-            
-            // Добавляем информацию, что это базовая форма
-            baseFormTranslations.isBaseForm = true;
-            
-            // Объединяем результаты
-            translations.relatedForms = translations.relatedForms || [];
-            translations.relatedForms.push({
-              word: baseForm,
-              translations: baseFormTranslations
-            });
-          } catch (baseFormError) {
-            console.error(`Ошибка при получении переводов для базовой формы ${baseForm}:`, baseFormError);
-          }
-        }
-      }
+    if (!words || !Array.isArray(words)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Требуется массив words'
+      });
     }
-    
-    return translations;
-  } catch (error) {
-    console.error('Ошибка при запросе к Glosbe:', error);
-    throw error;
-  }
-}
 
-// Функция для парсинга HTML-страницы Glosbe
-function parseGlosbeHTML(html, originalWord) {
-  try {
-    const $ = cheerio.load(html);
-    const result = {
-      word: originalWord,
-      directTranslations: [],
-      examples: [],
-      baseForms: [],
-      similarPhrases: []
-    };
+    console.log(`Массовый перевод ${words.length} слов`);
     
-    // 1. Проверяем, есть ли блок с предложением посмотреть другую форму слова
-    $('.p-2 .rounded.border-l-4.border-blue-600.bg-blue-50').each(function() {
-      $(this).find('a').each(function() {
-        const baseForm = $(this).text().trim();
-        if (baseForm && !result.baseForms.includes(baseForm)) {
-          result.baseForms.push(baseForm);
-        }
-      });
-    });
+    const results = [];
     
-    // 2. Извлекаем прямые переводы
-    $('.translation__item').each(function() {
-      const translationText = $(this).find('.translation__item__pharse').text().trim();
-      const partOfSpeech = $(this).find('.text-xxs.text-gray-500').text().trim();
-      
-      if (translationText) {
-        const examples = [];
+    for (const word of words) {
+      if (word && word.trim()) {
+        const result = await glosbeParser.parseWord(word.trim(), from, to);
+        results.push(result);
         
-        // Извлекаем примеры для этого перевода
-        $(this).find('.translation__example').each(function() {
-          const originalText = $(this).find('[lang="cs"]').text().trim();
-          const translatedText = $(this).find('.w-1/2.px-1.ml-2').text().trim();
-          
-          if (originalText && translatedText) {
-            examples.push({
-              original: originalText,
-              translated: translatedText
-            });
-          }
-        });
-        
-        result.directTranslations.push({
-          text: translationText,
-          partOfSpeech: partOfSpeech,
-          examples: examples
-        });
+        // Задержка между запросами
+        await new Promise(resolve => setTimeout(resolve, 2000));
       }
-    });
-    
-    // 3. Извлекаем менее частые переводы
-    $('#less-frequent-translations-container-0 li').each(function() {
-      const text = $(this).text().trim();
-      if (text) {
-        result.directTranslations.push({
-          text: text,
-          isLessFrequent: true
-        });
-      }
-    });
-    
-    // 4. Извлекаем примеры использования (контекстные переводы)
-    $('#tmem_first_examples .odd\\:bg-slate-100, #tmem_first_examples .px-1').each(function() {
-      const originalText = $(this).find('.w-1/2.dir-aware-pr-1').text().trim();
-      const translatedText = $(this).find('.w-1/2.dir-aware-pl-1').text().trim();
-      const source = $(this).find('.text-xs.text-gray-500.leading-6').text().trim();
-      
-      if (originalText && translatedText) {
-        // Ищем ключевое слово и его перевод (выделены в HTML классом "keyword")
-        const keywordOriginal = $(this).find('.dir-aware-pr-1 .keyword').text().trim();
-        const keywordTranslated = $(this).find('.dir-aware-pl-1 .keyword').text().trim();
-        
-        result.examples.push({
-          original: originalText,
-          translated: translatedText,
-          keywordOriginal: keywordOriginal || originalWord,
-          keywordTranslated: keywordTranslated || '',
-          source: source
-        });
-      }
-    });
-    
-    // 5. Извлекаем похожие фразы
-    $('#simmilar-phrases li').each(function() {
-      const phrase = $(this).find('.dir-aware-text-right a').text().trim();
-      const translation = $(this).find('.dir-aware-pl-2').text().trim();
-      
-      if (phrase && translation) {
-        result.similarPhrases.push({
-          phrase: phrase,
-          translation: translation
-        });
-      }
-    });
-    
-    // Если прямых переводов нет, но есть примеры, извлекаем возможные переводы из примеров
-    if (result.directTranslations.length === 0 && result.examples.length > 0) {
-      const possibleTranslations = new Map();
-      
-      result.examples.forEach(example => {
-        if (example.keywordTranslated) {
-          // Используем Map для подсчета частоты переводов
-          const count = possibleTranslations.get(example.keywordTranslated) || 0;
-          possibleTranslations.set(example.keywordTranslated, count + 1);
-        }
-      });
-      
-      // Преобразуем Map в массив и сортируем по частоте
-      const translationsArray = Array.from(possibleTranslations.entries())
-        .sort((a, b) => b[1] - a[1])
-        .map(([text, count]) => ({
-          text,
-          frequency: count,
-          extractedFromExamples: true
-        }));
-      
-      result.extractedTranslations = translationsArray;
     }
-    
-    return result;
-  } catch (error) {
-    console.error('Ошибка при парсинге HTML:', error);
-    return {
-      word: originalWord,
-      error: 'Ошибка при парсинге HTML',
-      directTranslations: [],
-      examples: []
-    };
-  }
-}
-
-// API для преобразования результатов парсинга в формат, ожидаемый приложением
-app.get('/api/format-translations', (req, res) => {
-  try {
-    const { rawData } = req.query;
-    
-    if (!rawData) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Данные для форматирования не указаны' 
-      });
-    }
-    
-    const parsedData = JSON.parse(rawData);
-    
-    // Преобразуем данные в формат, ожидаемый приложением
-    const formattedData = {
-      word: parsedData.word,
-      translations: parsedData.directTranslations.map(t => t.text),
-      samples: parsedData.examples.slice(0, 3).map(e => ({
-        phrase: e.original,
-        translation: e.translated
-      })),
-      source: 'glosbe',
-      timestamp: new Date().toISOString()
-    };
     
     return res.json({
       success: true,
-      data: formattedData
+      results: results,
+      total: results.length
     });
+
   } catch (error) {
-    console.error('Ошибка при форматировании данных:', error);
-    return res.status(500).json({ 
-      success: false, 
-      error: 'Ошибка при форматировании данных',
+    console.error('Ошибка в массовом переводе:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Ошибка при массовом переводе',
       message: error.message
     });
   }
 });
 
-// Маршрут для всех остальных запросов (для SPA маршрутизации)
+// API для управления сохраненными файлами
+app.get('/api/files', (req, res) => {
+  try {
+    const files = fs.readdirSync(parsedWordsFolder)
+      .filter(file => file.endsWith('.htm'))
+      .map(file => {
+        const filepath = path.join(parsedWordsFolder, file);
+        const stats = fs.statSync(filepath);
+        return {
+          filename: file,
+          size: stats.size,
+          created: stats.mtime,
+          word: file.split('_')[2] // Извлекаем слово из имени файла
+        };
+      });
+    
+    res.json({
+      success: true,
+      files: files,
+      count: files.length
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Ошибка при получении списка файлов'
+    });
+  }
+});
+
+// API для удаления файла
+app.delete('/api/files/:filename', (req, res) => {
+  try {
+    const filename = req.params.filename;
+    const filepath = path.join(parsedWordsFolder, filename);
+    
+    if (fs.existsSync(filepath)) {
+      fs.unlinkSync(filepath);
+      res.json({ success: true, message: 'Файл удален' });
+    } else {
+      res.status(404).json({ success: false, error: 'Файл не найден' });
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Ошибка при удалении файла' });
+  }
+});
+
+// Проверка здоровья API
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    service: 'flashcards-seznam-api',
+    timestamp: new Date().toISOString(),
+    version: '1.0.0'
+  });
+});
+
+// Маршрут для всех остальных запросов (для SPA)
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../build', 'index.html'));
+  res.sendFile(path.join(__dirname, 'build', 'index.html'));
 });
 
 // Запуск сервера
 app.listen(PORT, () => {
-  console.log(`Сервер запущен на порту ${PORT}`);
-  console.log(`API доступен по адресу: http://localhost:${PORT}/api/translate`);
-  console.log(`Папка с сохраненными HTML: ${parsedWordsFolder}`);
+  console.log(`🚀 Flashcards Seznam API запущен на порту ${PORT}`);
+  console.log(`📁 Папка с HTML файлами: ${parsedWordsFolder}`);
+  console.log(`🔗 API endpoints:`);
+  console.log(`   GET  /api/translate?word=слово&from=cs&to=ru`);
+  console.log(`   POST /api/translate/batch`);
+  console.log(`   GET  /api/files`);
+  console.log(`   GET  /api/health`);
 });
 
-module.exports = app; // Для тестирования
+module.exports = app;
