@@ -656,6 +656,13 @@
             'starší': 'starý', 'nejstarší': 'starý',
             'mladší': 'mladý', 'nejmladší': 'mladý',
             
+            // Наречия и частицы (исключения из общих правил)
+            'jakékoli': 'jakýkoli',  // любые
+            'několi': 'několik',     // несколько
+            'nikoli': 'nikoli',      // отнюдь не
+            'dokoli': 'dokola',      // кругом
+            'jakékol': 'jakýkoli',   // На случай ошибочной нормализации
+            
             // Специальные формы из вашего текста
             'kladených': 'klást',
             'zákaznickou': 'zákazník',
@@ -667,6 +674,10 @@
           
           // УЛУЧШЕННЫЕ правила нормализации - возвращают ВСЕ возможные варианты
           this.normalizationRules = [
+            // ============================================================================
+            // ГЛАГОЛЬНЫЕ ПРАВИЛА
+            // ============================================================================
+            
             // Специфичные глагольные окончания (несовершенный И совершенный вид)
             { 
               pattern: /ujeme$/, 
@@ -694,7 +705,7 @@
               type: 'verb' 
             }, // doporučuješ → doporučovat И doporučit
             
-            // Общие глагольные правила
+            // Общие глагольные правила - настоящее время
             { pattern: /eme$/, replacements: ['at'], type: 'verb' },          // děláme → dělat
             { pattern: /ete$/, replacements: ['at'], type: 'verb' },          // děláte → dělat
             { pattern: /ají$/, replacements: ['at'], type: 'verb' },          // dělají → dělat
@@ -736,12 +747,18 @@
             { pattern: /ený$/, replacements: ['it'], type: 'verb' },           // doporučený → doporučit
             { pattern: /aný$/, replacements: ['at'], type: 'verb' },           // dělaný → dělat
             
-            // Прилагательные - мужской род
+            // ============================================================================
+            // ПРАВИЛА ДЛЯ ПРИЛАГАТЕЛЬНЫХ
+            // ============================================================================
+            
+            // Прилагательные - мужской род твердого склонения
             { pattern: /ého$/, replacements: ['ý'], type: 'adj' },            // dobrého → dobrý
             { pattern: /ému$/, replacements: ['ý'], type: 'adj' },            // dobrému → dobrý
             { pattern: /ým$/, replacements: ['ý'], type: 'adj' },             // dobrým → dobrý
             { pattern: /ých$/, replacements: ['ý'], type: 'adj' },            // kladených → kladený
             { pattern: /ými$/, replacements: ['ý'], type: 'adj' },            // dobrými → dobrý
+            
+            // Прилагательные - мужской род мягкого склонения
             { pattern: /ího$/, replacements: ['í'], type: 'adj' },            // cizího → cizí
             { pattern: /ímu$/, replacements: ['í'], type: 'adj' },            // cizímu → cizí
             { pattern: /ím$/, replacements: ['í'], type: 'adj' },             // cizím → cizí
@@ -752,14 +769,30 @@
             { pattern: /ou$/, replacements: ['á'], type: 'adj' },             // dobrou → dobrá
             { pattern: /ickou$/, replacements: ['ický'], type: 'adj' },       // zákaznickou → zákaznický
             
+            // ============================================================================
+            // ПРАВИЛА ДЛЯ СУЩЕСТВИТЕЛЬНЫХ
+            // ============================================================================
+            
             // Существительные - мужской род твердый
             { pattern: /ové$/, replacements: [''], type: 'noun' },            // mužové → muž
             { pattern: /ů$/, replacements: [''], type: 'noun' },              // dotazů → dotaz, mužů → muž
             { pattern: /em$/, replacements: [''], type: 'noun' },             // mužem → muž
             { pattern: /ech$/, replacements: [''], type: 'noun' },            // mužích → muž
             { pattern: /ích$/, replacements: [''], type: 'noun' },            // učitelích → učitel
-            { pattern: /i$/, replacements: [''], type: 'noun' },              // muži → muž
-            { pattern: /y$/, replacements: [''], type: 'noun' },              // muži → muž
+            
+            // ⚠️ ОСТОРОЖНО: Эти правила могут затронуть наречия - добавляем проверки
+            { 
+              pattern: /i$/, 
+              replacements: [''], 
+              type: 'noun', 
+              exclude: ['jakékoli', 'několi', 'nikoli', 'dokoli'] 
+            },   // muži → muž (но НЕ jakékoli)
+            { 
+              pattern: /y$/, 
+              replacements: [''], 
+              type: 'noun', 
+              exclude: ['kdy', 'proč', 'dny', 'časy'] 
+            },      // muži → muž (но НЕ kdy, proč)
             
             // Существительные - женский род
             { pattern: /ách$/, replacements: ['a'], type: 'noun' },           // ženách → žena
@@ -773,6 +806,17 @@
             // Существительные - средний род
             { pattern: /a$/, replacements: ['o'], type: 'noun' },             // města → město
             { pattern: /y$/, replacements: ['o'], type: 'noun' },             // městy → město
+            
+            // ============================================================================
+            // ЧЕРЕДОВАНИЯ СОГЛАСНЫХ (применяем последними)
+            // ============================================================================
+            { pattern: /ce$/, replacements: ['k'], type: 'alternation' },     // lidé → lid + k → lidé
+            { pattern: /ze$/, replacements: ['h'], type: 'alternation' },     // knize → kniha
+            { pattern: /še$/, replacements: ['ch'], type: 'alternation' },    // tiše → tichý
+            { pattern: /ně$/, replacements: ['n'], type: 'alternation' },     // černě → černý
+            { pattern: /ře$/, replacements: ['r'], type: 'alternation' },     // staře → starý
+            { pattern: /ďe$/, replacements: ['d'], type: 'alternation' },     // mladě → mladý
+            { pattern: /ťe$/, replacements: ['t'], type: 'alternation' },     // zlatě → zlatý
           ];
         }
         
@@ -798,6 +842,12 @@
           // Применяем все подходящие правила
           for (const rule of this.normalizationRules) {
             if (rule.pattern.test(word)) {
+              // ✅ НОВОЕ: Проверяем исключения для правила
+              if (rule.exclude && rule.exclude.includes(word)) {
+                console.log(`Пропускаем правило ${rule.type} для "${word}" (в списке исключений)`);
+                continue; // Пропускаем это правило для данного слова
+              }
+              
               for (const replacement of rule.replacements) {
                 const normalized = word.replace(rule.pattern, replacement);
                 if (normalized !== word && normalized.length > 0) {
@@ -857,7 +907,8 @@
             'zákaznickou',
             'dotazů',
             'prosíme',
-            'směřujte'
+            'směřujte',
+            'jakékoli'      // ✅ НОВЫЙ ТЕСТ: должно дать: jakýkoli (через исключения)
           ];
           
           console.log('=== Тестирование улучшенной системы нормализации ===');
