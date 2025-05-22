@@ -1,10 +1,11 @@
-// server.js - Обновленный сервер с парсингом Glosbe для Flashcards Seznam
+// server.js - Оптимизированный сервер без сохранения HTML файлов для Flashcards Seznam
 const express = require('express');
 const axios = require('axios');
 const cheerio = require('cheerio');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
+const multer = require('multer');
 
 // Инициализация приложения Express
 const app = express();
@@ -14,20 +15,79 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
-// Папка с HTML-файлами (как в вашем оригинальном коде)
+// Мультер для загрузки файлов (если понадобится)
+const upload = multer({ 
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 } // 5MB лимит
+});
+
+// Папка с HTML-файлами (оставляем для совместимости, но не используем активно)
 const parsedWordsFolder = path.join(__dirname, 'parsed_glosbe_words');
 if (!fs.existsSync(parsedWordsFolder)) {
   fs.mkdirSync(parsedWordsFolder, { recursive: true });
 }
 
+// Функция очистки всех старых HTML файлов
+function cleanupAllFiles() {
+  try {
+    if (fs.existsSync(parsedWordsFolder)) {
+      const files = fs.readdirSync(parsedWordsFolder)
+        .filter(file => file.endsWith('.htm') || file.endsWith('.html'));
+      
+      files.forEach(file => {
+        const filepath = path.join(parsedWordsFolder, file);
+        fs.unlinkSync(filepath);
+      });
+      
+      if (files.length > 0) {
+        console.log(`🧹 Удалено ${files.length} старых HTML файлов при запуске`);
+      }
+    }
+  } catch (error) {
+    console.warn('Ошибка при очистке файлов:', error);
+  }
+}
+
+// Функция периодической очистки (запускается каждый час)
+function cleanupOldFiles() {
+  try {
+    if (!fs.existsSync(parsedWordsFolder)) return;
+    
+    const files = fs.readdirSync(parsedWordsFolder);
+    const now = Date.now();
+    let deletedCount = 0;
+    
+    files.forEach(file => {
+      if (!file.endsWith('.htm') && !file.endsWith('.html')) return;
+      
+      const filepath = path.join(parsedWordsFolder, file);
+      const stats = fs.statSync(filepath);
+      const ageHours = (now - stats.mtime.getTime()) / (1000 * 60 * 60);
+      
+      // Удаляем файлы старше 1 часа
+      if (ageHours > 1) {
+        fs.unlinkSync(filepath);
+        deletedCount++;
+      }
+    });
+    
+    if (deletedCount > 0) {
+      console.log(`🧹 Удалено ${deletedCount} старых HTML файлов (автоочистка)`);
+    }
+  } catch (error) {
+    console.warn('Ошибка при автоочистке файлов:', error);
+  }
+}
+
 // Обслуживание статических файлов
 app.use(express.static(path.join(__dirname, 'build')));
 
-// Новый класс для парсинга Glosbe (аналог вашего Python кода)
+// Оптимизированный класс для парсинга Glosbe БЕЗ сохранения файлов
 class GlosbeParser {
   constructor() {
     this.requestDelay = 1000; // Задержка между запросами
     this.lastRequestTime = 0;
+    this.saveFiles = process.env.SAVE_HTML_FILES === 'true'; // false по умолчанию
   }
 
   async parseWord(word, fromLang = 'cs', toLang = 'ru') {
@@ -42,13 +102,13 @@ class GlosbeParser {
 
       console.log(`[${new Date().toLocaleTimeString()}] Парсим слово: "${word}"`);
       
-      // Формируем URL точно как в вашем Python коде
+      // Формируем URL точно как в Python коде
       const encodedWord = encodeURIComponent(word);
       const url = `https://glosbe.com/${fromLang}/${toLang}/${encodedWord}`;
       
       console.log(`Запрос к URL: ${url}`);
       
-      // Выполняем HTTP запрос с теми же заголовками что в Python
+      // Выполняем HTTP запрос
       const response = await axios.get(url, {
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -66,25 +126,41 @@ class GlosbeParser {
         throw new Error(`HTTP ${response.status}`);
       }
 
-      // Сохраняем HTML файл точно как в Python коде
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-      const filename = `${fromLang}_${toLang}_${word}_${timestamp}.htm`;
-      const filepath = path.join(parsedWordsFolder, filename);
-      
-      fs.writeFileSync(filepath, response.data, 'utf8');
-      console.log(`Сохранен HTML файл: ${filename}`);
-
-      // Парсим HTML
+      // ✅ ОПТИМИЗАЦИЯ: Парсим СРАЗУ в памяти, не сохраняя файл
       const parsedData = this.parseHtmlContent(response.data, word);
       
-      // Можем удалить HTML файл после парсинга (как опция)
-      // fs.unlinkSync(filepath);
+      // 🗂️ ОПЦИОНАЛЬНО: Сохраняем файл только если флаг включен (для отладки)
+      if (this.saveFiles) {
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const filename = `${fromLang}_${toLang}_${word}_${timestamp}.htm`;
+        const filepath = path.join(parsedWordsFolder, filename);
+        
+        try {
+          fs.writeFileSync(filepath, response.data, 'utf8');
+          console.log(`📁 Сохранен HTML файл для отладки: ${filename}`);
+          
+          // Удаляем через 10 минут
+          setTimeout(() => {
+            try {
+              if (fs.existsSync(filepath)) {
+                fs.unlinkSync(filepath);
+                console.log(`🗑️ Удален файл отладки: ${filename}`);
+              }
+            } catch (delError) {
+              console.warn(`Ошибка при удалении файла отладки: ${delError.message}`);
+            }
+          }, 10 * 60 * 1000); // 10 минут
+          
+        } catch (saveError) {
+          console.warn(`Ошибка при сохранении файла отладки: ${saveError.message}`);
+        }
+      }
       
       return {
         success: true,
         word: word,
         data: parsedData,
-        savedFile: filename
+        savedFile: this.saveFiles ? 'временно сохранен' : 'не сохранен'
       };
 
     } catch (error) {
@@ -100,7 +176,7 @@ class GlosbeParser {
   parseHtmlContent(htmlContent, word) {
     const $ = cheerio.load(htmlContent);
     
-    // Извлекаем переводы (аналогично парсингу в вашем оригинальном коде)
+    // Извлекаем переводы
     const translations = [];
     
     // Метод 1: Основные переводы
@@ -116,6 +192,16 @@ class GlosbeParser {
       $('#less-frequent-translations-container-0 ul li').each((i, elem) => {
         const text = $(elem).text().trim();
         if (text && !text.includes('Less frequent translations')) {
+          translations.push(text);
+        }
+      });
+    }
+    
+    // Метод 3: Дополнительные переводы
+    if (translations.length === 0) {
+      $('.translation__translations .translation__item').each((i, elem) => {
+        const text = $(elem).text().trim();
+        if (text) {
           translations.push(text);
         }
       });
@@ -152,10 +238,28 @@ class GlosbeParser {
       });
     }
     
+    // Дополнительные примеры
+    if (samples.length === 0) {
+      $('.tmem_first_examples .bg-slate-50').each((i, elem) => {
+        const segments = $(elem).find('.segment');
+        if (segments.length >= 2) {
+          const csText = $(segments[0]).text().trim();
+          const ruText = $(segments[1]).text().trim();
+          
+          if (csText && ruText) {
+            samples.push({
+              phrase: csText,
+              translation: ruText
+            });
+          }
+        }
+      });
+    }
+    
     return {
       word: word,
-      translations: translations.slice(0, 10), // Ограничиваем количество
-      samples: samples.slice(0, 3), // Ограничиваем примеры
+      translations: [...new Set(translations)].slice(0, 10), // Убираем дубли, ограничиваем
+      samples: samples.slice(0, 5), // Ограничиваем примеры
       source: 'glosbe_direct',
       timestamp: new Date().toISOString()
     };
@@ -165,10 +269,10 @@ class GlosbeParser {
 // Создаем экземпляр парсера
 const glosbeParser = new GlosbeParser();
 
-// API эндпоинт для перевода слов (обновленный)
+// API эндпоинт для перевода слов (оптимизированный)
 app.get('/api/translate', async (req, res) => {
   try {
-    const { word, from = 'cs', to = 'ru' } = req.query;
+    const { word, from = 'cs', to = 'ru', checkLocal = false } = req.query;
     
     if (!word) {
       return res.status(400).json({ 
@@ -179,25 +283,27 @@ app.get('/api/translate', async (req, res) => {
 
     console.log(`API запрос на перевод: "${word}" (${from} -> ${to})`);
 
-    // Сначала проверяем, есть ли уже сохраненный HTML файл
-    const existingFiles = fs.readdirSync(parsedWordsFolder)
-      .filter(file => file.includes(`${from}_${to}_${word}_`) && file.endsWith('.htm'));
+    // Проверяем существующие файлы только если checkLocal=true
+    if (checkLocal) {
+      const existingFiles = fs.readdirSync(parsedWordsFolder)
+        .filter(file => file.includes(`${from}_${to}_${word}_`) && file.endsWith('.htm'));
 
-    if (existingFiles.length > 0) {
-      console.log(`Найден существующий HTML файл для "${word}"`);
-      const filepath = path.join(parsedWordsFolder, existingFiles[0]);
-      const html = fs.readFileSync(filepath, 'utf8');
-      const parsedData = glosbeParser.parseHtmlContent(html, word);
-      
-      return res.json({
-        success: true,
-        word: word,
-        translations: parsedData,
-        fromCache: true
-      });
+      if (existingFiles.length > 0) {
+        console.log(`Найден существующий HTML файл для "${word}"`);
+        const filepath = path.join(parsedWordsFolder, existingFiles[0]);
+        const html = fs.readFileSync(filepath, 'utf8');
+        const parsedData = glosbeParser.parseHtmlContent(html, word);
+        
+        return res.json({
+          success: true,
+          word: word,
+          translations: parsedData,
+          fromLocalFile: true
+        });
+      }
     }
 
-    // Если файла нет, парсим с сайта
+    // Парсим с сайта (БЕЗ сохранения файла)
     const result = await glosbeParser.parseWord(word, from, to);
     
     if (result.success) {
@@ -205,7 +311,8 @@ app.get('/api/translate', async (req, res) => {
         success: true,
         word: word,
         translations: result.data,
-        fromCache: false
+        fromCache: false,
+        fileSaved: result.savedFile
       });
     } else {
       return res.status(500).json(result);
@@ -216,6 +323,39 @@ app.get('/api/translate', async (req, res) => {
     return res.status(500).json({ 
       success: false, 
       error: 'Внутренняя ошибка сервера',
+      message: error.message
+    });
+  }
+});
+
+// API для сохранения HTML (из glosbeTranslator.js)
+app.post('/api/save-html', upload.single('html'), (req, res) => {
+  try {
+    const { word, from_lang = 'cs', to_lang = 'ru' } = req.body;
+    
+    if (!req.file || !word) {
+      return res.status(400).json({
+        success: false,
+        error: 'Требуется файл HTML и слово'
+      });
+    }
+    
+    const htmlContent = req.file.buffer.toString();
+    
+    // Парсим СРАЗУ в памяти, не сохраняя файл
+    const parsedData = glosbeParser.parseHtmlContent(htmlContent, word);
+    
+    res.json({
+      success: true,
+      data: parsedData,
+      message: 'HTML обработан в памяти без сохранения'
+    });
+    
+  } catch (error) {
+    console.error('Ошибка при обработке HTML:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Ошибка при обработке HTML',
       message: error.message
     });
   }
@@ -250,7 +390,8 @@ app.post('/api/translate/batch', async (req, res) => {
     return res.json({
       success: true,
       results: results,
-      total: results.length
+      total: results.length,
+      message: 'Файлы не сохранялись, только обработка в памяти'
     });
 
   } catch (error) {
@@ -267,7 +408,7 @@ app.post('/api/translate/batch', async (req, res) => {
 app.get('/api/files', (req, res) => {
   try {
     const files = fs.readdirSync(parsedWordsFolder)
-      .filter(file => file.endsWith('.htm'))
+      .filter(file => file.endsWith('.htm') || file.endsWith('.html'))
       .map(file => {
         const filepath = path.join(parsedWordsFolder, file);
         const stats = fs.statSync(filepath);
@@ -282,12 +423,32 @@ app.get('/api/files', (req, res) => {
     res.json({
       success: true,
       files: files,
-      count: files.length
+      count: files.length,
+      message: files.length === 0 ? 'Файлы автоматически удаляются после обработки' : 'Найдены временные файлы'
     });
   } catch (error) {
     res.status(500).json({
       success: false,
       error: 'Ошибка при получении списка файлов'
+    });
+  }
+});
+
+// API для подсчета HTML файлов
+app.get('/api/html-files-count', (req, res) => {
+  try {
+    const files = fs.readdirSync(parsedWordsFolder)
+      .filter(file => file.endsWith('.htm') || file.endsWith('.html'));
+    
+    res.json({
+      success: true,
+      count: files.length
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      count: 0,
+      error: 'Ошибка при подсчете файлов'
     });
   }
 });
@@ -300,12 +461,37 @@ app.delete('/api/files/:filename', (req, res) => {
     
     if (fs.existsSync(filepath)) {
       fs.unlinkSync(filepath);
-      res.json({ success: true, message: 'Файл удален' });
+      res.json({ 
+        success: true, 
+        message: 'Файл удален' 
+      });
     } else {
-      res.status(404).json({ success: false, error: 'Файл не найден' });
+      res.status(404).json({ 
+        success: false, 
+        error: 'Файл не найден' 
+      });
     }
   } catch (error) {
-    res.status(500).json({ success: false, error: 'Ошибка при удалении файла' });
+    res.status(500).json({ 
+      success: false, 
+      error: 'Ошибка при удалении файла' 
+    });
+  }
+});
+
+// API для ручной очистки всех файлов
+app.delete('/api/files', (req, res) => {
+  try {
+    cleanupAllFiles();
+    res.json({
+      success: true,
+      message: 'Все HTML файлы удалены'
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Ошибка при очистке файлов'
+    });
   }
 });
 
@@ -315,7 +501,12 @@ app.get('/api/health', (req, res) => {
     status: 'ok',
     service: 'flashcards-seznam-api',
     timestamp: new Date().toISOString(),
-    version: '1.0.0'
+    version: '1.0.0',
+    features: {
+      saveFiles: glosbeParser.saveFiles,
+      autoCleanup: true,
+      memoryParsing: true
+    }
   });
 });
 
@@ -324,14 +515,24 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'build', 'index.html'));
 });
 
+// Очистка при запуске сервера
+console.log('🧹 Очистка старых HTML файлов при запуске...');
+cleanupAllFiles();
+
+// Запускаем периодическую очистку каждый час
+setInterval(cleanupOldFiles, 60 * 60 * 1000);
+
 // Запуск сервера
 app.listen(PORT, () => {
   console.log(`🚀 Flashcards Seznam API запущен на порту ${PORT}`);
-  console.log(`📁 Папка с HTML файлами: ${parsedWordsFolder}`);
+  console.log(`📁 Папка для временных файлов: ${parsedWordsFolder}`);
+  console.log(`🗑️ Автоочистка файлов: включена`);
+  console.log(`💾 Сохранение HTML файлов: ${glosbeParser.saveFiles ? 'включено (отладка)' : 'отключено'}`);
   console.log(`🔗 API endpoints:`);
   console.log(`   GET  /api/translate?word=слово&from=cs&to=ru`);
   console.log(`   POST /api/translate/batch`);
   console.log(`   GET  /api/files`);
+  console.log(`   DELETE /api/files (очистить все)`);
   console.log(`   GET  /api/health`);
 });
 

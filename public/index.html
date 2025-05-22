@@ -320,6 +320,8 @@
         color: var(--dark-color);
         transform: rotateY(180deg);
         overflow-y: auto;
+        align-items: flex-start;
+        justify-content: flex-start;
       }
       
       .word {
@@ -343,6 +345,7 @@
         margin-bottom: 15px;
         color: var(--primary-color);
         text-align: center;
+        width: 100%;
       }
       
       .translations, .examples {
@@ -405,6 +408,25 @@
         margin-top: 20px;
         font-size: 0.9rem;
         color: #999;
+      }
+      
+      /* Стили для блока нормализации */
+      .normalization-info {
+        background-color: #e3f2fd;
+        padding: 8px 12px;
+        border-radius: 6px;
+        margin-bottom: 15px;
+        border: 1px solid #bbdefb;
+        font-size: 0.85rem;
+        width: 100%;
+      }
+      
+      .normalization-hint {
+        font-size: 0.8rem;
+        opacity: 0.8;
+        margin-top: 10px;
+        font-style: italic;
+        color: #f0f0f0;
       }
       
       /* Стили для индикатора прогресса */
@@ -535,6 +557,11 @@
           max-width: 100%;
           flex-wrap: wrap;
         }
+        
+        .normalization-info {
+          padding: 6px 10px;
+          font-size: 0.8rem;
+        }
       }
     </style>
   </head>
@@ -598,9 +625,9 @@
       window.firebaseGet = get;
     </script>
     
-    <!-- 🔥 СИСТЕМА НОРМАЛИЗАЦИИ ЧЕШСКИХ СЛОВ -->
+    <!-- 🔥 УЛУЧШЕННАЯ СИСТЕМА НОРМАЛИЗАЦИИ ЧЕШСКИХ СЛОВ -->
     <script>
-      // Система нормализации чешских слов
+      // Улучшенная система нормализации чешских слов с множественными вариантами
       class CzechNormalizer {
         constructor() {
           // Словарь исключений - неправильные формы
@@ -634,114 +661,125 @@
             'zákaznickou': 'zákazník',
             'směřujte': 'směřovat',
             'prosíme': 'prosit',
-            'doporučujeme': 'doporučit',
             'nahlédnout': 'nahlédnout',
             'zlepšení': 'zlepšit'
           };
           
-          // Правила нормализации (от самых специфичных к общим)
+          // УЛУЧШЕННЫЕ правила нормализации - возвращают ВСЕ возможные варианты
           this.normalizationRules = [
-            // Глагольные правила - настоящее время
-            { pattern: /ujeme$/, replacement: 'it', type: 'verb' },        // doporučujeme → doporučit
-            { pattern: /ujete$/, replacement: 'it', type: 'verb' },        // doporučujete → doporučit
-            { pattern: /ují$/, replacement: 'it', type: 'verb' },          // doporučují → doporučit
-            { pattern: /uji$/, replacement: 'it', type: 'verb' },          // doporučuji → doporučit
-            { pattern: /uješ$/, replacement: 'it', type: 'verb' },         // doporučuješ → doporučit
-            { pattern: /eme$/, replacement: 'at', type: 'verb' },          // děláme → dělat
-            { pattern: /ete$/, replacement: 'at', type: 'verb' },          // děláte → dělat
-            { pattern: /ají$/, replacement: 'at', type: 'verb' },          // dělají → dělat
-            { pattern: /ám$/, replacement: 'at', type: 'verb' },           // dělám → dělat
-            { pattern: /áš$/, replacement: 'at', type: 'verb' },           // děláš → dělat
-            { pattern: /á$/, replacement: 'at', type: 'verb' },            // dělá → dělat
-            { pattern: /íme$/, replacement: 'it', type: 'verb' },          // prosíme → prosit
-            { pattern: /íte$/, replacement: 'it', type: 'verb' },          // prosíte → prosit
-            { pattern: /í$/, replacement: 'it', type: 'verb' },            // prosí → prosit
-            { pattern: /ím$/, replacement: 'it', type: 'verb' },           // prosím → prosit
-            { pattern: /íš$/, replacement: 'it', type: 'verb' },           // prosíš → prosit
+            // Специфичные глагольные окончания (несовершенный И совершенный вид)
+            { 
+              pattern: /ujeme$/, 
+              replacements: ['ovat', 'it'], 
+              type: 'verb' 
+            }, // doporučujeme → doporučovat И doporučit
+            { 
+              pattern: /ujete$/, 
+              replacements: ['ovat', 'it'], 
+              type: 'verb' 
+            }, // doporučujete → doporučovat И doporučit
+            { 
+              pattern: /ují$/, 
+              replacements: ['ovat', 'it'], 
+              type: 'verb' 
+            }, // doporučují → doporučovat И doporučit
+            { 
+              pattern: /uji$/, 
+              replacements: ['ovat', 'it'], 
+              type: 'verb' 
+            }, // doporučuji → doporučovat И doporučit
+            { 
+              pattern: /uješ$/, 
+              replacements: ['ovat', 'it'], 
+              type: 'verb' 
+            }, // doporučuješ → doporučovat И doporučit
+            
+            // Общие глагольные правила
+            { pattern: /eme$/, replacements: ['at'], type: 'verb' },          // děláme → dělat
+            { pattern: /ete$/, replacements: ['at'], type: 'verb' },          // děláte → dělat
+            { pattern: /ají$/, replacements: ['at'], type: 'verb' },          // dělají → dělat
+            { pattern: /ám$/, replacements: ['at'], type: 'verb' },           // dělám → dělat
+            { pattern: /áš$/, replacements: ['at'], type: 'verb' },           // děláš → dělat
+            { pattern: /á$/, replacements: ['at'], type: 'verb' },            // dělá → dělat
+            { pattern: /íme$/, replacements: ['it'], type: 'verb' },          // prosíme → prosit
+            { pattern: /íte$/, replacements: ['it'], type: 'verb' },          // prosíte → prosit
+            { pattern: /í$/, replacements: ['it'], type: 'verb' },            // prosí → prosit
+            { pattern: /ím$/, replacements: ['it'], type: 'verb' },           // prosím → prosit
+            { pattern: /íš$/, replacements: ['it'], type: 'verb' },           // prosíš → prosit
             
             // Прошедшее время
-            { pattern: /oval$/, replacement: 'ovat', type: 'verb' },       // doporučoval → doporučovat
-            { pattern: /ovala$/, replacement: 'ovat', type: 'verb' },      // doporučovala → doporučovat
-            { pattern: /ovali$/, replacement: 'ovat', type: 'verb' },      // doporučovali → doporučovat
-            { pattern: /ovaly$/, replacement: 'ovat', type: 'verb' },      // doporučovaly → doporučovat
-            { pattern: /al$/, replacement: 'at', type: 'verb' },           // dělal → dělat
-            { pattern: /ala$/, replacement: 'at', type: 'verb' },          // dělala → dělat
-            { pattern: /ali$/, replacement: 'at', type: 'verb' },          // dělali → dělat
-            { pattern: /aly$/, replacement: 'at', type: 'verb' },          // dělaly → dělat
-            { pattern: /el$/, replacement: 'ět', type: 'verb' },           // viděl → vidět
-            { pattern: /ěla$/, replacement: 'ět', type: 'verb' },          // viděla → vidět
-            { pattern: /ěli$/, replacement: 'ět', type: 'verb' },          // viděli → vidět
-            { pattern: /ěly$/, replacement: 'ět', type: 'verb' },          // viděly → vidět
-            { pattern: /il$/, replacement: 'it', type: 'verb' },           // prosil → prosit
-            { pattern: /ila$/, replacement: 'it', type: 'verb' },          // prosila → prosit
-            { pattern: /ili$/, replacement: 'it', type: 'verb' },          // prosili → prosit
-            { pattern: /ily$/, replacement: 'it', type: 'verb' },          // prosily → prosit
+            { pattern: /oval$/, replacements: ['ovat'], type: 'verb' },       // doporučoval → doporučovat
+            { pattern: /ovala$/, replacements: ['ovat'], type: 'verb' },      // doporučovala → doporučovat
+            { pattern: /ovali$/, replacements: ['ovat'], type: 'verb' },      // doporučovali → doporučovat
+            { pattern: /ovaly$/, replacements: ['ovat'], type: 'verb' },      // doporučovaly → doporučovat
+            { pattern: /al$/, replacements: ['at'], type: 'verb' },           // dělal → dělat
+            { pattern: /ala$/, replacements: ['at'], type: 'verb' },          // dělala → dělat
+            { pattern: /ali$/, replacements: ['at'], type: 'verb' },          // dělali → dělat
+            { pattern: /aly$/, replacements: ['at'], type: 'verb' },          // dělaly → dělat
+            { pattern: /el$/, replacements: ['ět'], type: 'verb' },           // viděl → vidět
+            { pattern: /ěla$/, replacements: ['ět'], type: 'verb' },          // viděla → vidět
+            { pattern: /ěli$/, replacements: ['ět'], type: 'verb' },          // viděli → vidět
+            { pattern: /ěly$/, replacements: ['ět'], type: 'verb' },          // viděly → vidět
+            { pattern: /il$/, replacements: ['it'], type: 'verb' },           // prosil → prosit
+            { pattern: /ila$/, replacements: ['it'], type: 'verb' },          // prosila → prosit
+            { pattern: /ili$/, replacements: ['it'], type: 'verb' },          // prosili → prosit
+            { pattern: /ily$/, replacements: ['it'], type: 'verb' },          // prosily → prosit
             
             // Повелительное наклонение
-            { pattern: /ej$/, replacement: 'at', type: 'verb' },           // dělej → dělat
-            { pattern: /ejte$/, replacement: 'at', type: 'verb' },         // dělejte → dělat
-            { pattern: /ujte$/, replacement: 'it', type: 'verb' },         // směřujte → směřit
+            { pattern: /ej$/, replacements: ['at'], type: 'verb' },           // dělej → dělat
+            { pattern: /ejte$/, replacements: ['at'], type: 'verb' },         // dělejte → dělat
+            { pattern: /ujte$/, replacements: ['it', 'ovat'], type: 'verb' }, // směřujte → směřit И směřovat
             
             // Причастия и деепричастия
-            { pattern: /ující$/, replacement: 'it', type: 'verb' },        // doporučující → doporučit
-            { pattern: /ující$/, replacement: 'ovat', type: 'verb' },      // doporučující → doporučovat
-            { pattern: /ající$/, replacement: 'at', type: 'verb' },        // dělající → dělat
-            { pattern: /ený$/, replacement: 'it', type: 'verb' },          // doporučený → doporučit
-            { pattern: /aný$/, replacement: 'at', type: 'verb' },          // dělaný → dělat
+            { pattern: /ující$/, replacements: ['it', 'ovat'], type: 'verb' }, // doporučující → doporučit И doporučovat
+            { pattern: /ající$/, replacements: ['at'], type: 'verb' },         // dělající → dělat
+            { pattern: /ený$/, replacements: ['it'], type: 'verb' },           // doporučený → doporučit
+            { pattern: /aný$/, replacements: ['at'], type: 'verb' },           // dělaný → dělat
             
             // Прилагательные - мужской род
-            { pattern: /ého$/, replacement: 'ý', type: 'adj' },            // dobrého → dobrý
-            { pattern: /ému$/, replacement: 'ý', type: 'adj' },            // dobrému → dobrý
-            { pattern: /ým$/, replacement: 'ý', type: 'adj' },             // dobrým → dobrý
-            { pattern: /ých$/, replacement: 'ý', type: 'adj' },            // kladených → kladený
-            { pattern: /ými$/, replacement: 'ý', type: 'adj' },            // dobrými → dobrý
-            { pattern: /ího$/, replacement: 'í', type: 'adj' },            // cizího → cizí
-            { pattern: /ímu$/, replacement: 'í', type: 'adj' },            // cizímu → cizí
-            { pattern: /ím$/, replacement: 'í', type: 'adj' },             // cizím → cizí
-            { pattern: /ích$/, replacement: 'í', type: 'adj' },            // cizích → cizí
-            { pattern: /ími$/, replacement: 'í', type: 'adj' },            // cizími → cizí
+            { pattern: /ého$/, replacements: ['ý'], type: 'adj' },            // dobrého → dobrý
+            { pattern: /ému$/, replacements: ['ý'], type: 'adj' },            // dobrému → dobrý
+            { pattern: /ým$/, replacements: ['ý'], type: 'adj' },             // dobrým → dobrý
+            { pattern: /ých$/, replacements: ['ý'], type: 'adj' },            // kladených → kladený
+            { pattern: /ými$/, replacements: ['ý'], type: 'adj' },            // dobrými → dobrý
+            { pattern: /ího$/, replacements: ['í'], type: 'adj' },            // cizího → cizí
+            { pattern: /ímu$/, replacements: ['í'], type: 'adj' },            // cizímu → cizí
+            { pattern: /ím$/, replacements: ['í'], type: 'adj' },             // cizím → cizí
+            { pattern: /ích$/, replacements: ['í'], type: 'adj' },            // cizích → cizí
+            { pattern: /ími$/, replacements: ['í'], type: 'adj' },            // cizími → cizí
             
             // Прилагательные - женский род
-            { pattern: /ou$/, replacement: 'á', type: 'adj' },             // dobrou → dobrá
-            { pattern: /ickou$/, replacement: 'ický', type: 'adj' },       // zákaznickou → zákaznický
+            { pattern: /ou$/, replacements: ['á'], type: 'adj' },             // dobrou → dobrá
+            { pattern: /ickou$/, replacements: ['ický'], type: 'adj' },       // zákaznickou → zákaznický
             
             // Существительные - мужской род твердый
-            { pattern: /ové$/, replacement: '', type: 'noun' },            // mužové → muž
-            { pattern: /ů$/, replacement: '', type: 'noun' },              // dotazů → dotaz, mužů → muž
-            { pattern: /em$/, replacement: '', type: 'noun' },             // mužem → muž
-            { pattern: /ech$/, replacement: '', type: 'noun' },            // mužích → muž (убираем 'ích', добавляем '')
-            { pattern: /ích$/, replacement: '', type: 'noun' },            // učitelích → učitel
-            { pattern: /i$/, replacement: '', type: 'noun' },              // muži → muž
-            { pattern: /y$/, replacement: '', type: 'noun' },              // muži → muž (альтернативная форма)
+            { pattern: /ové$/, replacements: [''], type: 'noun' },            // mužové → muž
+            { pattern: /ů$/, replacements: [''], type: 'noun' },              // dotazů → dotaz, mužů → muž
+            { pattern: /em$/, replacements: [''], type: 'noun' },             // mužem → muž
+            { pattern: /ech$/, replacements: [''], type: 'noun' },            // mužích → muž
+            { pattern: /ích$/, replacements: [''], type: 'noun' },            // učitelích → učitel
+            { pattern: /i$/, replacements: [''], type: 'noun' },              // muži → muž
+            { pattern: /y$/, replacements: [''], type: 'noun' },              // muži → muž
             
             // Существительные - женский род
-            { pattern: /ách$/, replacement: 'a', type: 'noun' },           // ženách → žena
-            { pattern: /ami$/, replacement: 'a', type: 'noun' },           // ženami → žena
-            { pattern: /ě$/, replacement: 'a', type: 'noun' },             // ženě → žena
-            { pattern: /u$/, replacement: 'a', type: 'noun' },             // ženu → žena
-            { pattern: /y$/, replacement: 'a', type: 'noun' },             // ženy → žena
-            { pattern: /í$/, replacement: 'e', type: 'noun' },             // růží → růže
-            { pattern: /emi$/, replacement: 'e', type: 'noun' },           // růžemi → růže
+            { pattern: /ách$/, replacements: ['a'], type: 'noun' },           // ženách → žena
+            { pattern: /ami$/, replacements: ['a'], type: 'noun' },           // ženami → žena
+            { pattern: /ě$/, replacements: ['a'], type: 'noun' },             // ženě → žena
+            { pattern: /u$/, replacements: ['a'], type: 'noun' },             // ženu → žena
+            { pattern: /y$/, replacements: ['a'], type: 'noun' },             // ženy → žena
+            { pattern: /í$/, replacements: ['e'], type: 'noun' },             // růží → růže
+            { pattern: /emi$/, replacements: ['e'], type: 'noun' },           // růžemi → růže
             
             // Существительные - средний род
-            { pattern: /a$/, replacement: 'o', type: 'noun' },             // města → město
-            { pattern: /y$/, replacement: 'o', type: 'noun' },             // městy → město
-            
-            // Чередования согласных (применяем после основных правил)
-            { pattern: /ce$/, replacement: 'k', type: 'alternation' },     // lidé → lid + k → lidé
-            { pattern: /ze$/, replacement: 'h', type: 'alternation' },     // knize → kniha
-            { pattern: /še$/, replacement: 'ch', type: 'alternation' },    // tiše → tichý
-            { pattern: /ně$/, replacement: 'n', type: 'alternation' },     // černě → černý
-            { pattern: /ře$/, replacement: 'r', type: 'alternation' },     // staře → starý
-            { pattern: /ďe$/, replacement: 'd', type: 'alternation' },     // mladě → mladý
-            { pattern: /ťe$/, replacement: 't', type: 'alternation' },     // zlatě → zlatý
+            { pattern: /a$/, replacements: ['o'], type: 'noun' },             // města → město
+            { pattern: /y$/, replacements: ['o'], type: 'noun' },             // městy → město
           ];
         }
         
-        // Основная функция нормализации
+        // УЛУЧШЕННАЯ функция нормализации - возвращает ВСЕ варианты
         normalize(word) {
           if (!word || typeof word !== 'string') {
-            return word;
+            return [word];
           }
           
           const originalWord = word;
@@ -750,36 +788,37 @@
           // 1. Проверяем словарь исключений
           if (this.exceptions[word]) {
             console.log(`Исключение: ${originalWord} → ${this.exceptions[word]}`);
-            return this.exceptions[word];
+            return [this.exceptions[word]];
           }
           
-          // 2. Применяем правила нормализации
-          let normalizedWord = word;
-          let appliedRule = null;
+          // 2. Собираем ВСЕ возможные варианты нормализации
+          const candidates = new Set();
+          candidates.add(word); // Исходное слово всегда первое
           
+          // Применяем все подходящие правила
           for (const rule of this.normalizationRules) {
-            if (rule.pattern.test(normalizedWord)) {
-              const newWord = normalizedWord.replace(rule.pattern, rule.replacement);
-              if (newWord !== normalizedWord && newWord.length > 0) {
-                console.log(`Правило ${rule.type}: ${originalWord} → ${newWord} (${rule.pattern})`);
-                appliedRule = rule;
-                normalizedWord = newWord;
-                break; // Применяем только первое подходящее правило
+            if (rule.pattern.test(word)) {
+              for (const replacement of rule.replacements) {
+                const normalized = word.replace(rule.pattern, replacement);
+                if (normalized !== word && normalized.length > 0) {
+                  candidates.add(normalized);
+                  console.log(`Правило ${rule.type}: ${originalWord} → ${normalized}`);
+                }
               }
             }
           }
           
-          // 3. Дополнительная нормализация для составных случаев
-          if (appliedRule && appliedRule.type === 'adj') {
-            // Если получили прилагательное, проверяем, есть ли соответствующее существительное
-            const nounForm = this.adjToNoun(normalizedWord);
-            if (nounForm && nounForm !== normalizedWord) {
-              console.log(`Прилагательное → существительное: ${normalizedWord} → ${nounForm}`);
-              return nounForm;
+          // 3. Дополнительная нормализация для прилагательных
+          const candidatesArray = Array.from(candidates);
+          for (const candidate of candidatesArray) {
+            const nounForm = this.adjToNoun(candidate);
+            if (nounForm && nounForm !== candidate) {
+              candidates.add(nounForm);
+              console.log(`Прилагательное → существительное: ${candidate} → ${nounForm}`);
             }
           }
           
-          return normalizedWord;
+          return Array.from(candidates);
         }
         
         // Преобразование прилагательного в существительное
@@ -807,35 +846,24 @@
             'zemědělský': 'zemědělství'
           };
           
-          return adjToNounMap[adjective] || adjective;
+          return adjToNounMap[adjective] || null;
         }
         
         // Функция для тестирования нормализации
         test() {
           const testCases = [
-            // Ваши примеры
-            'doporučujeme',
+            'doporučujeme',  // должно дать: doporučovat И doporučit
             'kladených', 
             'zákaznickou',
             'dotazů',
             'prosíme',
-            'směřujte',
-            
-            // Дополнительные тесты
-            'dělají',
-            'viděli',
-            'lepší',
-            'lidé',
-            'děti',
-            'městech',
-            'dobrého',
-            'nahlédnout'
+            'směřujte'
           ];
           
-          console.log('=== Тестирование системы нормализации ===');
+          console.log('=== Тестирование улучшенной системы нормализации ===');
           testCases.forEach(word => {
-            const normalized = this.normalize(word);
-            console.log(`${word} → ${normalized}`);
+            const variants = this.normalize(word);
+            console.log(`${word} → [${variants.join(', ')}]`);
           });
         }
       }
@@ -843,7 +871,7 @@
       // Интеграция с существующей системой перевода
       window.czechNormalizer = new CzechNormalizer();
 
-      // Обновленная функция fetchTranslation с нормализацией
+      // УЛУЧШЕННАЯ функция fetchTranslation с множественными вариантами
       window.fetchTranslationWithNormalization = async function(word) {
         if (!word) return null;
         
@@ -871,32 +899,27 @@
           console.warn('Ошибка при получении из Firebase:', dbError);
         }
         
-        // Создаем список слов для попытки перевода
-        const wordsToTry = [word]; // Начинаем с исходного слова
-        
-        // Нормализуем слово
-        const normalizedWord = window.czechNormalizer.normalize(word);
-        if (normalizedWord !== word) {
-          wordsToTry.push(normalizedWord);
-          console.log(`Нормализация: ${word} → ${normalizedWord}`);
-        }
+        // Получаем ВСЕ варианты нормализации
+        const allVariants = window.czechNormalizer.normalize(word);
+        console.log(`Варианты для "${word}":`, allVariants);
         
         // Пробуем найти перевод для каждого варианта
-        for (const wordToTry of wordsToTry) {
+        for (const wordToTry of allVariants) {
           try {
-            console.log(`Пробуем найти перевод для: "${wordToTry}"`);
+            console.log(`Попытка перевода: "${wordToTry}"`);
             
-            // Проверяем кэш для нормализованного слова
+            // Проверяем кэш
             if (window.translationsCache[wordToTry]) {
               console.log('Найден кэшированный перевод для "' + wordToTry + '"');
               const result = { ...window.translationsCache[wordToTry] };
-              result.originalWord = word; // Сохраняем исходное слово
+              result.originalWord = word;
               result.normalizedWord = wordToTry;
-              window.translationsCache[word] = result; // Кэшируем и для исходного слова
+              result.normalizedVariants = allVariants;
+              window.translationsCache[word] = result;
               return result;
             }
             
-            // Проверяем Firebase для нормализованного слова
+            // Проверяем Firebase
             try {
               let cloudTranslation = await getFromCloudDictionary(wordToTry);
               if (cloudTranslation) {
@@ -904,19 +927,17 @@
                 const result = { ...cloudTranslation };
                 result.originalWord = word;
                 result.normalizedWord = wordToTry;
+                result.normalizedVariants = allVariants;
                 window.translationsCache[word] = result;
                 window.translationsCache[wordToTry] = result;
                 return result;
               }
             } catch (dbError) {
-              console.warn('Ошибка при получении из Firebase для нормализованного слова:', dbError);
+              console.warn('Ошибка при получении из Firebase для "' + wordToTry + '":', dbError);
             }
             
             // Пробуем получить через API
-            const apiUrl = window.location.protocol + '//' + window.location.hostname + ':3001';
-            const endpoint = apiUrl + '/api/translate?word=' + encodeURIComponent(wordToTry) + '&from=cs&to=ru';
-            
-            const response = await fetch(endpoint, {
+            const response = await fetch(`http://localhost:3001/api/translate?word=${encodeURIComponent(wordToTry)}&from=cs&to=ru`, {
               method: 'GET',
               headers: {
                 'Accept': 'application/json',
@@ -929,14 +950,17 @@
               const data = await response.json();
               
               if (data.success && data.translations && 
-                  (data.translations.translations.length > 0 || data.translations.samples.length > 0)) {
+                  (data.translations.translations && data.translations.translations.length > 0 || 
+                   data.translations.samples && data.translations.samples.length > 0)) {
                 
                 console.log(`✅ Найден перевод для "${wordToTry}"!`);
                 
                 const result = {
-                  word: word, // Возвращаем исходное слово
+                  word: word,                                    // Исходное слово
                   originalWord: word,
-                  normalizedWord: wordToTry,
+                  normalizedWord: wordToTry,                    // Слово, для которого найден перевод
+                  normalizedVariants: allVariants,              // ВСЕ попробованные варианты
+                  usedNormalization: wordToTry !== word,        // Была ли нормализация
                   translations: data.translations.translations || [],
                   samples: data.translations.samples || [],
                   source: data.fromCache ? 'local_cache' : 'glosbe_live',
@@ -967,36 +991,40 @@
         
         // Если ничего не найдено, пробуем базовый словарь
         console.log('Пробуем базовый словарь...');
-        const basicTranslations = getBasicTranslation(word) || getBasicTranslation(normalizedWord);
-        if (basicTranslations) {
-          const fallbackResult = {
-            word: word,
-            originalWord: word,
-            normalizedWord: normalizedWord,
-            translations: basicTranslations,
-            samples: [],
-            source: 'basic_dict',
-            note: 'Базовый перевод (Glosbe не дал результатов)',
-            timestamp: new Date().toISOString()
-          };
-          
-          window.translationsCache[word] = fallbackResult;
-          return fallbackResult;
+        for (const variant of allVariants) {
+          const basicTranslations = getBasicTranslation(variant);
+          if (basicTranslations) {
+            const fallbackResult = {
+              word: word,
+              originalWord: word,
+              normalizedWord: variant,
+              normalizedVariants: allVariants,
+              translations: basicTranslations,
+              samples: [],
+              source: 'basic_dict',
+              note: 'Базовый перевод (Glosbe не дал результатов)',
+              timestamp: new Date().toISOString()
+            };
+            
+            window.translationsCache[word] = fallbackResult;
+            return fallbackResult;
+          }
         }
         
         // Полный fallback
         return {
           word: word,
           originalWord: word,
-          normalizedWord: normalizedWord,
+          normalizedWord: allVariants[1] || word,
+          normalizedVariants: allVariants,
           translations: [],
           samples: [],
-          note: "Не удалось найти перевод даже после нормализации",
+          note: "Не удалось найти перевод ни для одного варианта: " + allVariants.join(', '),
           timestamp: new Date().toISOString()
         };
       };
 
-      console.log('✅ Система чешской нормализации загружена!');
+      console.log('✅ Улучшенная система чешской нормализации загружена!');
     </script>
     
     <!-- Основное приложение -->
@@ -1187,6 +1215,8 @@
           // Глаголы
           'doporučujeme': ['рекомендуем'],
           'doporučuje': ['рекомендует'],
+          'doporučovat': ['рекомендовать', 'советовать'],
+          'doporučit': ['порекомендовать', 'посоветовать'],
           'můžete': ['можете'],
           'můžeme': ['можем'],
           'chcete': ['хотите'],
@@ -1206,7 +1236,6 @@
           'přijít': ['прийти'],
           'klást': ['класть'],
           'prosit': ['просить'],
-          'doporučit': ['рекомендовать'],
           'směřovat': ['направлять'],
           
           // Существительные
@@ -1417,12 +1446,14 @@
         );
       };
 
-      // Компонент карточки
+      // УЛУЧШЕННЫЙ компонент карточки с показом нормализации
       const Flashcard = function(props) {
         const word = props.word;
         const translations = props.translations;
         const samples = props.samples;
         const note = props.note;
+        const normalizedWord = props.normalizedWord;           // НОВОЕ!
+        const normalizedVariants = props.normalizedVariants;   // НОВОЕ!
         
         const isFlippedState = useState(false);
         const isFlipped = isFlippedState[0];
@@ -1439,10 +1470,60 @@
           h('div', { className: 'card-inner' },
             h('div', { className: 'card-front' },
               h('div', { className: 'word' }, word),
+              // Показываем нормализацию на лицевой стороне, если она есть
+              normalizedWord && normalizedWord !== word &&h('div', { 
+                className: 'normalization-hint',
+                style: { 
+                  fontSize: '0.8rem', 
+                  opacity: '0.8', 
+                  marginTop: '10px',
+                  fontStyle: 'italic',
+                  color: '#f0f0f0'
+                }
+              }, '→ ' + normalizedWord),
               h('p', { className: 'hint' }, 'Нажмите, чтобы увидеть перевод')
             ),
             h('div', { className: 'card-back' },
               h('h3', { className: 'original-word' }, word),
+              
+              // НОВЫЙ БЛОК: Информация о нормализации
+              normalizedWord && normalizedWord !== word && h('div', { 
+                className: 'normalization-info',
+                style: {
+                  backgroundColor: '#e3f2fd',
+                  padding: '8px 12px',
+                  borderRadius: '6px',
+                  marginBottom: '15px',
+                  border: '1px solid #bbdefb',
+                  width: '100%'
+                }
+              },
+                h('div', { 
+                  style: { 
+                    fontSize: '0.85rem', 
+                    color: '#1565c0',
+                    fontWeight: '500',
+                    marginBottom: '4px'
+                  }
+                }, '🔄 Нормализовано:'),
+                h('div', { 
+                  style: { 
+                    fontSize: '0.9rem', 
+                    color: '#0d47a1',
+                    fontWeight: '600'
+                  }
+                }, normalizedWord),
+                
+                // Показываем все попробованные варианты, если их несколько
+                normalizedVariants && normalizedVariants.length > 2 && h('div', {
+                  style: {
+                    fontSize: '0.75rem',
+                    color: '#666',
+                    marginTop: '4px'
+                  }
+                }, 'Варианты: ' + normalizedVariants.slice(1).join(', '))
+              ),
+              
               h('div', { className: 'translations' },
                 translations && translations.length > 0 ? 
                   h('div', null,
@@ -1455,8 +1536,9 @@
                   ) :
                   h('p', { className: 'no-translations' }, 'Переводы не найдены')
               ),
+              
               samples && samples.length > 0 && h('div', { className: 'examples' },
-                h('h4', null, 'Примеры:'),
+                h('h4', null, 'Примеры' + (normalizedWord && normalizedWord !== word ? ' (' + normalizedWord + '):' : ':')),
                 h('ul', null,
                   samples.map(function(sample, index) {
                     return h('li', { key: index },
@@ -1466,15 +1548,21 @@
                   })
                 )
               ),
+              
               note && h('p', { className: 'note' }, note),
+              
               h('p', { className: 'hint' }, 'Нажмите, чтобы вернуться к слову'),
-              h('div', { className: 'attribution' }, 'Источник: Glosbe')
+              
+              h('div', { className: 'attribution' }, 
+                'Источник: Glosbe' + 
+                (normalizedWord && normalizedWord !== word ? ' (через ' + normalizedWord + ')' : '')
+              )
             )
           )
         );
       };
 
-      // Компонент просмотра карточек
+      // ОБНОВЛЕННЫЙ компонент просмотра карточек с передачей данных о нормализации
       const FlashcardViewer = function(props) {
         const flashcards = props.flashcards;
         const currentIndexState = useState(0);
@@ -1509,12 +1597,17 @@
               onClick: goToPrevious,
               'aria-label': 'Предыдущая карточка'
             }, '<'),
+            
+            // ✅ ОБНОВЛЕНИЕ: Передаем дополнительные данные о нормализации
             h(Flashcard, {
               word: currentCard.word,
               translations: currentCard.translations,
               samples: currentCard.samples,
-              note: currentCard.note
+              note: currentCard.note,
+              normalizedWord: currentCard.normalizedWord,           // ← НОВОЕ!
+              normalizedVariants: currentCard.normalizedVariants   // ← НОВОЕ!
             }),
+            
             h('button', {
               className: 'nav-btn next-btn',
               onClick: goToNext,
@@ -1716,6 +1809,13 @@
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(h(App));
       }
+      
+      // Тестируем систему нормализации при загрузке
+      setTimeout(function() {
+        if (window.czechNormalizer) {
+          window.czechNormalizer.test();
+        }
+      }, 1000);
     </script>
   </body>
 </html>
