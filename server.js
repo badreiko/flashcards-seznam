@@ -11,6 +11,8 @@ const multer = require('multer');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Важно: настройки CORS должны быть применены на Railway
+
 // Настраиваем CORS для всех доменов
 app.use(cors({
   origin: '*',  // Разрешаем запросы с любого домена
