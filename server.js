@@ -11,18 +11,21 @@ const multer = require('multer');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Настраиваем CORS для конкретных доменов
+// Настраиваем CORS для всех доменов
 app.use(cors({
-  origin: [
-    'https://flashcards-seznam.netlify.app',
-    'https://flashcards-seznam-production.up.railway.app',
-    'http://localhost:3000',
-    'http://localhost:3001'
-  ],
+  origin: '*',  // Разрешаем запросы с любого домена
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
+// Добавляем заголовки CORS вручную для всех ответов
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  next();
+});
 
 app.use(express.json());
 
