@@ -254,33 +254,49 @@
     .card-progress {
       display: flex;
       justify-content: center;
-      gap: 12px;
-      margin-top: 25px;
-      flex-wrap: wrap;
+      gap: 18px;
+      margin-top: 30px;
       padding: 0 20px;
+      position: relative;
     }
 
     .progress-dot {
-      width: 14px;
-      height: 14px;
+      width: 18px;
+      height: 18px;
       border-radius: 50%;
       background-color: #e0e0e0;
       border: 2px solid #bbb;
       cursor: pointer;
-      transition: all 0.3s ease;
+      transition: all 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55);
       position: relative;
+      z-index: 2;
     }
 
     .progress-dot:hover {
       background-color: #ccc;
-      transform: scale(1.1);
+      transform: scale(1.2);
     }
 
     .progress-dot.active {
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       border-color: #667eea;
-      transform: scale(1.3);
+      transform: scale(1.4);
       box-shadow: 0 3px 10px rgba(102, 126, 234, 0.4);
+    }
+    
+    /* Анимация перелистывания на точках */
+    .card-progress::after {
+      content: '';
+      position: absolute;
+      height: 4px;
+      background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+      top: 50%;
+      transform: translateY(-50%);
+      left: calc(50% - 36px);
+      right: calc(50% - 36px);
+      z-index: 1;
+      border-radius: 2px;
+      transition: all 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
     }
 
     /* Анимация появления */
@@ -311,13 +327,12 @@
 
     /* Стили для Flashcard */
     .flashcard {
+      perspective: 1500px;
+      transition: transform 0.5s;
+      cursor: pointer;
       width: 100%;
       max-width: 450px;
-      /* Увеличили ширину */
       height: 350px;
-      /* Увеличили высоту */
-      perspective: 1000px;
-      cursor: pointer;
       margin: 0 auto;
     }
 
@@ -325,17 +340,24 @@
       position: relative;
       width: 100%;
       height: 100%;
-      transition: transform 0.8s ease;
-      /* Плавнее анимация */
+      text-align: center;
+      transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
       transform-style: preserve-3d;
-      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-      /* Более красивая тень */
+      box-shadow: 0 15px 35px rgba(50, 50, 93, 0.1), 0 5px 15px rgba(0, 0, 0, 0.07);
       border-radius: 15px;
-      /* Более округлые углы */
     }
 
     .flashcard.flipped .card-inner {
       transform: rotateY(180deg);
+    }
+    
+    /* Добавляем эффект при наведении */
+    .flashcard:hover .card-inner {
+      box-shadow: 0 20px 40px rgba(50, 50, 93, 0.15), 0 10px 20px rgba(0, 0, 0, 0.1);
+    }
+    
+    .flashcard:hover .card-inner:not(.flipped) {
+      transform: rotateY(15deg);
     }
 
     .card-front,
@@ -361,8 +383,8 @@
     }
 
     .card-back {
-      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-      /* Другой градиент */
+      background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+      /* Более спокойный градиент */
       color: white;
       transform: rotateY(180deg);
       overflow-y: auto;
@@ -434,36 +456,42 @@
       margin-bottom: 12px;
       font-size: 1.2rem;
       font-weight: 500;
-      color: white;
-      padding: 8px 12px;
-      background: rgba(255, 255, 255, 0.1);
+      color: #f8f9fa;
+      padding: 10px 15px;
+      background: rgba(255, 255, 255, 0.2);
       border-radius: 8px;
-      border-left: 4px solid rgba(255, 255, 255, 0.4);
-      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+      border-left: 4px solid rgba(255, 255, 255, 0.5);
+      text-shadow: none;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     }
 
     .examples li {
       margin-bottom: 16px;
-      background: rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.25);
       padding: 15px;
       border-radius: 12px;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      backdrop-filter: blur(5px);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
     }
 
     .sample-phrase {
       font-weight: 600;
-      margin-bottom: 8px;
-      color: white;
+      margin-bottom: 10px;
+      color: #f8f9fa;
       font-size: 1.1rem;
-      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+      text-shadow: none;
+      border-bottom: 1px dashed rgba(255, 255, 255, 0.3);
+      padding-bottom: 5px;
     }
 
     .sample-translation {
       font-style: italic;
-      color: rgba(255, 255, 255, 0.9);
+      color: #e9ecef;
       font-size: 1rem;
-      line-height: 1.4;
+      line-height: 1.5;
+      background: rgba(0, 0, 0, 0.1);
+      padding: 8px 12px;
+      border-radius: 6px;
     }
 
     .no-translations {
@@ -2128,13 +2156,32 @@
           }, '>')
         ),
         h('div', { className: 'card-progress' },
-          flashcards.map(function (_, index) {
-            return h('span', {
-              key: index,
-              className: 'progress-dot' + (index === currentIndex ? ' active' : ''),
-              onClick: function () { setCurrentIndex(index); }
-            });
-          })
+          // Показываем только 3 точки вместо всех карточек
+          [
+            h('span', {
+              key: 'prev',
+              className: 'progress-dot' + (currentIndex === 0 ? ' active' : ''),
+              onClick: function () { 
+                setCurrentIndex(function(prevIndex) {
+                  return prevIndex === 0 ? flashcards.length - 1 : prevIndex - 1;
+                });
+              }
+            }),
+            h('span', {
+              key: 'current',
+              className: 'progress-dot active',
+              onClick: function () { /* Текущая точка, ничего не делаем */ }
+            }),
+            h('span', {
+              key: 'next',
+              className: 'progress-dot' + (currentIndex === flashcards.length - 1 ? ' active' : ''),
+              onClick: function () { 
+                setCurrentIndex(function(prevIndex) {
+                  return prevIndex === flashcards.length - 1 ? 0 : prevIndex + 1;
+                });
+              }
+            })
+          ]
         )
       );
     };
