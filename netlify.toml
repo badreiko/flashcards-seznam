@@ -1,12 +1,71 @@
-[[headers]]
-  # Определяем заголовки для всех файлов
-  for = "/*"
-    [headers.values]
-    # Разрешаем кросс-доменные запросы
-    Access-Control-Allow-Origin = "*"
+# netlify.toml - Исправленная конфигурация для деплоя
 
-# Перенаправление всех маршрутов на index.html для SPA
+[build]
+  # Команда сборки
+  command = "npm run build"
+  # Папка с результатом сборки
+  publish = "build"
+
+# Настройки для SPA маршрутизации
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
+
+# Заголовки для CORS и безопасности
+[[headers]]
+  for = "/*"
+  [headers.values]
+    # Разрешаем кросс-доменные запросы
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Methods = "GET, POST, PUT, DELETE, OPTIONS"
+    Access-Control-Allow-Headers = "Content-Type, Authorization"
+    
+    # Заголовки безопасности
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    X-XSS-Protection = "1; mode=block"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    
+    # Content Security Policy для предотвращения XSS
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://www.gstatic.com https://www.googletagmanager.com https://corsproxy.io; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://flashcards-seznam-6652a-default-rtdb.europe-west1.firebasedatabase.app https://corsproxy.io https://ru.glosbe.com https://www.google-analytics.com; frame-src 'none';"
+
+# Заголовки для статических ресурсов
+[[headers]]
+  for = "/static/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Заголовки для JS и CSS файлов
+[[headers]]
+  for = "*.js"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+    Content-Type = "application/javascript; charset=utf-8"
+
+[[headers]]
+  for = "*.css"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+    Content-Type = "text/css; charset=utf-8"
+
+# Заголовки для манифеста PWA
+[[headers]]
+  for = "/manifest.json"
+  [headers.values]
+    Content-Type = "application/manifest+json"
+
+# Настройки переменных окружения для продакшена
+[context.production.environment]
+  NODE_ENV = "production"
+  REACT_APP_FIREBASE_API_KEY = "AIzaSyAPZIHxaLt92McIvbIcYE-tSYp2Li2jxs4"
+  REACT_APP_FIREBASE_AUTH_DOMAIN = "flashcards-seznam-6652a.firebaseapp.com"
+  REACT_APP_FIREBASE_DATABASE_URL = "https://flashcards-seznam-6652a-default-rtdb.europe-west1.firebasedatabase.app/"
+  REACT_APP_FIREBASE_PROJECT_ID = "flashcards-seznam-6652a"
+  REACT_APP_FIREBASE_STORAGE_BUCKET = "flashcards-seznam-6652a.firebasestorage.app"
+  REACT_APP_FIREBASE_MESSAGING_SENDER_ID = "99460986155"
+  REACT_APP_FIREBASE_APP_ID = "1:99460986155:web:e5ca466e3d07c20cde016e"
+
+# Функции Netlify (если потребуются)
+[functions]
+  directory = "netlify/functions"
