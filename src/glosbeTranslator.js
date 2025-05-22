@@ -410,7 +410,15 @@ export async function fetchTranslation(word) {
 
       try {
         // Добавляем логирование URL для отладки
-        const apiUrl = `/api/translate?word=${encodeURIComponent(wordToTry)}&from=cs&to=ru`;
+        // Используем разные URL для локальной разработки и продакшена
+        let apiUrl;
+        if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+          // При локальной разработке используем полный URL
+          apiUrl = `https://flashcards-seznam.netlify.app/api/translate?word=${encodeURIComponent(wordToTry)}&from=cs&to=ru`;
+        } else {
+          // На Netlify используем относительный URL, который будет обработан прокси в netlify.toml
+          apiUrl = `/api/translate?word=${encodeURIComponent(wordToTry)}&from=cs&to=ru`;
+        }
         console.log(`🔍 Отправляем запрос к: ${apiUrl}`);
         
         const response = await fetch(apiUrl, {

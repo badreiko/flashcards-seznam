@@ -31,15 +31,15 @@ try {
   // Инициализируем Realtime Database
   database = getDatabase(app);
   
-  // В разработке подключаемся к эмулятору (опционально)
-  if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined' && window.location.hostname === 'localhost') {
-    try {
-      connectDatabaseEmulator(database, 'localhost', 9000);
-      console.log('Подключен к эмулятору Firebase Database');
-    } catch (emulatorError) {
-      console.warn('Не удалось подключиться к эмулятору, используем продакшен базу:', emulatorError);
-    }
-  }
+  // Отключаем использование эмулятора, чтобы всегда использовать реальную базу данных
+  // if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+  //   try {
+  //     connectDatabaseEmulator(database, 'localhost', 9000);
+  //     console.log('Подключен к эмулятору Firebase Database');
+  //   } catch (emulatorError) {
+  //     console.warn('Не удалось подключиться к эмулятору, используем продакшен базу:', emulatorError);
+  //   }
+  // }
   
   console.log('Firebase успешно инициализирован');
   
