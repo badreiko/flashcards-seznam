@@ -657,173 +657,309 @@
           'větší': 'velký', 'největší': 'velký',
           'menší': 'malý', 'nejmenší': 'malý',
           'starší': 'starý', 'nejstarší': 'starý',
-          'mladší': 'mladý', 'nejmladší': 'mladý',
-
-          // Наречия и частицы (исключения из общих правил)
-          'jakékoli': 'jakýkoli',  // любые
-          'několi': 'několik',     // несколько
-          'nikoli': 'nikoli',      // отнюдь не
-          'dokoli': 'dokola',      // кругом
-          'jakékol': 'jakýkoli',   // На случай ошибочной нормализации
-
-          // Специальные формы из вашего текста
-          'kladených': 'klást',
-          'zákaznickou': 'zákazník',
-          'směřujte': 'směřovat',
-          'prosíme': 'prosit',
-          'nahlédnout': 'nahlédnout',
-          'zlepšení': 'zlepšit'
+          'mladší': 'mladý', 'nejmladší': 'mladý'
         };
 
-        // УЛУЧШЕННЫЕ правила нормализации - возвращают ВСЕ возможные варианты
+        // ПОЛНЫЕ правила нормализации
         this.normalizationRules = [
+          // ============================================================================
+          // ПРИТЯЖАТЕЛЬНЫЕ МЕСТОИМЕНИЯ (высший приоритет)
+          // ============================================================================
+
+          // Мое/моя/мои
+          { pattern: /^mého$/, replacements: ['můj'], type: 'possessive', priority: 10 },
+          { pattern: /^mému$/, replacements: ['můj'], type: 'possessive', priority: 10 },
+          { pattern: /^mým$/, replacements: ['můj'], type: 'possessive', priority: 10 },
+          { pattern: /^mých$/, replacements: ['můj'], type: 'possessive', priority: 10 },
+          { pattern: /^mými$/, replacements: ['můj'], type: 'possessive', priority: 10 },
+          { pattern: /^mojí$/, replacements: ['můj'], type: 'possessive', priority: 10 },
+          { pattern: /^moji$/, replacements: ['můj'], type: 'possessive', priority: 10 },
+          { pattern: /^moje$/, replacements: ['můj'], type: 'possessive', priority: 10 },
+          { pattern: /^mou$/, replacements: ['můj'], type: 'possessive', priority: 10 },
+
+          // Твое/твоя/твои
+          { pattern: /^tvého$/, replacements: ['tvůj'], type: 'possessive', priority: 10 },
+          { pattern: /^tvému$/, replacements: ['tvůj'], type: 'possessive', priority: 10 },
+          { pattern: /^tvým$/, replacements: ['tvůj'], type: 'possessive', priority: 10 },
+          { pattern: /^tvých$/, replacements: ['tvůj'], type: 'possessive', priority: 10 },
+          { pattern: /^tvými$/, replacements: ['tvůj'], type: 'possessive', priority: 10 },
+          { pattern: /^tvoji$/, replacements: ['tvůj'], type: 'possessive', priority: 10 },
+          { pattern: /^tvoje$/, replacements: ['tvůj'], type: 'possessive', priority: 10 },
+          { pattern: /^tvou$/, replacements: ['tvůj'], type: 'possessive', priority: 10 },
+
+          // Наше/наша/наши
+          { pattern: /^našich$/, replacements: ['náš'], type: 'possessive', priority: 10 },
+          { pattern: /^naší$/, replacements: ['náš'], type: 'possessive', priority: 10 },
+          { pattern: /^našemu$/, replacements: ['náš'], type: 'possessive', priority: 10 },
+          { pattern: /^naším$/, replacements: ['náš'], type: 'possessive', priority: 10 },
+          { pattern: /^našimi$/, replacements: ['náš'], type: 'possessive', priority: 10 },
+          { pattern: /^naše$/, replacements: ['náš'], type: 'possessive', priority: 10 },
+          { pattern: /^našeho$/, replacements: ['náš'], type: 'possessive', priority: 10 },
+          { pattern: /^naši$/, replacements: ['náš'], type: 'possessive', priority: 10 },
+
+          // Ваше/ваша/ваши
+          { pattern: /^vašich$/, replacements: ['váš'], type: 'possessive', priority: 10 },
+          { pattern: /^vaší$/, replacements: ['váš'], type: 'possessive', priority: 10 },
+          { pattern: /^vašemu$/, replacements: ['váš'], type: 'possessive', priority: 10 },
+          { pattern: /^vaším$/, replacements: ['váš'], type: 'possessive', priority: 10 },
+          { pattern: /^vašimi$/, replacements: ['váš'], type: 'possessive', priority: 10 },
+          { pattern: /^vaše$/, replacements: ['váš'], type: 'possessive', priority: 10 },
+          { pattern: /^vašeho$/, replacements: ['váš'], type: 'possessive', priority: 10 },
+          { pattern: /^vaši$/, replacements: ['váš'], type: 'possessive', priority: 10 },
+
+          // ============================================================================
+          // ЛИЧНЫЕ МЕСТОИМЕНИЯ
+          // ============================================================================
+
+          // Он/она/оно
+          { pattern: /^něho$/, replacements: ['on'], type: 'pronoun', priority: 9 },
+          { pattern: /^něj$/, replacements: ['on'], type: 'pronoun', priority: 9 },
+          { pattern: /^němu$/, replacements: ['on'], type: 'pronoun', priority: 9 },
+          { pattern: /^ním$/, replacements: ['on'], type: 'pronoun', priority: 9 },
+          { pattern: /^něm$/, replacements: ['on'], type: 'pronoun', priority: 9 },
+          { pattern: /^jemu$/, replacements: ['on'], type: 'pronoun', priority: 9 },
+          { pattern: /^jím$/, replacements: ['on'], type: 'pronoun', priority: 9 },
+
+          { pattern: /^ní$/, replacements: ['ona'], type: 'pronoun', priority: 9 },
+          { pattern: /^jí$/, replacements: ['ona'], type: 'pronoun', priority: 9 },
+          { pattern: /^ji$/, replacements: ['ona'], type: 'pronoun', priority: 9 },
+          { pattern: /^ně$/, replacements: ['ona'], type: 'pronoun', priority: 9 },
+
+          // Мы/вы/они
+          { pattern: /^nás$/, replacements: ['my'], type: 'pronoun', priority: 9 },
+          { pattern: /^nám$/, replacements: ['my'], type: 'pronoun', priority: 9 },
+          { pattern: /^námi$/, replacements: ['my'], type: 'pronoun', priority: 9 },
+
+          { pattern: /^vás$/, replacements: ['vy'], type: 'pronoun', priority: 9 },
+          { pattern: /^vám$/, replacements: ['vy'], type: 'pronoun', priority: 9 },
+          { pattern: /^vámi$/, replacements: ['vy'], type: 'pronoun', priority: 9 },
+
+          { pattern: /^nich$/, replacements: ['oni'], type: 'pronoun', priority: 9 },
+          { pattern: /^nimi$/, replacements: ['oni'], type: 'pronoun', priority: 9 },
+          { pattern: /^jim$/, replacements: ['oni'], type: 'pronoun', priority: 9 },
+
+          // ============================================================================
+          // УКАЗАТЕЛЬНЫЕ МЕСТОИМЕНИЯ  
+          // ============================================================================
+
+          // Ten/ta/to
+          { pattern: /^toho$/, replacements: ['ten'], type: 'demonstrative', priority: 8 },
+          { pattern: /^tomu$/, replacements: ['ten'], type: 'demonstrative', priority: 8 },
+          { pattern: /^tom$/, replacements: ['ten'], type: 'demonstrative', priority: 8 },
+          { pattern: /^tím$/, replacements: ['ten'], type: 'demonstrative', priority: 8 },
+          { pattern: /^té$/, replacements: ['ten'], type: 'demonstrative', priority: 8 },
+          { pattern: /^tu$/, replacements: ['ten'], type: 'demonstrative', priority: 8 },
+          { pattern: /^tou$/, replacements: ['ten'], type: 'demonstrative', priority: 8 },
+          { pattern: /^těch$/, replacements: ['ten'], type: 'demonstrative', priority: 8 },
+          { pattern: /^těm$/, replacements: ['ten'], type: 'demonstrative', priority: 8 },
+          { pattern: /^těmi$/, replacements: ['ten'], type: 'demonstrative', priority: 8 },
+          { pattern: /^ty$/, replacements: ['ten', 'ty'], type: 'demonstrative', priority: 8 },
+
+          // Tento/tato/toto
+          { pattern: /^tohoto$/, replacements: ['tento'], type: 'demonstrative', priority: 8 },
+          { pattern: /^tomuto$/, replacements: ['tento'], type: 'demonstrative', priority: 8 },
+          { pattern: /^tomto$/, replacements: ['tento'], type: 'demonstrative', priority: 8 },
+          { pattern: /^tímto$/, replacements: ['tento'], type: 'demonstrative', priority: 8 },
+          { pattern: /^této$/, replacements: ['tento'], type: 'demonstrative', priority: 8 },
+          { pattern: /^tuto$/, replacements: ['tento'], type: 'demonstrative', priority: 8 },
+          { pattern: /^touto$/, replacements: ['tento'], type: 'demonstrative', priority: 8 },
+          { pattern: /^těchto$/, replacements: ['tento'], type: 'demonstrative', priority: 8 },
+          { pattern: /^těmto$/, replacements: ['tento'], type: 'demonstrative', priority: 8 },
+          { pattern: /^těmito$/, replacements: ['tento'], type: 'demonstrative', priority: 8 },
+          { pattern: /^tyto$/, replacements: ['tento'], type: 'demonstrative', priority: 8 },
+
+          // ============================================================================
+          // ЧИСЛИТЕЛЬНЫЕ
+          // ============================================================================
+
+          { pattern: /^jednoho$/, replacements: ['jeden'], type: 'numeral', priority: 7 },
+          { pattern: /^jednom$/, replacements: ['jeden'], type: 'numeral', priority: 7 },
+          { pattern: /^jedním$/, replacements: ['jeden'], type: 'numeral', priority: 7 },
+          { pattern: /^jedné$/, replacements: ['jeden'], type: 'numeral', priority: 7 },
+          { pattern: /^jednu$/, replacements: ['jeden'], type: 'numeral', priority: 7 },
+          { pattern: /^jednou$/, replacements: ['jeden'], type: 'numeral', priority: 7 },
+          { pattern: /^jedni$/, replacements: ['jeden'], type: 'numeral', priority: 7 },
+          { pattern: /^jedny$/, replacements: ['jeden'], type: 'numeral', priority: 7 },
+
+          { pattern: /^dvou$/, replacements: ['dva'], type: 'numeral', priority: 7 },
+          { pattern: /^dvěma$/, replacements: ['dva'], type: 'numeral', priority: 7 },
+
+          { pattern: /^tří$/, replacements: ['tři'], type: 'numeral', priority: 7 },
+          { pattern: /^třem$/, replacements: ['tři'], type: 'numeral', priority: 7 },
+          { pattern: /^třemi$/, replacements: ['tři'], type: 'numeral', priority: 7 },
+
+          { pattern: /^čtyř$/, replacements: ['čtyři'], type: 'numeral', priority: 7 },
+          { pattern: /^čtyřem$/, replacements: ['čtyři'], type: 'numeral', priority: 7 },
+          { pattern: /^čtyřmi$/, replacements: ['čtyři'], type: 'numeral', priority: 7 },
+
+          { pattern: /^pěti$/, replacements: ['pět'], type: 'numeral', priority: 7 },
+          { pattern: /^šesti$/, replacements: ['šest'], type: 'numeral', priority: 7 },
+          { pattern: /^sedmi$/, replacements: ['sedm'], type: 'numeral', priority: 7 },
+          { pattern: /^osmi$/, replacements: ['osm'], type: 'numeral', priority: 7 },
+          { pattern: /^devíti$/, replacements: ['devět'], type: 'numeral', priority: 7 },
+          { pattern: /^deseti$/, replacements: ['deset'], type: 'numeral', priority: 7 },
+
           // ============================================================================
           // ГЛАГОЛЬНЫЕ ПРАВИЛА
           // ============================================================================
 
-          // Специфичные глагольные окончания (несовершенный И совершенный вид)
-          {
-            pattern: /ujeme$/,
-            replacements: ['ovat', 'it'],
-            type: 'verb'
-          }, // doporučujeme → doporučovat И doporučit
-          {
-            pattern: /ujete$/,
-            replacements: ['ovat', 'it'],
-            type: 'verb'
-          }, // doporučujete → doporučovat И doporučit
-          {
-            pattern: /ují$/,
-            replacements: ['ovat', 'it'],
-            type: 'verb'
-          }, // doporučují → doporučovat И doporučit
-          {
-            pattern: /uji$/,
-            replacements: ['ovat', 'it'],
-            type: 'verb'
-          }, // doporučuji → doporučovat И doporučit
-          {
-            pattern: /uješ$/,
-            replacements: ['ovat', 'it'],
-            type: 'verb'
-          }, // doporučuješ → doporučovat И doporučit
+          // Специфичные глагольные окончания
+          { pattern: /ujeme$/, replacements: ['ovat', 'it'], type: 'verb' },
+          { pattern: /ujete$/, replacements: ['ovat', 'it'], type: 'verb' },
+          { pattern: /ují$/, replacements: ['ovat', 'it'], type: 'verb' },
+          { pattern: /uji$/, replacements: ['ovat', 'it'], type: 'verb' },
+          { pattern: /uješ$/, replacements: ['ovat', 'it'], type: 'verb' },
 
-          // Общие глагольные правила - настоящее время
-          { pattern: /eme$/, replacements: ['at'], type: 'verb' },          // děláme → dělat
-          { pattern: /ete$/, replacements: ['at'], type: 'verb' },          // děláte → dělat
-          { pattern: /ají$/, replacements: ['at'], type: 'verb' },          // dělají → dělat
-          { pattern: /ám$/, replacements: ['at'], type: 'verb' },           // dělám → dělat
-          { pattern: /áš$/, replacements: ['at'], type: 'verb' },           // děláš → dělat
-          { pattern: /á$/, replacements: ['at'], type: 'verb' },            // dělá → dělat
-          { pattern: /íme$/, replacements: ['it'], type: 'verb' },          // prosíme → prosit
-          { pattern: /íte$/, replacements: ['it'], type: 'verb' },          // prosíte → prosit
-          { pattern: /í$/, replacements: ['it'], type: 'verb' },            // prosí → prosit
-          { pattern: /ím$/, replacements: ['it'], type: 'verb' },           // prosím → prosit
-          { pattern: /íš$/, replacements: ['it'], type: 'verb' },           // prosíš → prosit
+          // Настоящее время - 1-е спряжение (-at глаголы)
+          { pattern: /eme$/, replacements: ['at'], type: 'verb' },
+          { pattern: /ete$/, replacements: ['at'], type: 'verb' },
+          { pattern: /ají$/, replacements: ['at'], type: 'verb' },
+          { pattern: /ám$/, replacements: ['at'], type: 'verb' },
+          { pattern: /áš$/, replacements: ['at'], type: 'verb' },
+          { pattern: /á$/, replacements: ['at'], type: 'verb' },
+
+          // Настоящее время - 2-е спряжение (-et глаголы)
+          { pattern: /íme$/, replacements: ['ět'], type: 'verb' },
+          { pattern: /íte$/, replacements: ['ět'], type: 'verb' },
+          { pattern: /í$/, replacements: ['ět'], type: 'verb' },
+          { pattern: /ím$/, replacements: ['ět'], type: 'verb' },
+          { pattern: /íš$/, replacements: ['ět'], type: 'verb' },
+
+          // Настоящее время - 3-е спряжение (-it глаголы)
+          { pattern: /íme$/, replacements: ['it'], type: 'verb' },
+          { pattern: /íte$/, replacements: ['it'], type: 'verb' },
+          { pattern: /í$/, replacements: ['it'], type: 'verb' },
+          { pattern: /ím$/, replacements: ['it'], type: 'verb' },
+          { pattern: /íš$/, replacements: ['it'], type: 'verb' },
 
           // Прошедшее время
-          { pattern: /oval$/, replacements: ['ovat'], type: 'verb' },       // doporučoval → doporučovat
-          { pattern: /ovala$/, replacements: ['ovat'], type: 'verb' },      // doporučovala → doporučovat
-          { pattern: /ovali$/, replacements: ['ovat'], type: 'verb' },      // doporučovali → doporučovat
-          { pattern: /ovaly$/, replacements: ['ovat'], type: 'verb' },      // doporučovaly → doporučovat
-          { pattern: /al$/, replacements: ['at'], type: 'verb' },           // dělal → dělat
-          { pattern: /ala$/, replacements: ['at'], type: 'verb' },          // dělala → dělat
-          { pattern: /ali$/, replacements: ['at'], type: 'verb' },          // dělali → dělat
-          { pattern: /aly$/, replacements: ['at'], type: 'verb' },          // dělaly → dělat
-          { pattern: /el$/, replacements: ['ět'], type: 'verb' },           // viděl → vidět
-          { pattern: /ěla$/, replacements: ['ět'], type: 'verb' },          // viděla → vidět
-          { pattern: /ěli$/, replacements: ['ět'], type: 'verb' },          // viděli → vidět
-          { pattern: /ěly$/, replacements: ['ět'], type: 'verb' },          // viděly → vidět
-          { pattern: /il$/, replacements: ['it'], type: 'verb' },           // prosil → prosit
-          { pattern: /ila$/, replacements: ['it'], type: 'verb' },          // prosila → prosit
-          { pattern: /ili$/, replacements: ['it'], type: 'verb' },          // prosili → prosit
-          { pattern: /ily$/, replacements: ['it'], type: 'verb' },          // prosily → prosit
+          { pattern: /oval$/, replacements: ['ovat'], type: 'verb' },
+          { pattern: /ovala$/, replacements: ['ovat'], type: 'verb' },
+          { pattern: /ovalo$/, replacements: ['ovat'], type: 'verb' },
+          { pattern: /ovali$/, replacements: ['ovat'], type: 'verb' },
+          { pattern: /ovaly$/, replacements: ['ovat'], type: 'verb' },
+
+          { pattern: /al$/, replacements: ['at'], type: 'verb' },
+          { pattern: /ala$/, replacements: ['at'], type: 'verb' },
+          { pattern: /alo$/, replacements: ['at'], type: 'verb' },
+          { pattern: /ali$/, replacements: ['at'], type: 'verb' },
+          { pattern: /aly$/, replacements: ['at'], type: 'verb' },
+
+          { pattern: /el$/, replacements: ['ět', 'it'], type: 'verb' },
+          { pattern: /ěla$/, replacements: ['ět'], type: 'verb' },
+          { pattern: /ělo$/, replacements: ['ět'], type: 'verb' },
+          { pattern: /ěli$/, replacements: ['ět'], type: 'verb' },
+          { pattern: /ěly$/, replacements: ['ět'], type: 'verb' },
+
+          { pattern: /il$/, replacements: ['it'], type: 'verb' },
+          { pattern: /ila$/, replacements: ['it'], type: 'verb' },
+          { pattern: /ilo$/, replacements: ['it'], type: 'verb' },
+          { pattern: /ili$/, replacements: ['it'], type: 'verb' },
+          { pattern: /ily$/, replacements: ['it'], type: 'verb' },
 
           // Повелительное наклонение
-          { pattern: /ej$/, replacements: ['at'], type: 'verb' },           // dělej → dělat
-          { pattern: /ejte$/, replacements: ['at'], type: 'verb' },         // dělejte → dělat
-          { pattern: /ujte$/, replacements: ['it', 'ovat'], type: 'verb' }, // směřujte → směřit И směřovat
+          { pattern: /ej$/, replacements: ['at'], type: 'verb' },
+          { pattern: /ejte$/, replacements: ['at'], type: 'verb' },
+          { pattern: /ějme$/, replacements: ['at'], type: 'verb' },
+          { pattern: /ujte$/, replacements: ['it', 'ovat'], type: 'verb' },
+          { pattern: /ujme$/, replacements: ['it', 'ovat'], type: 'verb' },
 
           // Причастия и деепричастия
-          { pattern: /ující$/, replacements: ['it', 'ovat'], type: 'verb' }, // doporučující → doporučit И doporučovat
-          { pattern: /ající$/, replacements: ['at'], type: 'verb' },         // dělající → dělat
-          { pattern: /ený$/, replacements: ['it'], type: 'verb' },           // doporučený → doporučit
-          { pattern: /aný$/, replacements: ['at'], type: 'verb' },           // dělaný → dělat
+          { pattern: /ující$/, replacements: ['it', 'ovat'], type: 'verb' },
+          { pattern: /ající$/, replacements: ['at'], type: 'verb' },
+          { pattern: /ící$/, replacements: ['it', 'ět'], type: 'verb' },
+          { pattern: /ený$/, replacements: ['it'], type: 'verb' },
+          { pattern: /aný$/, replacements: ['at'], type: 'verb' },
+          { pattern: /ovaný$/, replacements: ['ovat'], type: 'verb' },
 
           // ============================================================================
           // ПРАВИЛА ДЛЯ ПРИЛАГАТЕЛЬНЫХ
           // ============================================================================
 
-          // Прилагательные - мужской род твердого склонения
-          { pattern: /ého$/, replacements: ['ý'], type: 'adj' },            // dobrého → dobrý
-          { pattern: /ému$/, replacements: ['ý'], type: 'adj' },            // dobrému → dobrý
-          { pattern: /ým$/, replacements: ['ý'], type: 'adj' },             // dobrým → dobrý
-          { pattern: /ých$/, replacements: ['ý'], type: 'adj' },            // kladených → kladený
-          { pattern: /ými$/, replacements: ['ý'], type: 'adj' },            // dobrými → dobrý
+          // Мужской род твердого склонения
+          { pattern: /ého$/, replacements: ['ý'], type: 'adj' },
+          { pattern: /ému$/, replacements: ['ý'], type: 'adj' },
+          { pattern: /ým$/, replacements: ['ý'], type: 'adj' },
+          { pattern: /ých$/, replacements: ['ý'], type: 'adj' },
+          { pattern: /ými$/, replacements: ['ý'], type: 'adj' },
+          { pattern: /é$/, replacements: ['ý'], type: 'adj' },
 
-          // Прилагательные - мужской род мягкого склонения
-          { pattern: /ího$/, replacements: ['í'], type: 'adj' },            // cizího → cizí
-          { pattern: /ímu$/, replacements: ['í'], type: 'adj' },            // cizímu → cizí
-          { pattern: /ím$/, replacements: ['í'], type: 'adj' },             // cizím → cizí
-          { pattern: /ích$/, replacements: ['í'], type: 'adj' },            // cizích → cizí
-          { pattern: /ími$/, replacements: ['í'], type: 'adj' },            // cizími → cizí
+          // Мужской род мягкого склонения
+          { pattern: /ího$/, replacements: ['í'], type: 'adj' },
+          { pattern: /ímu$/, replacements: ['í'], type: 'adj' },
+          { pattern: /ím$/, replacements: ['í'], type: 'adj' },
+          { pattern: /ích$/, replacements: ['í'], type: 'adj' },
+          { pattern: /ími$/, replacements: ['í'], type: 'adj' },
 
-          // Прилагательные - женский род
-          { pattern: /ou$/, replacements: ['á'], type: 'adj' },             // dobrou → dobrá
-          { pattern: /ickou$/, replacements: ['ický'], type: 'adj' },       // zákaznickou → zákaznický
+          // Женский род твердого склонения
+          { pattern: /ou$/, replacements: ['á'], type: 'adj' },
+          { pattern: /ických$/, replacements: ['ický'], type: 'adj' },
+          { pattern: /ickou$/, replacements: ['ický'], type: 'adj' },
+          { pattern: /skou$/, replacements: ['ský'], type: 'adj' },
+          { pattern: /nou$/, replacements: ['ný'], type: 'adj' },
 
           // ============================================================================
           // ПРАВИЛА ДЛЯ СУЩЕСТВИТЕЛЬНЫХ
           // ============================================================================
 
-          // Существительные - мужской род твердый
-          { pattern: /ové$/, replacements: [''], type: 'noun' },            // mužové → muž
-          { pattern: /ů$/, replacements: [''], type: 'noun' },              // dotazů → dotaz, mužů → muž
-          { pattern: /em$/, replacements: [''], type: 'noun' },             // mužem → muž
-          { pattern: /ech$/, replacements: [''], type: 'noun' },            // mužích → muž
-          { pattern: /ích$/, replacements: [''], type: 'noun' },            // učitelích → učitel
+          // Мужской род твердого склонения
+          { pattern: /ové$/, replacements: [''], type: 'noun' },
+          { pattern: /ů$/, replacements: [''], type: 'noun' },
+          { pattern: /em$/, replacements: [''], type: 'noun' },
+          { pattern: /ech$/, replacements: [''], type: 'noun' },
+          { pattern: /y$/, replacements: [''], type: 'noun', exclude: ['kdy', 'proč', 'aby', 'když', 'ty'] },
 
-          // ⚠️ ОСТОРОЖНО: Эти правила могут затронуть наречия - добавляем проверки
-          {
-            pattern: /i$/,
-            replacements: [''],
-            type: 'noun',
-            exclude: ['jakékoli', 'několi', 'nikoli', 'dokoli']
-          },   // muži → muž (но НЕ jakékoli)
-          {
-            pattern: /y$/,
-            replacements: [''],
-            type: 'noun',
-            exclude: ['kdy', 'proč', 'dny', 'časy']
-          },      // muži → muž (но НЕ kdy, proč)
+          // Мужской род мягкого склонения
+          { pattern: /ích$/, replacements: [''], type: 'noun' },
+          { pattern: /i$/, replacements: [''], type: 'noun', exclude: ['jakékoli', 'několi', 'nikoli', 'dokoli', 'říci', 'oni', 'ti'] },
 
-          // Существительные - женский род
-          { pattern: /ách$/, replacements: ['a'], type: 'noun' },           // ženách → žena
-          { pattern: /ami$/, replacements: ['a'], type: 'noun' },           // ženami → žena
-          { pattern: /ě$/, replacements: ['a'], type: 'noun' },             // ženě → žena
-          { pattern: /u$/, replacements: ['a'], type: 'noun' },             // ženu → žena
-          { pattern: /y$/, replacements: ['a'], type: 'noun' },             // ženy → žena
-          { pattern: /í$/, replacements: ['e'], type: 'noun' },             // růží → růže
-          { pattern: /emi$/, replacements: ['e'], type: 'noun' },           // růžemi → růže
+          // Женский род твердого склонения
+          { pattern: /ách$/, replacements: ['a'], type: 'noun' },
+          { pattern: /ami$/, replacements: ['a'], type: 'noun' },
+          { pattern: /ě$/, replacements: ['a'], type: 'noun' },
+          { pattern: /u$/, replacements: ['a'], type: 'noun' },
+          { pattern: /y$/, replacements: ['a'], type: 'noun' },
 
-          // Существительные - средний род
-          { pattern: /a$/, replacements: ['o'], type: 'noun' },             // města → město
-          { pattern: /y$/, replacements: ['o'], type: 'noun' },             // městy → město
+          // Женский род мягкого склонения  
+          { pattern: /í$/, replacements: ['e'], type: 'noun' },
+          { pattern: /ích$/, replacements: ['e'], type: 'noun' },
+          { pattern: /emi$/, replacements: ['e'], type: 'noun' },
+
+          // Средний род твердого склонения
+          { pattern: /a$/, replacements: ['o'], type: 'noun' },
+          { pattern: /ech$/, replacements: ['o'], type: 'noun' },
+          { pattern: /y$/, replacements: ['o'], type: 'noun' },
+
+          // Средний род мягкого склонения
+          { pattern: /í$/, replacements: ['e'], type: 'noun' },
+          { pattern: /ích$/, replacements: ['e'], type: 'noun' },
 
           // ============================================================================
           // ЧЕРЕДОВАНИЯ СОГЛАСНЫХ (применяем последними)
           // ============================================================================
-          { pattern: /ce$/, replacements: ['k'], type: 'alternation' },     // lidé → lid + k → lidé
-          { pattern: /ze$/, replacements: ['h'], type: 'alternation' },     // knize → kniha
-          { pattern: /še$/, replacements: ['ch'], type: 'alternation' },    // tiše → tichý
-          { pattern: /ně$/, replacements: ['n'], type: 'alternation' },     // černě → černý
-          { pattern: /ře$/, replacements: ['r'], type: 'alternation' },     // staře → starý
-          { pattern: /ďe$/, replacements: ['d'], type: 'alternation' },     // mladě → mladý
-          { pattern: /ťe$/, replacements: ['t'], type: 'alternation' },     // zlatě → zlatý
+          { pattern: /ce$/, replacements: ['k'], type: 'alternation' },
+          { pattern: /ze$/, replacements: ['h'], type: 'alternation' },
+          { pattern: /še$/, replacements: ['ch'], type: 'alternation' },
+          { pattern: /ně$/, replacements: ['n'], type: 'alternation' },
+          { pattern: /ře$/, replacements: ['r'], type: 'alternation' },
+          { pattern: /ďe$/, replacements: ['d'], type: 'alternation' },
+          { pattern: /ťe$/, replacements: ['t'], type: 'alternation' },
+
+          // Чередования в корне
+          { pattern: /ck$/, replacements: ['k'], type: 'alternation' },
+          { pattern: /ž$/, replacements: ['h'], type: 'alternation' },
+          { pattern: /š$/, replacements: ['ch'], type: 'alternation' },
+          { pattern: /ň$/, replacements: ['n'], type: 'alternation' },
+          { pattern: /ř$/, replacements: ['r'], type: 'alternation' },
+          { pattern: /ď$/, replacements: ['d'], type: 'alternation' },
+          { pattern: /ť$/, replacements: ['t'], type: 'alternation' },
         ];
+
+        // Сортируем правила по приоритету (специальные случаи первыми)
+        this.normalizationRules.sort((a, b) => (b.priority || 0) - (a.priority || 0));
       }
 
-      // УЛУЧШЕННАЯ функция нормализации - возвращает ВСЕ варианты
+      // УЛУЧШЕННАЯ функция нормализации
       normalize(word) {
         if (!word || typeof word !== 'string') {
           return [word];
@@ -832,9 +968,11 @@
         const originalWord = word;
         word = word.toLowerCase().trim();
 
+        console.log(`🔍 Нормализация слова: "${originalWord}"`);
+
         // 1. Проверяем словарь исключений
         if (this.exceptions[word]) {
-          console.log(`Исключение: ${originalWord} → ${this.exceptions[word]}`);
+          console.log(`📋 Исключение: ${originalWord} → ${this.exceptions[word]}`);
           return [this.exceptions[word]];
         }
 
@@ -845,17 +983,17 @@
         // Применяем все подходящие правила
         for (const rule of this.normalizationRules) {
           if (rule.pattern.test(word)) {
-            // ✅ НОВОЕ: Проверяем исключения для правила
+            // Проверяем исключения для правила
             if (rule.exclude && rule.exclude.includes(word)) {
-              console.log(`Пропускаем правило ${rule.type} для "${word}" (в списке исключений)`);
-              continue; // Пропускаем это правило для данного слова
+              console.log(`⚠️ Пропускаем правило ${rule.type} для "${word}" (в списке исключений)`);
+              continue;
             }
 
             for (const replacement of rule.replacements) {
               const normalized = word.replace(rule.pattern, replacement);
               if (normalized !== word && normalized.length > 0) {
                 candidates.add(normalized);
-                console.log(`Правило ${rule.type}: ${originalWord} → ${normalized}`);
+                console.log(`✅ Правило ${rule.type} (приоритет ${rule.priority || 0}): ${originalWord} → ${normalized}`);
               }
             }
           }
@@ -867,16 +1005,19 @@
           const nounForm = this.adjToNoun(candidate);
           if (nounForm && nounForm !== candidate) {
             candidates.add(nounForm);
-            console.log(`Прилагательное → существительное: ${candidate} → ${nounForm}`);
+            console.log(`🔄 Прилагательное → существительное: ${candidate} → ${nounForm}`);
           }
         }
 
-        return Array.from(candidates);
+        const result = Array.from(candidates);
+        console.log(`📝 Финальные варианты для "${originalWord}": [${result.join(', ')}]`);
+        return result;
       }
 
       // Преобразование прилагательного в существительное
       adjToNoun(adjective) {
         const adjToNounMap = {
+          // Основные прилагательные → существительные
           'zákaznický': 'zákazník',
           'městský': 'město',
           'školní': 'škola',
@@ -896,7 +1037,41 @@
           'sportovní': 'sport',
           'obchodní': 'obchod',
           'průmyslový': 'průmysl',
-          'zemědělský': 'zemědělství'
+          'zemědělský': 'zemědělství',
+
+          // Дополнительные
+          'pracovní': 'práce',
+          'domácí': 'dům',
+          'lidský': 'člověk',
+          'světový': 'svět',
+          'životní': 'život',
+          'časový': 'čas',
+          'denní': 'den',
+          'noční': 'noc',
+          'ranní': 'ráno',
+          'večerní': 'večer',
+          'roční': 'rok',
+          'měsíční': 'měsíc',
+          'týdenní': 'týden',
+          'hodný': 'hodnota',
+          'cenný': 'cena',
+          'kvalitní': 'kvalita',
+          'bezpečný': 'bezpečnost',
+          'zdravý': 'zdraví',
+          'mladý': 'mládí',
+          'starý': 'stáří',
+          'osobní': 'osoba',
+          'veřejný': 'veřejnost',
+          'soukromý': 'soukromí',
+          'právní': 'právo',
+          'vojenský': 'vojsko',
+          'policejní': 'policie',
+          'lékařský': 'lékař',
+          'učitelský': 'učitel',
+          'studentský': 'student',
+          'dětský': 'dítě',
+          'ženský': 'žena',
+          'mužský': 'muž'
         };
 
         return adjToNounMap[adjective] || null;
@@ -905,20 +1080,48 @@
       // Функция для тестирования нормализации
       test() {
         const testCases = [
-          'doporučujeme',  // должно дать: doporučovat И doporučit
-          'kladených',
-          'zákaznickou',
-          'dotazů',
-          'prosíme',
-          'směřujte',
-          'jakékoli'      // ✅ НОВЫЙ ТЕСТ: должно дать: jakýkoli (через исключения)
+          'našich',         // náš (притяжательное местоимение)
+          'doporučujeme',   // doporučovat/doporučit (глагол)
+          'kladených',      // kladený → klást (прилагательное → глагол)
+          'zákaznickou',    // zákaznický → zákazník (прилагательное → существительное)
+          'dotazů',         // dotaz (существительное Р.п. мн.ч.)
+          'prosíme',        // prosit (глагол 1 л. мн.ч.)
+          'směřujte',       // směřovat/směřit (глагол повелит. накл.)
+          'jakékoli',       // jakýkoli (через исключения)
+          'toho',           // ten (указательное местоимение)
+          'tohoto',         // tento (указательное местоимение)
+          'jednoho',        // jeden (числительное)
+          'dvou',           // dva (числительное)
+          'mého',           // můj (притяжательное местоимение)
+          'tvého',          // tvůj (притяжательное местоимение)
+          'něho',           // on (личное местоимение)
+          'nás',            // my (личное местоимение)
+          'nich',           // oni (личное местоимение)
+          'městské',        // městský → město (прилагательное)
+          'pracoval',       // pracovat (глагол прош. время)
+          'dělající',       // dělat (причастие)
+          'kvalitní',       // kvalitní → kvalita (прилагательное → существительное)
+          'lidé',           // člověk (через исключения)
+          'lepší',          // dobrý (через исключения)
+          'byla',           // být (через исключения)
+          'mají'            // mít (через исключения)
         ];
 
-        console.log('=== Тестирование улучшенной системы нормализации ===');
+        console.log('=== 🧪 Тестирование ПОЛНОЙ системы нормализации ===');
         testCases.forEach(word => {
           const variants = this.normalize(word);
           console.log(`${word} → [${variants.join(', ')}]`);
         });
+
+        console.log('\n=== 📊 Статистика покрытия ===');
+        let successCount = 0;
+        testCases.forEach(word => {
+          const variants = this.normalize(word);
+          if (variants.length > 1 || this.exceptions[word.toLowerCase()]) {
+            successCount++;
+          }
+        });
+        console.log(`Успешно нормализовано: ${successCount}/${testCases.length} (${Math.round(successCount / testCases.length * 100)}%)`);
       }
     }
 
@@ -1082,7 +1285,7 @@
       };
     };
 
-    console.log('✅ Улучшенная система чешской нормализации загружена!');
+    console.log('✅ Полная система чешской нормализации загружена!');
   </script>
 
   <!-- Основное приложение -->
@@ -1249,6 +1452,33 @@
     // Расширенный базовый словарь для fallback
     function getBasicTranslation(word) {
       const basicDict = {
+        // Местоимения
+        'náš': ['наш', 'наша', 'наше'],
+        'váš': ['ваш', 'ваша', 'ваше'],
+        'můj': ['мой', 'моя', 'моё'],
+        'tvůj': ['твой', 'твоя', 'твоё'],
+        'jeho': ['его'],
+        'její': ['её'],
+        'jejich': ['их'],
+        'ten': ['тот', 'этот'],
+        'tento': ['этот'],
+        'on': ['он'],
+        'ona': ['она'],
+        'ono': ['оно'],
+        'my': ['мы'],
+        'vy': ['вы'],
+        'oni': ['они'],
+        'jeden': ['один'],
+        'dva': ['два'],
+        'tři': ['три'],
+        'čtyři': ['четыре'],
+        'pět': ['пять'],
+        'šest': ['шесть'],
+        'sedm': ['семь'],
+        'osm': ['восемь'],
+        'devět': ['девять'],
+        'deset': ['десять'],
+
         // Предлоги и частицы
         'do': ['в', 'к', 'до'],
         'na': ['на', 'в'],
@@ -1269,10 +1499,14 @@
         'nad': ['над'],
         'pod': ['под'],
         'vedle': ['рядом', 'около'],
+        'v': ['в'],
+        'o': ['о', 'об'],
+        'u': ['у', 'около'],
+        'k': ['к'],
+        's': ['с'],
+        'z': ['из', 'с'],
 
         // Глаголы
-        'doporučujeme': ['рекомендуем'],
-        'doporučuje': ['рекомендует'],
         'doporučovat': ['рекомендовать', 'советовать'],
         'doporučit': ['порекомендовать', 'посоветовать'],
         'můžete': ['можете'],
@@ -1281,10 +1515,8 @@
         'chceme': ['хотим'],
         'potřebujete': ['нуждаетесь'],
         'potřebujeme': ['нуждаемся'],
-        'je': ['есть', 'является'],
-        'jsou': ['являются', 'есть'],
-        'mít': ['иметь'],
         'být': ['быть'],
+        'mít': ['иметь'],
         'dělat': ['делать'],
         'jít': ['идти'],
         'říct': ['сказать'],
@@ -1295,16 +1527,35 @@
         'klást': ['класть'],
         'prosit': ['просить'],
         'směřovat': ['направлять'],
+        'pracovat': ['работать'],
+        'studovat': ['изучать'],
+        'cestovat': ['путешествовать'],
+        'milovat': ['любить'],
+        'hrát': ['играть'],
+        'číst': ['читать'],
+        'psát': ['писать'],
+        'koupit': ['купить'],
+        'prodat': ['продать'],
+        'najít': ['найти'],
+        'ztratit': ['потерять'],
+        'začít': ['начать'],
+        'skončit': ['закончить'],
+        'otevřít': ['открыть'],
+        'zavřít': ['закрыть'],
 
         // Существительные
-        'televize': ['телевидение', 'телевизор', 'ТВ'],
+        'dotaz': ['вопрос'],
+        'zákazník': ['клиент'],
+        'člověk': ['человек'],
+        'žena': ['женщина'],
+        'muž': ['мужчина'],
+        'dítě': ['ребенок'],
+        'rodina': ['семья'],
+        'přítel': ['друг'],
         'dům': ['дом'],
         'auto': ['автомобиль', 'машина'],
-        'kino': ['кино', 'кинотеатр'],
         'škola': ['школа'],
         'práce': ['работа'],
-        'jídlo': ['еда', 'пища'],
-        'voda': ['вода'],
         'čas': ['время'],
         'den': ['день'],
         'noc': ['ночь'],
@@ -1313,12 +1564,8 @@
         'rok': ['год'],
         'měsíc': ['месяц'],
         'týden': ['неделя'],
-        'člověk': ['человек'],
-        'žena': ['женщина'],
-        'muž': ['мужчина'],
-        'dítě': ['ребенок'],
-        'rodina': ['семья'],
-        'přítel': ['друг'],
+        'hodina': ['час'],
+        'minuta': ['минута'],
         'kniha': ['книга'],
         'film': ['фильм'],
         'hudba': ['музыка'],
@@ -1332,14 +1579,6 @@
         'město': ['город'],
         'země': ['страна'],
         'svět': ['мир'],
-        'dotaz': ['вопрос'],
-        'zákazník': ['клиент'],
-        'podpora': ['поддержка'],
-        'služba': ['услуга'],
-        'problém': ['проблема'],
-        'návrh': ['предложение'],
-        'zlepšení': ['улучшение'],
-        'připomínka': ['замечание'],
 
         // Прилагательные
         'dobrý': ['хороший'],
@@ -1363,7 +1602,8 @@
         'také': ['также'],
         'často': ['часто'],
         'nebo': ['или'],
-        'jakékoli': ['любые']
+        'jakékoli': ['любые'],
+        'jakýkoli': ['любой']
       };
 
       return basicDict[word.toLowerCase()] || null;
@@ -1510,8 +1750,8 @@
       const translations = props.translations;
       const samples = props.samples;
       const note = props.note;
-      const normalizedWord = props.normalizedWord;           // НОВОЕ!
-      const normalizedVariants = props.normalizedVariants;   // НОВОЕ!
+      const normalizedWord = props.normalizedWord;
+      const normalizedVariants = props.normalizedVariants;
 
       const isFlippedState = useState(false);
       const isFlipped = isFlippedState[0];
@@ -1662,8 +1902,8 @@
             translations: currentCard.translations,
             samples: currentCard.samples,
             note: currentCard.note,
-            normalizedWord: currentCard.normalizedWord,           // ← НОВОЕ!
-            normalizedVariants: currentCard.normalizedVariants   // ← НОВОЕ!
+            normalizedWord: currentCard.normalizedWord,
+            normalizedVariants: currentCard.normalizedVariants
           }),
 
           h('button', {
