@@ -286,7 +286,11 @@ export async function fetchTranslation(word) {
     console.log(`Запрашиваем перевод для слова "${word}" из Glosbe через API`);
     
     // Используем наш локальный API для получения перевода
-    const apiUrl = `/api/translate?word=${encodeURIComponent(word)}&from=cs&to=ru`;
+    const API_BASE_URL = process.env.NODE_ENV === 'production' 
+  ? 'https://flashcards-seznam.railway.internal/api'
+  : 'http://localhost:3001/api';
+
+const apiUrl = `${API_BASE_URL}/translate?word=${encodeURIComponent(word)}&from=cs&to=ru`;
     const response = await fetch(apiUrl);
     
     if (!response.ok) {

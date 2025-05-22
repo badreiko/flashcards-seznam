@@ -11,8 +11,22 @@ const multer = require('multer');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Включаем CORS для доступа с фронтенда
-app.use(cors());
+// Инициализация приложения Express
+const app = express();
+const PORT = process.env.PORT || 3001;
+
+// Настраиваем CORS для конкретных доменов
+app.use(cors({
+  origin: [
+    'https://flashcards-seznam.netlify.app',
+    'http://localhost:3000',
+    'http://localhost:3001'
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
 app.use(express.json());
 
 // Мультер для загрузки файлов (если понадобится)

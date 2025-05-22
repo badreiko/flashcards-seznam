@@ -5,8 +5,8 @@
  * В разработке используем локальный сервер, в продакшене можно заменить на фактический адрес вашего сервера
  */
 const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? '/api' // В продакшене относительный путь
-  : 'http://localhost:3001/api'; // В разработке полный URL
+  ? 'https://flashcards-seznam.railway.internal/api'
+  : 'http://localhost:3001/api';
 
 /**
  * Получает перевод слова через серверное API
