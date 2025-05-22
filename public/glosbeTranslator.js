@@ -7,6 +7,19 @@
 // Создаем экземпляр нормализатора
 const czechNormalizer = new CzechNormalizationRules();
 
+// Функции для работы с Firebase
+const dbRef = function(path) {
+  return firebase.database().ref(path);
+};
+
+const setData = function(ref, data) {
+  return ref.set(data);
+};
+
+const getData = function(ref) {
+  return ref.once('value').then(snapshot => snapshot.val());
+};
+
 /**
  * Функции для локального кэширования переводов
  */
@@ -218,7 +231,7 @@ async function checkLocalHtmlFiles(word, from_lang = 'cs', to_lang = 'ru') {
  * @param {string} word - Слово для перевода
  * @returns {Promise<Object>} - Объект с переводом и примерами
  */
-export async function fetchTranslation(word) {
+async function fetchTranslation(word) {
   if (!word) return null;
   
   console.log(`\n=== 🔍 ОБРАБОТКА СЛОВА: "${word}" ===`);
