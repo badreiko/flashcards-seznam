@@ -1626,7 +1626,7 @@ console.log('📚 После загрузки glosbeTranslator.js будет д�
     // Файл должен экспортировать функцию с именем fetchTranslation.
     // Пример содержимого glosbeTranslator.js:
     // export async function fetchTranslation(word) { /* ... логика ... */ return { word, translations: [...], ... }; }
-    const glosbeModule = await import('./src/glosbeTranslator.js'); // Сохраняем модуль
+    const glosbeModule = await import('./glosbeTranslator.js'); // Сохраняем модуль
     
     if (glosbeModule && typeof glosbeModule.fetchTranslation === 'function') {
       // Заменяем базовую функцию на полную
