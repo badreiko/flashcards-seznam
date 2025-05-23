@@ -18,32 +18,86 @@ app.set('trust proxy', true);
 // Настройка для решения проблемы "Invalid Host header" на Railway
 app.use((req, res, next) => {
   // Разрешаем запросы с любого хоста
-  req.headers.host = req.headers.host || 'flashcards-seznam-production.up.railway.app';
+  const allowedHosts = [
+    'flashcards-seznam-production.up.railway.app',
+    'flashcards-seznam.netlify.app',
+    'localhost',
+    '127.0.0.1'
+  ];
+  
+  // Полностью отключаем проверку хоста для Railway
+  if (process.env.RAILWAY_STATIC_URL || process.env.RAILWAY_SERVICE_ID) {
+    // Если мы на Railway, игнорируем все проверки хоста
+    req.headers.host = 'flashcards-seznam-production.up.railway.app';
+  } else if (req.headers.host && !allowedHosts.some(host => req.headers.host.includes(host))) {
+    // Если хост не в списке разрешенных, устанавливаем дефолтный
+    req.headers.host = 'flashcards-seznam-production.up.railway.app';
+  }
+  
   next();
 });
 
 // Важно: настройки CORS должны быть применены на Railway
 
+// Разрешенные источники для CORS
+const allowedOrigins = [
+  'https://flashcards-seznam.netlify.app',
+  'https://flashcards-seznam-production.up.railway.app',
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:3001'
+];
+
 // Настраиваем CORS для всех доменов, особенно для Netlify
 app.use(cors({
-  origin: ['https://flashcards-seznam.netlify.app', 'http://localhost:3000', '*'],  // Явно разрешаем Netlify и localhost
+  origin: function(origin, callback) {
+    // Разрешаем запросы без origin (например, из Postman или curl)
+    if (!origin) return callback(null, true);
+    
+    // Если мы на Railway, разрешаем все запросы
+    if (process.env.RAILWAY_STATIC_URL || process.env.RAILWAY_SERVICE_ID) {
+      return callback(null, true);
+    }
+    
+    // Проверяем, есть ли источник в списке разрешенных
+    if (allowedOrigins.indexOf(origin) !== -1 || allowedOrigins.some(allowed => origin.includes(allowed.replace('https://', '').replace('http://', '')))) {
+      callback(null, true);
+    } else {
+      // В продакшене разрешаем все запросы, чтобы избежать проблем
+      callback(null, true);
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Origin']
 }));
 
 // Добавляем заголовки CORS вручную для всех ответов
 app.use((req, res, next) => {
   const origin = req.headers.origin;
-  // Если запрос с Netlify или localhost, явно разрешаем этот домен
-  if (origin && (origin.includes('netlify.app') || origin.includes('localhost'))) {
+  
+  // Если мы на Railway, разрешаем все запросы
+  if (process.env.RAILWAY_STATIC_URL || process.env.RAILWAY_SERVICE_ID) {
+    res.header('Access-Control-Allow-Origin', '*');
+  } 
+  // Если запрос с Netlify или другого разрешенного источника
+  else if (origin && (allowedOrigins.includes(origin) || allowedOrigins.some(allowed => origin.includes(allowed.replace('https://', '').replace('http://', ''))))) {
     res.header('Access-Control-Allow-Origin', origin);
   } else {
+    // В продакшене разрешаем все запросы, чтобы избежать проблем
     res.header('Access-Control-Allow-Origin', '*');
   }
+  
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Origin');
   res.header('Access-Control-Allow-Credentials', 'true');
+  
+  // Если это OPTIONS-запрос, сразу отвечаем успехом
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  
   next();
 });
 
@@ -577,16 +631,14 @@ app.delete('/api/cleanup-html-files', async (req, res) => {
 
 // Промежуточный обработчик для всех API запросов
 app.use('/api/*', (req, res, next) => {
-  // Проверяем, что запрос пришел с Netlify или другого разрешенного источника
-  const origin = req.headers.origin || req.headers.referer;
-  
-  // Если это OPTIONS-запрос (preflight), сразу отвечаем успехом
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-  
-  // Добавляем дополнительные заголовки для решения проблем с CORS
+  // Добавляем дополнительные заголовки для API запросов
   res.header('Content-Type', 'application/json');
+  
+  // Добавляем специальные заголовки для Railway
+  if (process.env.RAILWAY_STATIC_URL || process.env.RAILWAY_SERVICE_ID) {
+    res.header('X-Powered-By', 'Railway');
+    res.header('X-Railway-Service', process.env.RAILWAY_SERVICE_NAME || 'flashcards-seznam-api');
+  }
   
   // Продолжаем к следующему обработчику
   next();
