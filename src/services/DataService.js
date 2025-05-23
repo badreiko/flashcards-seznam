@@ -9,6 +9,9 @@ import { database } from '../firebase';
 import { BaseDict } from '../utils/BaseDict';
 import { normalizationService } from './NormalizationService';
 
+// Константа для API URL на Railway
+const API_URL = 'https://flashcards-seznam-production.up.railway.app';
+
 class DataService {
   constructor() {
     this.baseDict = new BaseDict();
@@ -25,6 +28,7 @@ class DataService {
       fallbackHits: 0,
       totalRequests: 0
     };
+    this.API_URL = API_URL; // Сохраняем ссылку на API URL в экземпляре класса
     
     // Инициализация и проверка соединений
     this.initConnections();
@@ -80,9 +84,13 @@ class DataService {
    */
   async checkServerConnection() {
     try {
-      const response = await fetch('/api/health', { 
+      // Используем абсолютный URL для Railway
+      const response = await fetch(`${this.API_URL}/api/health`, { 
         method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Origin': 'https://flashcards-seznam.netlify.app'
+        },
         signal: AbortSignal.timeout(3000) // 3 секунды таймаут
       });
       return response.ok;
@@ -321,9 +329,13 @@ class DataService {
    */
   async fetchFromServer(word) {
     try {
-      const response = await fetch(`/api/translate?word=${encodeURIComponent(word)}`, {
+      // Используем абсолютный URL для Railway вместо относительного
+      const response = await fetch(`${this.API_URL}/api/translate?word=${encodeURIComponent(word)}`, {
         method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Origin': 'https://flashcards-seznam.netlify.app'
+        },
         signal: AbortSignal.timeout(10000) // 10 секунд таймаут
       });
       

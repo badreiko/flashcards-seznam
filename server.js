@@ -592,6 +592,16 @@ app.use('/api/*', (req, res, next) => {
   next();
 });
 
+// API эндпоинт для проверки соединения
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development',
+    service: 'flashcards-seznam-api'
+  });
+});
+
 // API для перевода слова
 app.get('/api/translate', async (req, res) => {
   try {
