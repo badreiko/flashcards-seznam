@@ -10,7 +10,13 @@ import { BaseDict } from '../utils/BaseDict';
 import { normalizationService } from './NormalizationService';
 
 // Константа для API URL на Railway
+// Добавляем случайный параметр для обхода кэширования
 const API_URL = 'https://flashcards-seznam-production.up.railway.app';
+
+// Функция для генерации случайного строкового идентификатора
+function generateRandomId(length = 8) {
+  return Math.random().toString(36).substring(2, 2 + length);
+}
 
 class DataService {
   constructor() {
@@ -84,14 +90,21 @@ class DataService {
    */
   async checkServerConnection() {
     try {
-      // Используем абсолютный URL для Railway
-      const response = await fetch(`${this.API_URL}/api/health`, { 
+      // Используем абсолютный URL для Railway с дополнительными параметрами
+      const nonce = generateRandomId();
+      const response = await fetch(`${this.API_URL}/api/health?_=${Date.now()}&nonce=${nonce}`, { 
         method: 'GET',
         headers: { 
           'Content-Type': 'application/json',
-          'Origin': 'https://flashcards-seznam.netlify.app'
+          'Origin': 'https://flashcards-seznam.netlify.app',
+          'X-Requested-With': 'XMLHttpRequest',
+          'Accept': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
         },
-        signal: AbortSignal.timeout(3000) // 3 секунды таймаут
+        cache: 'no-cache',
+        signal: AbortSignal.timeout(5000) // Увеличиваем таймаут до 5 секунд
       });
       return response.ok;
     } catch (error) {
@@ -329,20 +342,73 @@ class DataService {
    */
   async fetchFromServer(word) {
     try {
-      // Используем абсолютный URL для Railway вместо относительного
-      const response = await fetch(`${this.API_URL}/api/translate?word=${encodeURIComponent(word)}`, {
+      // Используем абсолютный URL для Railway с дополнительными параметрами
+      const nonce = generateRandomId();
+      const timestamp = Date.now();
+      
+      // Добавляем случайные параметры для обхода кэширования
+      const url = `${this.API_URL}/api/translate?word=${encodeURIComponent(word)}&_=${timestamp}&nonce=${nonce}`;
+      
+      console.log(`Отправка запроса на: ${url}`);
+      
+      const response = await fetch(url, {
         method: 'GET',
         headers: { 
           'Content-Type': 'application/json',
-          'Origin': 'https://flashcards-seznam.netlify.app'
+          'Origin': 'https://flashcards-seznam.netlify.app',
+          'X-Requested-With': 'XMLHttpRequest',
+          'Accept': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
         },
-        signal: AbortSignal.timeout(10000) // 10 секунд таймаут
+        cache: 'no-cache',
+        signal: AbortSignal.timeout(15000) // Увеличиваем таймаут до 15 секунд
       });
       
+      console.log(`Получен ответ со статусом: ${response.status}`);
+      
+      // Проверяем заголовки ответа
+      const contentType = response.headers.get('content-type');
+      console.log(`Тип контента ответа: ${contentType}`);
+      
       if (!response.ok) {
-        throw new Error(`Server responded with status: ${response.status}`);
+        // Получаем текст ошибки для диагностики
+        const errorText = await response.text();
+        console.error(`Ошибка ответа сервера: ${errorText}`);
+        throw new Error(`Server responded with status: ${response.status}, Error: ${errorText}`);
       }
       
+      // Проверяем, что ответ действительно JSON
+      if (!contentType || !contentType.includes('application/json')) {
+        const rawText = await response.text();
+        console.error(`Неверный тип контента: ${contentType}, текст: ${rawText.substring(0, 100)}...`);
+        
+        // Пробуем распарсить как JSON, даже если тип контента неверный
+        try {
+          const data = JSON.parse(rawText);
+          return data;
+        } catch (parseError) {
+          // Если текст содержит "Invalid Host header", возвращаем заглушку
+          if (rawText.includes('Invalid Host header')) {
+            console.error('Обнаружена ошибка "Invalid Host header", возвращаем заглушку');
+            return {
+              success: false,
+              word: word,
+              error: 'Invalid Host header',
+              data: {
+                translations: [],
+                samples: []
+              },
+              source: 'error'
+            };
+          }
+          
+          throw new Error(`Failed to parse response as JSON: ${parseError.message}, Raw text: ${rawText.substring(0, 100)}...`);
+        }
+      }
+      
+      // Обычная обработка JSON
       const data = await response.json();
       return data;
     } catch (error) {
