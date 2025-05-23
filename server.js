@@ -12,21 +12,38 @@ const os = require('os');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Отключаем проверку Host заголовка для Railway deployment
+app.set('trust proxy', true);
+
+// Настройка для решения проблемы "Invalid Host header" на Railway
+app.use((req, res, next) => {
+  // Разрешаем запросы с любого хоста
+  req.headers.host = req.headers.host || 'flashcards-seznam-production.up.railway.app';
+  next();
+});
+
 // Важно: настройки CORS должны быть применены на Railway
 
-// Настраиваем CORS для всех доменов
+// Настраиваем CORS для всех доменов, особенно для Netlify
 app.use(cors({
-  origin: '*',  // Разрешаем запросы с любого домена
+  origin: ['https://flashcards-seznam.netlify.app', 'http://localhost:3000', '*'],  // Явно разрешаем Netlify и localhost
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 
 // Добавляем заголовки CORS вручную для всех ответов
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
+  const origin = req.headers.origin;
+  // Если запрос с Netlify или localhost, явно разрешаем этот домен
+  if (origin && (origin.includes('netlify.app') || origin.includes('localhost'))) {
+    res.header('Access-Control-Allow-Origin', origin);
+  } else {
+    res.header('Access-Control-Allow-Origin', '*');
+  }
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  res.header('Access-Control-Allow-Credentials', 'true');
   next();
 });
 
@@ -459,9 +476,9 @@ function cleanupOldHtmlFiles(maxAgeDays = 30) {
       if (deletedCount > 0) {
         console.log(`🧹 Очистка: удалено ${deletedCount} старых HTML-файлов (${(totalSize / 1024).toFixed(2)} KB)`);
       }
+      
+      return { deletedCount, totalSize };
     }
-    
-    return { deletedCount, totalSize };
   } catch (error) {
     console.error('Ошибка при очистке старых HTML-файлов:', error.message);
     return { deletedCount: 0, totalSize: 0, error: error.message };
@@ -504,7 +521,7 @@ app.get('/api/parser-stats', (req, res) => {
             return {
               name: file,
               size: stats.size,
-              created: stats.birthtime
+              created: stats.mtime
             };
           } catch (err) {
             return null;
@@ -543,11 +560,10 @@ app.get('/api/parser-stats', (req, res) => {
 });
 
 // API для ручной очистки HTML-файлов
-app.delete('/api/cleanup-html-files', (req, res) => {
+app.delete('/api/cleanup-html-files', async (req, res) => {
   try {
     const maxAgeDays = parseInt(req.query.maxAgeDays) || 7; // По умолчанию 7 дней
     const result = cleanupOldHtmlFiles(maxAgeDays);
-    
     res.json({
       success: true,
       message: `Старые HTML-файлы удалены (${result.deletedCount} файлов, ${(result.totalSize / 1024).toFixed(2)} KB)`,
@@ -559,7 +575,24 @@ app.delete('/api/cleanup-html-files', (req, res) => {
   }
 });
 
-// API эндпоинт для перевода слов
+// Промежуточный обработчик для всех API запросов
+app.use('/api/*', (req, res, next) => {
+  // Проверяем, что запрос пришел с Netlify или другого разрешенного источника
+  const origin = req.headers.origin || req.headers.referer;
+  
+  // Если это OPTIONS-запрос (preflight), сразу отвечаем успехом
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  
+  // Добавляем дополнительные заголовки для решения проблем с CORS
+  res.header('Content-Type', 'application/json');
+  
+  // Продолжаем к следующему обработчику
+  next();
+});
+
+// API для перевода слова
 app.get('/api/translate', async (req, res) => {
   try {
     const { word, from, to, checkLocal } = req.query;
@@ -787,86 +820,14 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Маршрут для всех остальных запросов (для SPA)
-app.get('*', (req, res) => {
+// Основной маршрут для React приложения
+app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'build', 'index.html'));
 });
 
-// Очистка при запуске сервера
-console.log('🧹 Очистка старых HTML файлов при запуске...');
-cleanupAllFiles();
-
-// Запускаем периодическую очистку каждый час
-setInterval(cleanupOldFiles, 60 * 60 * 1000);
-
-// API-эндпоинт для проверки состояния сервера (health check)
-app.get('/api/health', async (req, res) => {
-  try {
-    // Проверяем доступность папки для хранения HTML
-    const folderAccessible = fs.existsSync(parsedWordsFolder);
-    
-    // Проверяем возможность записи в папку
-    let canWrite = false;
-    if (folderAccessible) {
-      try {
-        const testFile = path.join(parsedWordsFolder, '.test_write');
-        fs.writeFileSync(testFile, 'test', 'utf8');
-        fs.unlinkSync(testFile);
-        canWrite = true;
-      } catch (e) {
-        console.warn('Не удалось записать в папку:', e.message);
-      }
-    }
-    
-    // Проверяем доступность Glosbe с помощью простого HEAD-запроса
-    let glosbeAccessible = false;
-    try {
-      const response = await axios.head('https://glosbe.com/cs/ru', {
-        timeout: 5000,
-        validateStatus: () => true // принимаем любой статус
-      });
-      glosbeAccessible = response.status >= 200 && response.status < 500;
-    } catch (e) {
-      console.warn('Не удалось проверить доступность Glosbe:', e.message);
-    }
-    
-    // Собираем информацию о системе
-    const systemInfo = {
-      memory: process.memoryUsage(),
-      uptime: process.uptime(),
-      nodeVersion: process.version,
-      platform: process.platform,
-      cpus: os.cpus().length
-    };
-    
-    // Формируем ответ
-    const health = {
-      status: folderAccessible && canWrite && glosbeAccessible ? 'healthy' : 'degraded',
-      timestamp: new Date().toISOString(),
-      checks: {
-        folderAccessible,
-        canWrite,
-        glosbeAccessible
-      },
-      parser: {
-        totalRequests: glosbeParser.stats.totalRequests,
-        successfulParses: glosbeParser.stats.successfulParses,
-        failedParses: glosbeParser.stats.failedParses,
-        successRate: glosbeParser.stats.totalRequests > 0 ?
-          (glosbeParser.stats.successfulParses / glosbeParser.stats.totalRequests * 100).toFixed(2) + '%' : '0%'
-      },
-      system: systemInfo
-    };
-    
-    res.json(health);
-  } catch (error) {
-    console.error('Ошибка при проверке состояния сервера:', error);
-    res.status(500).json({
-      status: 'error',
-      timestamp: new Date().toISOString(),
-      error: error.message
-    });
-  }
+// Catch-all маршрут для React Router (должен быть последним)
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'build', 'index.html'));
 });
 
 // Запускаем сервер
