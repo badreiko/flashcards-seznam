@@ -207,6 +207,15 @@ export class CzechNormalizationRules {
       { pattern: /^(.+)izi$/, base: '$1ize', type: 'noun-f-soft-acc', priority: 90 },
       { pattern: /^(.+)ici$/, base: '$1ice', type: 'noun-f-soft-acc', priority: 90 },
       
+      // Дополнительные правила для существительных женского рода на -ce, -se, -ze
+      { pattern: /^(.+)ikaci$/, base: '$1ikace', type: 'noun-f-soft-acc-special', priority: 95 },
+      { pattern: /^(.+)likaci$/, base: '$1likace', type: 'noun-f-soft-acc-special', priority: 95 },
+      { pattern: /^(.+)kaci$/, base: '$1kace', type: 'noun-f-soft-acc-special', priority: 95 },
+      { pattern: /^(.+)enci$/, base: '$1ence', type: 'noun-f-soft-acc-special', priority: 95 },
+      { pattern: /^(.+)anci$/, base: '$1ance', type: 'noun-f-soft-acc-special', priority: 95 },
+      { pattern: /^(.+)usi$/, base: '$1use', type: 'noun-f-soft-acc-special', priority: 95 },
+      { pattern: /^(.+)esi$/, base: '$1ese', type: 'noun-f-soft-acc-special', priority: 95 },
+      
       // Средний род (твердое склонение)
       { pattern: /^(.+)a$/, base: '$1o', type: 'noun-n-hard', priority: 5 },
       { pattern: /^(.+)ech$/, base: '$1o', type: 'noun-n-hard', priority: 6 },
