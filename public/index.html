@@ -1,1643 +1,814 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<meta name="theme-color" content="#2563eb" />
-<meta name="description" content="Flashcards Seznam - приложение для изучения чешских слов с помощью карточек" />
-<link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<link rel="manifest" href="/manifest.json">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<title>Flashcards Seznam</title>
-
-<style>
-/* ===================================================================== */
-/* ОСНОВНЫЕ СТИЛИ - ЧИСТЫЙ И СОВРЕМЕННЫЙ ДИЗАЙН */
-/* ===================================================================== */
-
-:root {
-  /* Цветовая палитра */
-  --primary: #2563eb;
-  --primary-hover: #1d4ed8;
-  --secondary: #64748b;
-  --accent: #dc2626;
-  --background: #f8fafc;
-  --surface: #ffffff;
-  --border: #e2e8f0;
-  --text-primary: #0f172a;
-  --text-secondary: #64748b;
-  --text-muted: #94a3b8;
-  --success: #16a34a;
-  --warning: #d97706;
-  --error: #dc2626;
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#2563eb" />
+  <meta name="description" content="Flashcards Seznam - приложение для изучения чешских слов с помощью карточек" />
   
-  /* Размеры */
-  --border-radius: 12px;
-  --border-radius-sm: 8px;
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-  --transition: all 0.2s ease;
-}
-
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  line-height: 1.6;
-  color: var(--text-primary);
-  background-color: var(--background);
-  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
-}
-
-.app {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
-  min-height: 100vh;
-}
-
-/* ===================================================================== */
-/* ЗАГОЛОВОК */
-/* ===================================================================== */
-
-.header {
-  text-align: center;
-  margin-bottom: 40px;
-  padding: 30px 20px;
-  background: var(--surface);
-  border-radius: var(--border-radius);
-  box-shadow: var(--shadow-sm);
-  border: 1px solid var(--border);
-}
-
-.header h1 {
-  color: var(--text-primary);
-  font-size: 2.5rem;
-  font-weight: 700;
-  margin-bottom: 8px;
-  letter-spacing: -0.025em;
-}
-
-.subtitle {
-  color: var(--text-secondary);
-  font-size: 1.1rem;
-  font-weight: 400;
-}
-
-/* ===================================================================== */
-/* ОСНОВНОЙ КОНТЕНТ */
-/* ===================================================================== */
-
-.main-content {
-  background: var(--surface);
-  border-radius: var(--border-radius);
-  box-shadow: var(--shadow);
-  border: 1px solid var(--border);
-  padding: 32px;
-  min-height: 500px;
-}
-
-/* ===================================================================== */
-/* КНОПКИ */
-/* ===================================================================== */
-
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 12px 24px;
-  border: none;
-  border-radius: var(--border-radius-sm);
-  cursor: pointer;
-  font-size: 0.875rem;
-  font-weight: 500;
-  text-align: center;
-  transition: var(--transition);
-  text-decoration: none;
-  font-family: inherit;
-  line-height: 1;
-  min-height: 44px;
-}
-
-.btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.btn-primary {
-  background-color: var(--primary);
-  color: white;
-  border: 1px solid var(--primary);
-}
-
-.btn-primary:hover:not(:disabled) {
-  background-color: var(--primary-hover);
-  border-color: var(--primary-hover);
-}
-
-.btn-secondary {
-  background-color: var(--surface);
-  color: var(--text-primary);
-  border: 1px solid var(--border);
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background-color: var(--background);
-  border-color: var(--secondary);
-}
-
-.actions {
-  margin-top: 24px;
-  display: flex;
-  gap: 12px;
-  justify-content: center;
-  flex-wrap: wrap;
-}
-
-/* ===================================================================== */
-/* ВВОД ТЕКСТА */
-/* ===================================================================== */
-
-.text-input {
-  width: 100%;
-  max-width: 800px;
-  margin: 0 auto;
-}
-
-.text-input h2 {
-  text-align: center;
-  margin-bottom: 12px;
-  color: var(--text-primary);
-  font-size: 1.5rem;
-  font-weight: 600;
-}
-
-.instruction {
-  text-align: center;
-  margin-bottom: 24px;
-  color: var(--text-secondary);
-  font-size: 0.875rem;
-  line-height: 1.5;
-}
-
-.text-area {
-  width: 100%;
-  min-height: 200px;
-  padding: 16px;
-  border-radius: var(--border-radius-sm);
-  border: 1px solid var(--border);
-  font-family: inherit;
-  font-size: 0.875rem;
-  resize: vertical;
-  transition: var(--transition);
-  margin-bottom: 20px;
-  background: var(--surface);
-  color: var(--text-primary);
-}
-
-.text-area:focus {
-  outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgb(37 99 235 / 0.1);
-}
-
-.text-area::placeholder {
-  color: var(--text-muted);
-}
-
-/* ===================================================================== */
-/* ИЗВЛЕЧЕННЫЕ СЛОВА */
-/* ===================================================================== */
-
-.extracted-words {
-  margin-bottom: 32px;
-}
-
-.extracted-words h2 {
-  margin-bottom: 20px;
-  text-align: center;
-  color: var(--text-primary);
-  font-size: 1.5rem;
-  font-weight: 600;
-}
-
-.words-container {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 24px;
-  justify-content: center;
-}
-
-.word-chip {
-  background: var(--background);
-  padding: 8px 16px;
-  border-radius: 20px;
-  font-size: 0.875rem;
-  border: 1px solid var(--border);
-  color: var(--text-primary);
-  transition: var(--transition);
-  font-weight: 500;
-}
-
-.word-chip:hover {
-  background: var(--primary);
-  color: white;
-  border-color: var(--primary);
-}
-
-/* ===================================================================== */
-/* ИНДИКАТОР ПРОГРЕССА */
-/* ===================================================================== */
-
-.progress-container {
-  margin: 24px auto;
-  max-width: 400px;
-}
-
-.progress-bar {
-  height: 8px;
-  background: var(--background);
-  border-radius: 4px;
-  overflow: hidden;
-  margin-bottom: 8px;
-  border: 1px solid var(--border);
-}
-
-.progress-bar-fill {
-  height: 100%;
-  background: var(--primary);
-  border-radius: 4px;
-  transition: width 0.3s ease;
-}
-
-.progress-text {
-  font-size: 0.75rem;
-  color: var(--text-secondary);
-  text-align: center;
-  font-weight: 500;
-}
-
-/* ===================================================================== */
-/* СООБЩЕНИЯ ОБ ОШИБКАХ */
-/* ===================================================================== */
-
-.error-message {
-  color: var(--error);
-  text-align: center;
-  margin: 16px 0;
-  padding: 12px 16px;
-  border: 1px solid rgb(220 38 38 / 0.2);
-  border-radius: var(--border-radius-sm);
-  background: rgb(220 38 38 / 0.05);
-  font-size: 0.875rem;
-}
-
-.no-cards {
-  text-align: center;
-  padding: 60px 20px;
-  font-size: 1rem;
-  color: var(--text-secondary);
-}
-
-/* ===================================================================== */
-/* КАРТОЧКИ - УЛУЧШЕННЫЙ ДИЗАЙН БЕЗ ГРАДИЕНТОВ */
-/* ===================================================================== */
-
-.flashcard-viewer {
-  width: 100%;
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 20px 0;
-}
-
-.progress-info {
-  text-align: center;
-  margin-bottom: 24px;
-  font-size: 0.875rem;
-  color: var(--text-secondary);
-  font-weight: 500;
-  background: var(--background);
-  padding: 8px 16px;
-  border-radius: var(--border-radius-sm);
-  border: 1px solid var(--border);
-  display: inline-block;
-}
-
-.card-container {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 24px;
-  margin-bottom: 32px;
-  min-height: 400px;
-}
-
-.nav-btn {
-  background: var(--surface);
-  border: 2px solid var(--border);
-  color: var(--text-primary);
-  font-size: 1.5rem;
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: var(--transition);
-  box-shadow: var(--shadow-sm);
-  font-weight: 600;
-}
-
-.nav-btn:hover {
-  background: var(--primary);
-  border-color: var(--primary);
-  color: white;
-  box-shadow: var(--shadow);
-}
-
-.nav-btn:active {
-  transform: scale(0.95);
-}
-
-.nav-btn:focus {
-  outline: none;
-  box-shadow: 0 0 0 3px rgb(37 99 235 / 0.2);
-}
-
-/* ===================================================================== */
-/* КАРТОЧКА - ЧИСТЫЙ ДИЗАЙН */
-/* ===================================================================== */
-
-.flashcard {
-  perspective: 1000px;
-  cursor: pointer;
-  width: 100%;
-  max-width: 420px;
-  height: 360px;
-  margin: 0 auto;
-}
-
-.card-inner {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  text-align: center;
-  transition: transform 0.4s ease;
-  transform-style: preserve-3d;
-  border-radius: var(--border-radius);
-}
-
-.flashcard.flipped .card-inner {
-  transform: rotateY(180deg);
-}
-
-.card-front,
-.card-back {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  backface-visibility: hidden;
-  border-radius: var(--border-radius);
-  border: 2px solid var(--border);
-  background: var(--surface);
-  box-shadow: var(--shadow-lg);
-  display: flex;
-  flex-direction: column;
-  padding: 32px 24px;
-}
-
-/* ЛИЦЕВАЯ СТОРОНА - простая и чистая */
-.card-front {
-  justify-content: center;
-  align-items: center;
-  text-align: center;
-}
-
-.word {
-  font-size: 2.5rem;
-  font-weight: 700;
-  color: var(--text-primary);
-  margin-bottom: 16px;
-  letter-spacing: -0.025em;
-  line-height: 1.1;
-  word-break: break-word;
-}
-
-.hint {
-  font-size: 0.875rem;
-  color: var(--text-muted);
-  position: absolute;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  text-align: center;
-  font-weight: 400;
-}
-
-/* ОБРАТНАЯ СТОРОНА - структурированная информация */
-.card-back {
-  transform: rotateY(180deg);
-  justify-content: flex-start;
-  align-items: stretch;
-  overflow-y: auto;
-  padding: 24px;
-}
-
-.original-word {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--text-primary);
-  text-align: center;
-  margin-bottom: 20px;
-  padding-bottom: 12px;
-  border-bottom: 2px solid var(--border);
-  word-break: break-word;
-}
-
-/* Информация о нормализации */
-.normalization-info {
-  background: var(--background);
-  border: 1px solid var(--border);
-  border-radius: var(--border-radius-sm);
-  padding: 12px 16px;
-  margin-bottom: 20px;
-  font-size: 0.75rem;
-}
-
-.normalization-info > div:first-child {
-  color: var(--text-secondary);
-  font-weight: 600;
-  margin-bottom: 4px;
-}
-
-.normalization-info > div:nth-child(2) {
-  color: var(--primary);
-  font-weight: 700;
-  font-size: 0.875rem;
-}
-
-.normalization-info > div:last-child {
-  color: var(--text-muted);
-  margin-top: 4px;
-  font-style: italic;
-}
-
-/* Переводы и примеры */
-.translations,
-.examples {
-  margin-bottom: 20px;
-}
-
-.translations h4,
-.examples h4 {
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin-bottom: 12px;
-  border-bottom: 1px solid var(--border);
-  padding-bottom: 6px;
-}
-
-.translations ul,
-.examples ul {
-  list-style: none;
-  padding: 0;
-}
-
-.translations li {
-  margin-bottom: 8px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--text-primary);
-  padding: 8px 12px;
-  background: var(--background);
-  border-radius: var(--border-radius-sm);
-  border-left: 3px solid var(--primary);
-}
-
-.examples li {
-  margin-bottom: 12px;
-  background: var(--background);
-  padding: 12px;
-  border-radius: var(--border-radius-sm);
-  border: 1px solid var(--border);
-}
-
-.sample-phrase {
-  font-weight: 600;
-  color: var(--text-primary);
-  font-size: 0.875rem;
-  margin-bottom: 6px;
-  border-bottom: 1px dashed var(--border);
-  padding-bottom: 4px;
-}
-
-.sample-translation {
-  font-style: italic;
-  color: var(--text-secondary);
-  font-size: 0.875rem;
-  line-height: 1.4;
-}
-
-.no-translations {
-  color: var(--text-muted);
-  text-align: center;
-  font-style: italic;
-  padding: 20px;
-  font-size: 0.875rem;
-}
-
-.note {
-  font-size: 0.75rem;
-  font-style: italic;
-  color: var(--text-secondary);
-  margin-top: 12px;
-  text-align: center;
-  padding: 8px 12px;
-  background: var(--background);
-  border-radius: var(--border-radius-sm);
-  border: 1px solid var(--border);
-}
-
-.attribution {
-  font-size: 0.625rem;
-  color: var(--text-muted);
-  position: absolute;
-  bottom: 8px;
-  right: 12px;
-  font-style: italic;
-}
-
-/* ===================================================================== */
-/* НАВИГАЦИЯ ПО КАРТОЧКАМ */
-/* ===================================================================== */
-
-.card-progress {
-  display: flex;
-  justify-content: center;
-  gap: 8px;
-  margin-top: 20px;
-  padding: 0 20px;
-}
-
-.progress-dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: var(--border);
-  border: 2px solid var(--border);
-  cursor: pointer;
-  transition: var(--transition);
-}
-
-.progress-dot:hover {
-  background: var(--secondary);
-  border-color: var(--secondary);
-}
-
-.progress-dot.active {
-  background: var(--primary);
-  border-color: var(--primary);
-  transform: scale(1.2);
-}
-
-/* ===================================================================== */
-/* СЛОВАРЬ */
-/* ===================================================================== */
-
-.dictionary-stats {
-  margin-top: 32px;
-  padding: 20px;
-  background: var(--background);
-  border-radius: var(--border-radius);
-  text-align: center;
-  border: 1px solid var(--border);
-}
-
-.dictionary-button {
-  margin: 0 6px;
-  padding: 8px 16px;
-  background: var(--primary);
-  color: white;
-  border: none;
-  border-radius: var(--border-radius-sm);
-  cursor: pointer;
-  font-size: 0.75rem;
-  font-weight: 500;
-  transition: var(--transition);
-}
-
-.dictionary-button:hover {
-  background: var(--primary-hover);
-}
-
-.dictionary-view {
-  margin-top: 20px;
-  max-height: 300px;
-  overflow-y: auto;
-  border: 1px solid var(--border);
-  border-radius: var(--border-radius-sm);
-  padding: 16px;
-  background: var(--surface);
-}
-
-.dict-word-item {
-  margin-bottom: 12px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--border);
-}
-
-.dict-word-item:last-child {
-  border-bottom: none;
-  margin-bottom: 0;
-  padding-bottom: 0;
-}
-
-.dict-word {
-  font-weight: 600;
-  color: var(--text-primary);
-  font-size: 0.875rem;
-}
-
-.dict-translations {
-  margin-top: 4px;
-  font-size: 0.75rem;
-  color: var(--text-secondary);
-}
-
-.api-attribution {
-  text-align: center;
-  margin-top: 20px;
-  font-size: 0.75rem;
-  color: var(--text-muted);
-}
-
-.api-attribution a {
-  color: var(--primary);
-  text-decoration: none;
-}
-
-.api-attribution a:hover {
-  text-decoration: underline;
-}
-
-/* ===================================================================== */
-/* ЗАГРУЗКА */
-/* ===================================================================== */
-
-.loading {
-  text-align: center;
-  padding: 40px 20px;
-  color: var(--text-secondary);
-  font-size: 0.875rem;
-}
-
-/* ===================================================================== */
-/* АДАПТИВНОСТЬ */
-/* ===================================================================== */
-
-@media screen and (max-width: 768px) {
-  .app {
-    padding: 12px;
-  }
-
-  .header {
-    padding: 24px 16px;
-    margin-bottom: 24px;
-  }
-
-  .header h1 {
-    font-size: 2rem;
-  }
-
-  .main-content {
-    padding: 24px 16px;
-  }
-
-  .text-area {
-    min-height: 150px;
-  }
-
-  .flashcard {
-    max-width: 340px;
-    height: 320px;
-  }
-
-  .word {
-    font-size: 2rem;
-  }
-
-  .original-word {
-    font-size: 1.25rem;
-  }
-
-  .card-container {
-    gap: 16px;
-    min-height: 340px;
-  }
-
-  .nav-btn {
-    width: 44px;
-    height: 44px;
-    font-size: 1.25rem;
-  }
-
-  .card-front,
-  .card-back {
-    padding: 24px 20px;
-  }
-
-  .actions {
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .btn {
-    min-width: 200px;
-  }
-}
-
-/* ===================================================================== */
-/* ТЕМНАЯ ТЕМА (опционально) */
-/* ===================================================================== */
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --primary: #3b82f6;
-    --primary-hover: #2563eb;
-    --secondary: #64748b;
-    --accent: #ef4444;
-    --background: #0f172a;
-    --surface: #1e293b;
-    --border: #334155;
-    --text-primary: #f1f5f9;
-    --text-secondary: #cbd5e1;
-    --text-muted: #64748b;
-    --success: #22c55e;
-    --warning: #f59e0b;
-    --error: #ef4444;
-  }
-}
-</style>
+  <!-- Иконки и манифест -->
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="manifest" href="/manifest.json">
+  
+  <!-- Шрифты -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <title>Flashcards Seznam</title>
+
+  <style>
+    /* ===================================================================== */
+    /* ОСНОВНЫЕ СТИЛИ - ЧИСТЫЙ И СОВРЕМЕННЫЙ ДИЗАЙН */
+    /* ===================================================================== */
+
+    :root {
+      /* Цветовая палитра */
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --secondary: #64748b;
+      --accent: #dc2626;
+      --background: #f8fafc;
+      --surface: #ffffff;
+      --border: #e2e8f0;
+      --text-primary: #0f172a;
+      --text-secondary: #64748b;
+      --text-muted: #94a3b8;
+      --success: #16a34a;
+      --warning: #d97706;
+      --error: #dc2626;
+      
+      /* Размеры */
+      --border-radius: 12px;
+      --border-radius-sm: 8px;
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+      --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+      --transition: all 0.2s ease;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      line-height: 1.6;
+      color: var(--text-primary);
+      background-color: var(--background);
+      font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    }
+
+    .app {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      min-height: 100vh;
+    }
+
+    /* ===================================================================== */
+    /* ЗАГОЛОВОК */
+    /* ===================================================================== */
+
+    .header {
+      text-align: center;
+      margin-bottom: 40px;
+      padding: 30px 20px;
+      background: var(--surface);
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--border);
+    }
+
+    .header h1 {
+      color: var(--text-primary);
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+      letter-spacing: -0.025em;
+    }
+
+    .subtitle {
+      color: var(--text-secondary);
+      font-size: 1.1rem;
+      font-weight: 400;
+    }
+
+    /* ===================================================================== */
+    /* ОСНОВНОЙ КОНТЕНТ */
+    /* ===================================================================== */
+
+    .main-content {
+      background: var(--surface);
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+      padding: 32px;
+      min-height: 500px;
+    }
+
+    /* ===================================================================== */
+    /* КНОПКИ */
+    /* ===================================================================== */
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px 24px;
+      border: none;
+      border-radius: var(--border-radius-sm);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      text-align: center;
+      transition: var(--transition);
+      text-decoration: none;
+      font-family: inherit;
+      line-height: 1;
+      min-height: 44px;
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background-color: var(--primary);
+      color: white;
+      border: 1px solid var(--primary);
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background-color: var(--primary-hover);
+      border-color: var(--primary-hover);
+    }
+
+    .btn-secondary {
+      background-color: var(--surface);
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+      background-color: var(--background);
+      border-color: var(--secondary);
+    }
+
+    .actions {
+      margin-top: 24px;
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    /* ===================================================================== */
+    /* ВВОД ТЕКСТА */
+    /* ===================================================================== */
+
+    .text-input {
+      width: 100%;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .text-input h2 {
+      text-align: center;
+      margin-bottom: 12px;
+      color: var(--text-primary);
+      font-size: 1.5rem;
+      font-weight: 600;
+    }
+
+    .instruction {
+      text-align: center;
+      margin-bottom: 24px;
+      color: var(--text-secondary);
+      font-size: 0.875rem;
+      line-height: 1.5;
+    }
+
+    .text-area {
+      width: 100%;
+      min-height: 200px;
+      padding: 16px;
+      border-radius: var(--border-radius-sm);
+      border: 1px solid var(--border);
+      font-family: inherit;
+      font-size: 0.875rem;
+      resize: vertical;
+      transition: var(--transition);
+      margin-bottom: 20px;
+      background: var(--surface);
+      color: var(--text-primary);
+    }
+
+    .text-area:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgb(37 99 235 / 0.1);
+    }
+
+    .text-area::placeholder {
+      color: var(--text-muted);
+    }
+
+    /* ===================================================================== */
+    /* ИЗВЛЕЧЕННЫЕ СЛОВА */
+    /* ===================================================================== */
+
+    .extracted-words {
+      margin-bottom: 32px;
+    }
+
+    .extracted-words h2 {
+      margin-bottom: 20px;
+      text-align: center;
+      color: var(--text-primary);
+      font-size: 1.5rem;
+      font-weight: 600;
+    }
+
+    .words-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 24px;
+      justify-content: center;
+    }
+
+    .word-chip {
+      background: var(--background);
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 0.875rem;
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      transition: var(--transition);
+      font-weight: 500;
+    }
+
+    .word-chip:hover {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+
+    /* ===================================================================== */
+    /* ИНДИКАТОР ПРОГРЕССА */
+    /* ===================================================================== */
+
+    .progress-container {
+      margin: 24px auto;
+      max-width: 400px;
+    }
+
+    .progress-bar {
+      height: 8px;
+      background: var(--background);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 8px;
+      border: 1px solid var(--border);
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: var(--primary);
+      border-radius: 4px;
+      transition: width 0.3s ease;
+    }
+
+    .progress-text {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      text-align: center;
+      font-weight: 500;
+    }
+
+    /* ===================================================================== */
+    /* СООБЩЕНИЯ ОБ ОШИБКАХ */
+    /* ===================================================================== */
+
+    .error-message {
+      color: var(--error);
+      text-align: center;
+      margin: 16px 0;
+      padding: 12px 16px;
+      border: 1px solid rgb(220 38 38 / 0.2);
+      border-radius: var(--border-radius-sm);
+      background: rgb(220 38 38 / 0.05);
+      font-size: 0.875rem;
+    }
+
+    .no-cards {
+      text-align: center;
+      padding: 60px 20px;
+      font-size: 1rem;
+      color: var(--text-secondary);
+    }
+
+    /* ===================================================================== */
+    /* КАРТОЧКИ - УЛУЧШЕННЫЙ ДИЗАЙН */
+    /* ===================================================================== */
+
+    .flashcard-viewer {
+      width: 100%;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 20px 0;
+    }
+
+    .progress-info {
+      text-align: center;
+      margin-bottom: 24px;
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      font-weight: 500;
+      background: var(--background);
+      padding: 8px 16px;
+      border-radius: var(--border-radius-sm);
+      border: 1px solid var(--border);
+      display: inline-block;
+    }
+
+    .card-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 24px;
+      margin-bottom: 32px;
+      min-height: 400px;
+    }
+
+    .nav-btn {
+      background: var(--surface);
+      border: 2px solid var(--border);
+      color: var(--text-primary);
+      font-size: 1.5rem;
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: var(--transition);
+      box-shadow: var(--shadow-sm);
+      font-weight: 600;
+    }
+
+    .nav-btn:hover {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: white;
+      box-shadow: var(--shadow);
+    }
+
+    .nav-btn:active {
+      transform: scale(0.95);
+    }
+
+    .nav-btn:focus {
+      outline: none;
+      box-shadow: 0 0 0 3px rgb(37 99 235 / 0.2);
+    }
+
+    .nav-btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    .nav-btn:disabled:hover {
+      background: var(--surface);
+      border-color: var(--border);
+      color: var(--text-primary);
+      box-shadow: var(--shadow-sm);
+      transform: none;
+    }
+
+    /* ===================================================================== */
+    /* КАРТОЧКА */
+    /* ===================================================================== */
+
+    .flashcard {
+      perspective: 1000px;
+      cursor: pointer;
+      width: 100%;
+      max-width: 420px;
+      height: 360px;
+      margin: 0 auto;
+    }
+
+    .card-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      text-align: center;
+      transition: transform 0.4s ease;
+      transform-style: preserve-3d;
+      border-radius: var(--border-radius);
+    }
+
+    .flashcard.flipped .card-inner {
+      transform: rotateY(180deg);
+    }
+
+    .card-front,
+    .card-back {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+      border-radius: var(--border-radius);
+      border: 2px solid var(--border);
+      background: var(--surface);
+      box-shadow: var(--shadow-lg);
+      display: flex;
+      flex-direction: column;
+      padding: 32px 24px;
+    }
+
+    /* ЛИЦЕВАЯ СТОРОНА */
+    .card-front {
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+
+    .word {
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 16px;
+      letter-spacing: -0.025em;
+      line-height: 1.1;
+      word-break: break-word;
+    }
+
+    .hint {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      text-align: center;
+      font-weight: 400;
+    }
+
+    /* ОБРАТНАЯ СТОРОНА */
+    .card-back {
+      transform: rotateY(180deg);
+      justify-content: flex-start;
+      align-items: stretch;
+      overflow-y: auto;
+      padding: 24px;
+    }
+
+    .original-word {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      text-align: center;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid var(--border);
+      word-break: break-word;
+    }
+
+    /* Информация о нормализации */
+    .normalization-info {
+      background: var(--background);
+      border: 1px solid var(--border);
+      border-radius: var(--border-radius-sm);
+      padding: 12px 16px;
+      margin-bottom: 20px;
+      font-size: 0.75rem;
+    }
+
+    .normalization-info > div:first-child {
+      color: var(--text-secondary);
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .normalization-info > div:nth-child(2) {
+      color: var(--primary);
+      font-weight: 700;
+      font-size: 0.875rem;
+    }
+
+    .normalization-info > div:last-child {
+      color: var(--text-muted);
+      margin-top: 4px;
+      font-style: italic;
+    }
+
+    /* Переводы и примеры */
+    .translations,
+    .examples {
+      margin-bottom: 20px;
+    }
+
+    .translations h4,
+    .examples h4 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 6px;
+    }
+
+    .translations ul,
+    .examples ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    .translations li {
+      margin-bottom: 8px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text-primary);
+      padding: 8px 12px;
+      background: var(--background);
+      border-radius: var(--border-radius-sm);
+      border-left: 3px solid var(--primary);
+    }
+
+    .examples li {
+      margin-bottom: 12px;
+      background: var(--background);
+      padding: 12px;
+      border-radius: var(--border-radius-sm);
+      border: 1px solid var(--border);
+    }
+
+    .sample-phrase {
+      font-weight: 600;
+      color: var(--text-primary);
+      font-size: 0.875rem;
+      margin-bottom: 6px;
+      border-bottom: 1px dashed var(--border);
+      padding-bottom: 4px;
+    }
+
+    .sample-translation {
+      font-style: italic;
+      color: var(--text-secondary);
+      font-size: 0.875rem;
+      line-height: 1.4;
+    }
+
+    .no-translations {
+      color: var(--text-muted);
+      text-align: center;
+      font-style: italic;
+      padding: 20px;
+      font-size: 0.875rem;
+    }
+
+    .note {
+      font-size: 0.75rem;
+      font-style: italic;
+      color: var(--text-secondary);
+      margin-top: 12px;
+      text-align: center;
+      padding: 8px 12px;
+      background: var(--background);
+      border-radius: var(--border-radius-sm);
+      border: 1px solid var(--border);
+    }
+
+    .attribution {
+      font-size: 0.625rem;
+      color: var(--text-muted);
+      position: absolute;
+      bottom: 8px;
+      right: 12px;
+      font-style: italic;
+    }
+
+    /* ===================================================================== */
+    /* НАВИГАЦИЯ ПО КАРТОЧКАМ */
+    /* ===================================================================== */
+
+    .card-progress {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 20px;
+      padding: 0 20px;
+    }
+
+    .progress-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--border);
+      border: 2px solid var(--border);
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .progress-dot:hover {
+      background: var(--secondary);
+      border-color: var(--secondary);
+    }
+
+    .progress-dot.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      transform: scale(1.2);
+    }
+
+    /* ===================================================================== */
+    /* СЛОВАРЬ */
+    /* ===================================================================== */
+
+    .dictionary-stats {
+      margin-top: 32px;
+      padding: 20px;
+      background: var(--background);
+      border-radius: var(--border-radius);
+      text-align: center;
+      border: 1px solid var(--border);
+    }
+
+    .dictionary-button {
+      margin: 0 6px;
+      padding: 8px 16px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: var(--border-radius-sm);
+      cursor: pointer;
+      font-size: 0.75rem;
+      font-weight: 500;
+      transition: var(--transition);
+    }
+
+    .dictionary-button:hover {
+      background: var(--primary-hover);
+    }
+
+    .dictionary-view {
+      margin-top: 20px;
+      max-height: 300px;
+      overflow-y: auto;
+      border: 1px solid var(--border);
+      border-radius: var(--border-radius-sm);
+      padding: 16px;
+      background: var(--surface);
+    }
+
+    .dict-word-item {
+      margin-bottom: 12px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .dict-word-item:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .dict-word {
+      font-weight: 600;
+      color: var(--text-primary);
+      font-size: 0.875rem;
+    }
+
+    .dict-translations {
+      margin-top: 4px;
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+    }
+
+    .api-attribution {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .api-attribution a {
+      color: var(--primary);
+      text-decoration: none;
+    }
+
+    .api-attribution a:hover {
+      text-decoration: underline;
+    }
+
+    /* ===================================================================== */
+    /* ЗАГРУЗКА */
+    /* ===================================================================== */
+
+    .loading {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-secondary);
+      font-size: 0.875rem;
+    }
+
+    /* ===================================================================== */
+    /* АДАПТИВНОСТЬ */
+    /* ===================================================================== */
+
+    @media screen and (max-width: 768px) {
+      .app {
+        padding: 12px;
+      }
+
+      .header {
+        padding: 24px 16px;
+        margin-bottom: 24px;
+      }
+
+      .header h1 {
+        font-size: 2rem;
+      }
+
+      .main-content {
+        padding: 24px 16px;
+      }
+
+      .text-area {
+        min-height: 150px;
+      }
+
+      .flashcard {
+        max-width: 340px;
+        height: 320px;
+      }
+
+      .word {
+        font-size: 2rem;
+      }
+
+      .original-word {
+        font-size: 1.25rem;
+      }
+
+      .card-container {
+        gap: 16px;
+        min-height: 340px;
+      }
+
+      .nav-btn {
+        width: 44px;
+        height: 44px;
+        font-size: 1.25rem;
+      }
+
+      .card-front,
+      .card-back {
+        padding: 24px 20px;
+      }
+
+      .actions {
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .btn {
+        min-width: 200px;
+      }
+    }
+
+    /* ===================================================================== */
+    /* ТЕМНАЯ ТЕМА (опционально) */
+    /* ===================================================================== */
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --primary: #3b82f6;
+        --primary-hover: #2563eb;
+        --secondary: #64748b;
+        --accent: #ef4444;
+        --background: #0f172a;
+        --surface: #1e293b;
+        --border: #334155;
+        --text-primary: #f1f5f9;
+        --text-secondary: #cbd5e1;
+        --text-muted: #64748b;
+        --success: #22c55e;
+        --warning: #f59e0b;
+        --error: #ef4444;
+      }
+    }
+  </style>
 </head>
 <body>
-<noscript>Для работы приложения необходимо включить JavaScript.</noscript>
-<div id="root">
-  <div class="loading">Загрузка приложения...</div>
-</div>
-
-<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-
-<script type="module">
-  // Импорт Firebase SDK из CDN  
-  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js';
-  import { getDatabase, ref, set, get } from 'https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js';
-
-  // Firebase конфигурация
-  // ВАЖНО: Не храните чувствительные ключи API в клиентском коде в продакшене без соответствующих правил безопасности Firebase.
-  const firebaseConfig = {
-    apiKey: "AIzaSyAPZIHxaLt92McIvbIcYE-tSYp2Li2jxs4", // Этот ключ виден клиенту. Убедитесь, что ваши правила Firebase Database/Firestore/Storage настроены безопасно.
-    authDomain: "flashcards-seznam-6652a.firebaseapp.com",
-    projectId: "flashcards-seznam-6652a",
-    storageBucket: "flashcards-seznam-6652a.firebasestorage.app",
-    messagingSenderId: "99460986155",
-    appId: "1:99460986155:web:e5ca466e3d07c20cde016e",
-    databaseURL: "https://flashcards-seznam-6652a-default-rtdb.europe-west1.firebasedatabase.app"
-  };
-
-  // Инициализируем Firebase
-  let app, database;
-
-  try {
-    console.log('🔥 Инициализация Firebase...');
-    app = initializeApp(firebaseConfig);
-    database = getDatabase(app);
-
-    console.log('✅ Firebase успешно инициализирован');
-
-    // Простая проверка соединения
-    const testRef = ref(database, 'test');
-    get(testRef).then(() => {
-      console.log('✅ Соединение с Firebase Database установлено');
-    }).catch((error) => {
-      console.warn('⚠️ Проблема с соединением Firebase Database:', error);
-    });
-
-  } catch (error) {
-    console.error('❌ Ошибка инициализации Firebase:', error);
-    database = null; // Убедимся, что database null в случае ошибки
-  }
-
-  // Делаем Firebase доступным глобально для основного скрипта приложения (ES5)
-  window.firebaseApp = app;
-  window.firebaseDB = database;
-  window.firebaseRef = ref;
-  window.firebaseSet = set;
-  window.firebaseGet = get;
-</script>
-
-<script>
-// ===================================================================
-// ОСНОВНОЙ КОД ПРИЛОЖЕНИЯ (ES5 для совместимости)
-// ===================================================================
-
-const { useState, useEffect, createElement: h } = React;
-
-// Функция для извлечения уникальных слов из текста
-const extractUniqueWords = function (text) {
-  if (!text || typeof text !== 'string') {
-    return [];
-  }
-
-  // Предварительная очистка текста
-  const preprocessedText = text
-    .replace(/<[^>]*>/g, ' ') // Удаляем HTML теги
-    .replace(/https?:\/\/[^\s]+/g, ' ') // Удаляем URL
-    .replace(/\S+@\S+\.\S+/g, ' ') // Удаляем email
-    .replace(/[""'']/g, '"') // Нормализуем кавычки (может быть не нужно, зависит от требований)
-    .replace(/[–—]/g, '-') // Нормализуем тире
-    .replace(/\s+/g, ' ') // Заменяем множественные пробелы на один
-    .trim();
-
-  // Приводим к нижнему регистру
-  const lowerCaseText = preprocessedText.toLowerCase();
-
-  // Расширенная очистка от знаков препинания и цифр
-  // Оставляем только буквы и пробелы, специфичные для Unicode (включая чешские символы)
-  const cleanedText = lowerCaseText
-    .replace(/[.,/#!$%^&*;:{}=\-_`~()«»„""''\[\]?¿¡!@#$%^&*+=|\\<>]/g, ' ') // Удаляем основную пунктуацию
-    .replace(/\d+/g, ' ') // Удаляем цифры
-    .replace(/[^\p{L}\s]/gu, ' ') // Удаляем все, что не является буквой Unicode или пробелом
-    .replace(/\s+/g, ' '); // Снова убираем лишние пробелы
-
-  // Разбиваем на слова и фильтруем
-  const words = cleanedText
-    .split(/\s+/)
-    .filter(function (word) {
-      return word.length > 1 && // Слово должно быть длиннее одной буквы
-        isValidCzechWord(word); // Проверка на чешские буквы
-    });
-
-  // Создаем множество для исключения дубликатов
-  const uniqueWordsSet = new Set(words);
-
-  return Array.from(uniqueWordsSet).sort(); // Возвращаем отсортированный массив уникальных слов
-};
-
-// Проверка на валидное чешское слово (содержит только чешские буквы)
-function isValidCzechWord(word) {
-  if (!/\p{L}/u.test(word)) return false; // Должна быть хотя бы одна буква
-  // Регулярное выражение для проверки, состоит ли слово только из букв чешского алфавита (включая диакритические знаки)
-  const czechLetters = /^[a-záčďéěíňóřšťúůýž]+$/i;
-  return czechLetters.test(word);
-}
-
-// Функция для сохранения перевода в Firebase
-async function saveToCloudDictionary(wordData) {
-  if (!window.firebaseDB) { // Проверяем, инициализирована ли база данных
-    console.warn('⚠️ Firebase недоступен, сохранение пропущено');
-    return false;
-  }
-
-  try {
-    const wordKey = wordData.word.toLowerCase(); // Используем слово в нижнем регистре как ключ
-    const database = window.firebaseDB;
-    const dbRef = window.firebaseRef; // Получаем функции из глобального объекта
-    const dbSet = window.firebaseSet;
-    const dbGet = window.firebaseGet;
-
-    // Сначала пытаемся получить существующие данные для этого слова
-    try {
-      const snapshot = await dbGet(dbRef(database, 'dictionary/' + wordKey));
-
-      if (snapshot.exists()) {
-        // Если слово уже есть, обновляем его данные
-        const existingData = snapshot.val();
-
-        // Объединяем переводы, избегая дубликатов
-        const allTranslations = Array.from(new Set([].concat(
-          existingData.translations || [],
-          wordData.translations || []
-        )));
-
-        // Объединяем примеры, избегая дубликатов (по паре phrase|translation)
-        const samplesMap = {}; // Используем объект для уникальности
-        (existingData.samples || []).forEach(function (sample) {
-          const key = sample.phrase + '|' + sample.translation;
-          samplesMap[key] = sample;
-        });
-        (wordData.samples || []).forEach(function (sample) {
-          const key = sample.phrase + '|' + sample.translation;
-          samplesMap[key] = sample;
-        });
-        const allSamples = Object.values(samplesMap);
-
-        const updatedData = Object.assign({}, existingData, {
-          translations: allTranslations,
-          samples: allSamples,
-          lastUpdated: new Date().toISOString()
-        });
-
-        await dbSet(dbRef(database, 'dictionary/' + wordKey), updatedData);
-      } else {
-        // Если слова нет, создаем новую запись
-        await dbSet(dbRef(database, 'dictionary/' + wordKey), Object.assign({}, wordData, {
-          created: new Date().toISOString(),
-          lastUpdated: new Date().toISOString()
-        }));
-      }
-    } catch (getError) {
-      // Если произошла ошибка при чтении (например, из-за правил),
-      // все равно пытаемся записать (это может быть первая запись)
-      // Это поведение можно изменить в зависимости от требований.
-      console.warn('⚠️ Ошибка при чтении перед записью, пытаемся создать новую запись:', getError);
-      await dbSet(dbRef(database, 'dictionary/' + wordKey), Object.assign({}, wordData, {
-        created: new Date().toISOString(),
-        lastUpdated: new Date().toISOString()
-      }));
-    }
-
-    console.log('✅ Слово "' + wordData.word + '" сохранено в облачном словаре');
-    return true;
-  } catch (error) {
-    console.error('❌ Ошибка при сохранении в облачный словарь:', error);
-    return false;
-  }
-}
-
-
-// Функция для получения перевода из Firebase
-async function getFromCloudDictionary(word) {
-  if (!word || !window.firebaseDB) return null;
-
-  try {
-    const wordKey = word.toLowerCase();
-    const database = window.firebaseDB;
-    const dbRef = window.firebaseRef;
-    const dbGet = window.firebaseGet;
-
-    const snapshot = await dbGet(dbRef(database, 'dictionary/' + wordKey));
-
-    if (snapshot.exists()) {
-      console.log('✅ Слово "' + word + '" найдено в облачном словаре');
-      return snapshot.val();
-    } else {
-      console.log('ℹ️ Слово "' + word + '" не найдено в облачном словаре');
-      return null;
-    }
-  } catch (error) {
-    console.error('❌ Ошибка при получении из облачного словаря:', error);
-    return null;
-  }
-}
-
-// Функция для получения всего словаря
-async function getEntireDictionary() {
-  if (!window.firebaseDB) {
-    console.warn('⚠️ Firebase недоступен');
-    return [];
-  }
-
-  try {
-    const database = window.firebaseDB;
-    const dbRef = window.firebaseRef;
-    const dbGet = window.firebaseGet;
-
-    const snapshot = await dbGet(dbRef(database, 'dictionary'));
-
-    if (snapshot.exists()) {
-      const dictionary = snapshot.val();
-      return Object.values(dictionary); // Возвращаем массив значений
-    } else {
-      console.log('ℹ️ Словарь пуст');
-      return [];
-    }
-  } catch (error) {
-    console.error('❌ Ошибка при получении словаря:', error);
-    return [];
-  }
-}
-
-// Функция для экспорта словаря в JSON
-function exportDictionaryToJson(dictionary) {
-  try {
-    const dataStr = JSON.stringify(dictionary, null, 2); // Форматированный JSON
-    const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
-
-    const exportFileDefaultName = 'czech_dictionary.json';
-
-    const linkElement = document.createElement('a');
-    linkElement.setAttribute('href', dataUri);
-    linkElement.setAttribute('download', exportFileDefaultName);
-    linkElement.click(); // Инициируем скачивание
-  } catch (error) {
-    console.error('❌ Ошибка при экспорте словаря:', error);
-    alert('Ошибка при экспорте словаря: ' + error.message);
-  }
-}
-
-
-// ===================================================================
-// ФУНКЦИЯ ПЕРЕВОДА С НОРМАЛИЗАЦИЕЙ (ЗАГЛУШКА)
-// ===================================================================
-
-// ВАЖНО: Эта функция будет заменена после загрузки glosbeTranslator.js
-window.fetchTranslation = async function(word) {
-  console.log('⚠️ Используется базовая функция перевода (заглушка). Ожидается загрузка полной системы...');
-  
-  // Простая заглушка до загрузки полной системы
-  // Попробуем использовать базовый словарь, если есть
-  const basicTranslations = getBasicTranslation(word);
-
-  return {
-    word: word,
-    translations: basicTranslations || [],
-    samples: [], // Базовая заглушка не предоставляет примеры
-    note: basicTranslations ? 'Перевод из базового словаря.' : 'Система нормализации и полного перевода загружается...',
-    timestamp: new Date().toISOString()
-  };
-};
-
-// Расширенный базовый словарь для fallback
-function getBasicTranslation(word) {
-  const basicDict = {
-    // Местоимения
-    'náš': ['наш', 'наша', 'наше'],
-    'váš': ['ваш', 'ваша', 'ваше'],
-    'můj': ['мой', 'моя', 'моё'],
-    'tvůj': ['твой', 'твоя', 'твоё'],
-    'ten': ['тот', 'этот'],
-    'tento': ['этот'],
-    'on': ['он'],
-    'ona': ['она'],
-    'my': ['мы'],
-    'vy': ['вы'],
-    'oni': ['они'],
-
-    // Числительные
-    'jeden': ['один'], 'dva': ['два'], 'tři': ['три'], 'čtyři': ['четыре'], 'pět': ['пять'],
-
-    // Глаголы
-    'doporučovat': ['рекомендовать'], 'být': ['быть'], 'mít': ['иметь'], 'dělat': ['делать'],
-    'jít': ['идти'], 'prosit': ['просить'], 'klást': ['класть'],
-
-    // Существительные
-    'dotaz': ['вопрос'], 'zákazník': ['клиент'], 'seriál': ['сериал'],
-
-    // Прилагательные
-    'dobrý': ['хороший'], 'skvělý': ['отличный', 'великолепный'],
-
-    // Наречия
-    'také': ['также'], 'samozřejmě': ['конечно']
-    // Добавьте другие базовые слова по необходимости
-  };
-
-  return basicDict[word.toLowerCase()] || null;
-}
-
-// ===================================================================
-// КОМПОНЕНТЫ REACT
-// ===================================================================
-
-// Компонент для статистики словаря
-const DictionaryStats = function (props) {
-  const onViewDictionary = props.onViewDictionary;
-  const [wordCount, setWordCount] = useState(0); // Используем React.useState
-
-  useEffect(function () {
-    async function loadStats() {
-      try {
-        const dictionary = await getEntireDictionary();
-        setWordCount(dictionary.length);
-      } catch (error) {
-        console.error('❌ Ошибка при загрузке статистики словаря:', error);
-      }
-    }
-
-    loadStats();
-  }, []); // Пустой массив зависимостей - запуск один раз при монтировании
-
-  const handleExportDictionary = async function () {
-    try {
-      const dictionary = await getEntireDictionary();
-      if (dictionary.length > 0) {
-        exportDictionaryToJson(dictionary);
-      } else {
-        alert('Словарь пуст. Нечего экспортировать.');
-      }
-    } catch (error) {
-      console.error('❌ Ошибка при экспорте словаря:', error);
-      alert('Произошла ошибка при экспорте словаря.');
-    }
-  };
-
-  return h('div', { className: 'dictionary-stats' },
-    h('p', null, 'В вашем облачном словаре: ', h('strong', null, wordCount), ' слов'),
-    h('div', { style: { marginTop: '10px' } },
-      h('button', { className: 'dictionary-button', onClick: onViewDictionary }, 'Просмотреть словарь'),
-      h('button', { className: 'dictionary-button', onClick: handleExportDictionary }, 'Экспорт словаря')
-    )
-  );
-};
-
-// Компонент для просмотра словаря
-const DictionaryViewer = function (props) {
-  const onClose = props.onClose;
-  const [dictionary, setDictionary] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(function () {
-    async function loadDictionary() {
-      setIsLoading(true);
-      try {
-        const dict = await getEntireDictionary();
-        dict.sort(function (a, b) { return a.word.localeCompare(b.word); }); // Сортировка по слову
-        setDictionary(dict);
-      } catch (error) {
-        console.error('❌ Ошибка при загрузке словаря:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    loadDictionary();
-  }, []);
-
-  if (isLoading) {
-    return h('div', { className: 'dictionary-view' }, 'Загрузка словаря...');
-  }
-
-  if (dictionary.length === 0) {
-    return h('div', { className: 'dictionary-view' },
-      h('p', null, 'Словарь пуст. Добавьте слова, используя текст для перевода.'),
-      h('button', { className: 'btn btn-secondary', onClick: onClose, style: { marginTop: '15px' } }, 'Закрыть')
-    );
-  }
-
-  return h('div', null, // Обертка для DictionaryViewer и кнопки "Закрыть"
-    h('div', { className: 'dictionary-view' },
-      dictionary.map(function (entry, index) {
-        return h('div', { key: entry.word || index, className: 'dict-word-item' }, // Используем entry.word как ключ, если он уникален, иначе index
-          h('div', { className: 'dict-word' }, entry.word),
-          h('div', { className: 'dict-translations' }, (entry.translations || []).join(', ')) // Проверка на undefined
-        );
-      })
-    ),
-    h('button', { className: 'btn btn-secondary', onClick: onClose, style: { marginTop: '15px', display: 'block', marginLeft: 'auto', marginRight: 'auto' } }, 'Закрыть')
-  );
-};
-
-// Компонент для ввода текста
-const TextInput = function (props) {
-  const text = props.text;
-  const onTextChange = props.onTextChange;
-  const onExtractWords = props.onExtractWords;
-
-  return h('div', { className: 'text-input' },
-    h('h2', null, 'Введите текст на чешском языке'),
-    h('p', { className: 'instruction' },
-      'Вставьте текст (статью, рассказ, диалог) на чешском языке, из которого нужно извлечь слова для изучения.'
-    ),
-    h('textarea', {
-      className: 'text-area',
-      value: text,
-      onChange: function (e) { onTextChange(e.target.value); },
-      placeholder: 'Вставьте текст на чешском языке...',
-      rows: 10
-    }),
-    h('button', {
-      className: 'btn btn-primary',
-      onClick: onExtractWords,
-      disabled: !text.trim(), // Кнопка неактивна, если текст пуст или состоит из пробелов
-      style: { display: 'block', margin: '0 auto' } // Центрирование кнопки
-    }, 'Извлечь слова')
-  );
-};
-
-// Компонент индикатора прогресса
-const ProgressIndicator = function (props) {
-  const progress = props.progress;
-
-  return h('div', { className: 'progress-container' },
-    h('div', { className: 'progress-bar' },
-      h('div', {
-        className: 'progress-bar-fill',
-        style: { width: progress + '%' }
-      })
-    ),
-    h('div', { className: 'progress-text' }, progress + '% завершено')
-  );
-};
-
-// УЛУЧШЕННЫЙ компонент карточки с показом нормализации
-const Flashcard = function (props) {
-  const word = props.word;
-  const translations = props.translations || []; // Обеспечиваем значение по умолчанию
-  const samples = props.samples || [];
-  const note = props.note;
-  const normalizedWord = props.normalizedWord;
-  const normalizedVariants = props.normalizedVariants;
-  const usedNormalization = props.usedNormalization;
-
-  const [isFlipped, setIsFlipped] = useState(false);
-
-  // Сбрасываем состояние flipped при смене слова
-  useEffect(function() {
-    setIsFlipped(false);
-  }, [word]);
-
-
-  const handleFlip = function () {
-    setIsFlipped(!isFlipped);
-  };
-
-  return h('div', {
-    className: 'flashcard' + (isFlipped ? ' flipped' : ''),
-    onClick: handleFlip
-  },
-    h('div', { className: 'card-inner' },
-      h('div', { className: 'card-front' },
-        h('div', { className: 'word' }, word),
-        // Показываем подсказку о нормализации, если она была использована и слово отличается
-        usedNormalization && normalizedWord && normalizedWord !== word && h('div', {
-          style: {
-            fontSize: '0.75rem',
-            opacity: '0.7',
-            marginTop: '8px',
-            fontStyle: 'italic',
-            color: 'var(--text-muted)'
-          }
-        }, '→ ' + normalizedWord),
-        h('p', { className: 'hint' }, 'Нажмите, чтобы увидеть перевод')
-      ),
-      h('div', { className: 'card-back' },
-        h('h3', { className: 'original-word' }, word),
-
-        // Информация о нормализации
-        usedNormalization && normalizedWord && normalizedWord !== word && h('div', { className: 'normalization-info' },
-          h('div', null, '🔄 Нормализовано:'),
-          h('div', null, normalizedWord),
-          normalizedVariants && normalizedVariants.length > 0 && h('div', null, // Проверка на normalizedVariants и длину
-            'Варианты: ' + normalizedVariants.slice(1).join(', ') // Если первый вариант - само слово, можно его не показывать или показывать все
-          )
-        ),
-
-        h('div', { className: 'translations' },
-          translations && translations.length > 0 ?
-            h('div', null,
-              h('h4', null, 'Переводы:'),
-              h('ul', null,
-                translations.map(function (translation, index) {
-                  return h('li', { key: index }, translation);
-                })
-              )
-            ) :
-            h('p', { className: 'no-translations' }, 'Переводы не найдены')
-        ),
-
-        samples && samples.length > 0 && h('div', { className: 'examples' },
-          h('h4', null, 'Примеры' + (usedNormalization && normalizedWord && normalizedWord !== word ? ' (для ' + normalizedWord + '):' : ':')),
-          h('ul', null,
-            samples.map(function (sample, index) {
-              return h('li', { key: index },
-                h('div', { className: 'sample-phrase' }, sample.phrase),
-                h('div', { className: 'sample-translation' }, sample.translation)
-              );
-            })
-          )
-        ),
-
-        note && h('p', { className: 'note' }, note),
-
-        h('p', { className: 'hint' }, 'Нажмите, чтобы вернуться к слову'),
-
-        h('div', { className: 'attribution' },
-          'Источник: Glosbe' +
-          (usedNormalization && normalizedWord && normalizedWord !== word ? ' (через ' + normalizedWord + ')' : '')
-        )
-      )
-    )
-  );
-};
-
-// Компонент просмотра карточек
-const FlashcardViewer = function (props) {
-  const flashcards = props.flashcards;
-  const [currentIndex, setCurrentIndex] = useState(0);
-
-  // Сброс currentIndex если изменился набор карточек (например, новый текст)
-  // или если текущий индекс стал невалидным.
-  useEffect(function() {
-    if (flashcards && flashcards.length > 0) {
-        if (currentIndex >= flashcards.length) {
-            setCurrentIndex(0); // Сброс на первую карточку, если текущий индекс вне диапазона
-        }
-    } else {
-        setCurrentIndex(0); // Если карточек нет, ставим 0
-    }
-  }, [flashcards, currentIndex]); // Следим за flashcards и currentIndex
-
-
-  if (!flashcards || flashcards.length === 0) {
-    return h('div', { className: 'no-cards' }, 'Карточки не найдены или не загружены.');
-  }
-
-  const currentCard = flashcards[currentIndex];
-  if (!currentCard) { // Дополнительная проверка
-      return h('div', { className: 'no-cards' }, 'Ошибка: текущая карточка не найдена.');
-  }
-
-
-  const goToPrevious = function () {
-    setCurrentIndex(function (prevIndex) {
-      return prevIndex === 0 ? flashcards.length - 1 : prevIndex - 1;
-    });
-  };
-
-  const goToNext = function () {
-    setCurrentIndex(function (prevIndex) {
-      return prevIndex === flashcards.length - 1 ? 0 : prevIndex + 1;
-    });
-  };
-
-  return h('div', { className: 'flashcard-viewer' },
-    h('div', { className: 'progress-info' },
-      'Карточка ' + (currentIndex + 1) + ' из ' + flashcards.length
-    ),
-    h('div', { className: 'card-container' },
-      h('button', {
-        className: 'nav-btn prev-btn',
-        onClick: goToPrevious,
-        'aria-label': 'Предыдущая карточка',
-        disabled: flashcards.length <= 1 // Отключить, если одна карточка
-      }, '‹'),
-
-      h(Flashcard, { // Передаем данные текущей карточки
-        key: currentCard.word + currentIndex, // Добавляем currentIndex к ключу для принудительного ре-рендера Flashcard при смене карточки
-        word: currentCard.word,
-        translations: currentCard.translations,
-        samples: currentCard.samples,
-        note: currentCard.note,
-        normalizedWord: currentCard.normalizedWord,
-        normalizedVariants: currentCard.normalizedVariants,
-        usedNormalization: currentCard.usedNormalization
-      }),
-
-      h('button', {
-        className: 'nav-btn next-btn',
-        onClick: goToNext,
-        'aria-label': 'Следующая карточка',
-        disabled: flashcards.length <= 1 // Отключить, если одна карточка
-      }, '›')
-    ),
-    h('div', { className: 'card-progress' },
-      flashcards.map(function (_, index) {
-        return h('span', {
-          key: index,
-          className: 'progress-dot' + (index === currentIndex ? ' active' : ''),
-          onClick: function () { setCurrentIndex(index); }
-        });
-      })
-    )
-  );
-};
-
-// Основной компонент приложения
-const App = function () {
-  const [text, setText] = useState('');
-  const [uniqueWords, setUniqueWords] = useState([]);
-  const [flashcards, setFlashcards] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [currentStep, setCurrentStep] = useState('input'); // 'input', 'extracted', 'translated', 'dictionary'
-  const [progress, setProgress] = useState(0);
-  const [error, setError] = useState('');
-
-  // Обработчик изменения текста
-  const handleTextChange = function (newText) {
-    setText(newText);
-  };
-
-  // Извлечение уникальных слов из текста
-  const handleExtractWords = function () {
-    if (!text.trim()) return;
-
-    const words = extractUniqueWords(text);
-    setUniqueWords(words);
-    setCurrentStep('extracted');
-    setFlashcards([]); // Очищаем старые карточки
-    setError('');
-  };
-
-  // Получение переводов для всех извлеченных слов
-  const handleGetTranslations = async function () {
-    if (uniqueWords.length === 0) return;
-
-    setIsLoading(true);
-    setProgress(0);
-    setError('');
-    setFlashcards([]); // Очищаем предыдущие результаты
-
-    try {
-      const translatedCards = [];
-      let completed = 0;
-      const total = uniqueWords.length;
-
-      // Обрабатываем по 2 слова за раз с задержкой
-      // Это может быть необходимо для обхода лимитов API или для уменьшения нагрузки
-      const batchSize = 2;
-      const delayBetweenBatches = 1000; // 1 секунда
-
-      for (let i = 0; i < total; i += batchSize) {
-        const batch = uniqueWords.slice(i, i + batchSize);
-        const batchPromises = batch.map(async function (word) {
-          // Пытаемся получить из облачного словаря
-          let data = await getFromCloudDictionary(word);
-          if (!data) { // Если нет в облаке, получаем через API
-            data = await window.fetchTranslation(word); // Используем глобальную функцию
-            if (data && (data.translations && data.translations.length > 0)) { // Сохраняем в облако, только если есть переводы
-              await saveToCloudDictionary(data);
-            }
-          }
-          return data; // Возвращаем данные (из облака или API)
-        });
-
-        try {
-          const batchResults = await Promise.all(batchPromises);
-
-          batchResults.forEach(function (result) {
-            if (result) { // Убедимся, что результат есть
-              translatedCards.push(result);
-            }
-          });
-        } catch (batchError) {
-          console.error('❌ Ошибка при обработке пакета слов:', batchError);
-          // Можно добавить обработку ошибки для конкретного пакета
-        }
-
-        completed += batch.length;
-        setProgress(Math.min(100, Math.floor((completed / total) * 100))); // Убедимся, что прогресс не превышает 100%
-
-        // Задержка между пакетами, если это не последний пакет
-        if (i + batchSize < total) {
-          await new Promise(function (resolve) {
-            setTimeout(resolve, delayBetweenBatches);
-          });
-        }
-      }
-
-      if (translatedCards.length === 0) {
-        setError('Не удалось получить переводы. Пожалуйста, попробуйте позже или проверьте текст.');
-      } else {
-        setFlashcards(translatedCards.filter(card => card)); // Фильтруем null/undefined на всякий случай
-        setCurrentStep('translated');
-      }
-    } catch (error) {
-      console.error('❌ Ошибка при получении переводов:', error);
-      setError('Произошла ошибка при получении переводов. Пожалуйста, попробуйте позже.');
-    } finally {
-      setIsLoading(false);
-      // setProgress(100); // Можно установить в 100, даже если были ошибки, или оставить как есть
-    }
-  };
-
-  // Сброс состояния приложения
-  const handleReset = function () {
-    setText('');
-    setUniqueWords([]);
-    setFlashcards([]);
-    setCurrentStep('input');
-    setProgress(0);
-    setError('');
-  };
-
-  // Просмотр словаря
-  const handleViewDictionary = function () {
-    setCurrentStep('dictionary');
-  };
-
-  // Возврат из просмотра словаря
-  const handleCloseDictionary = function () {
-    // Возвращаемся к предыдущему шагу или к вводу по умолчанию
-    if (flashcards.length > 0) {
-      setCurrentStep('translated');
-    } else if (uniqueWords.length > 0) {
-      setCurrentStep('extracted');
-    } else {
-      setCurrentStep('input');
-    }
-  };
-
-  return h('div', { className: 'app' },
-    h('header', { className: 'header' },
-      h('h1', null, 'Flashcards Seznam'),
-      h('p', { className: 'subtitle' }, 'Изучение чешских слов с помощью карточек')
-    ),
-    h('main', { className: 'main-content' },
-      currentStep === 'input' && h(React.Fragment, null,
-        h(TextInput, {
-          text: text,
-          onTextChange: handleTextChange,
-          onExtractWords: handleExtractWords
-        }),
-        h(DictionaryStats, { onViewDictionary: handleViewDictionary })
-      ),
-      currentStep === 'extracted' && h('div', { className: 'extracted-words' },
-        h('h2', null, 'Найдено ' + uniqueWords.length + ' уникальных слов' + (uniqueWords.length > 0 ? ':' : '.')),
-        uniqueWords.length > 0 && h('div', { className: 'words-container' },
-          uniqueWords.map(function (word, index) {
-            return h('span', { key: index, className: 'word-chip' }, word);
-          })
-        ),
-        h('div', { className: 'actions' },
-          h('button', {
-            className: 'btn btn-primary',
-            onClick: handleGetTranslations,
-            disabled: isLoading || uniqueWords.length === 0 // Также отключаем, если нет слов
-          }, isLoading ? 'Загрузка...' : 'Получить переводы'),
-          h('button', { className: 'btn btn-secondary', onClick: handleReset }, 'Сбросить')
-        ),
-        isLoading && h(ProgressIndicator, { progress: progress }),
-        error && h('div', { className: 'error-message' }, error)
-      ),
-      currentStep === 'translated' && h('div', null,
-        flashcards.length > 0 ?
-            h(FlashcardViewer, { flashcards: flashcards }) :
-            h('div', { className: 'no-cards' }, 'Нет карточек для отображения. Возможно, не удалось получить переводы.'),
-        h('div', { className: 'actions' },
-          h('button', { className: 'btn btn-secondary', onClick: handleReset }, 'Начать заново'),
-          h('button', { className: 'btn btn-primary', onClick: handleViewDictionary }, 'Просмотреть словарь')
-        ),
-        h('div', { className: 'api-attribution' },
-          'Переводы предоставлены словарем ',
-          h('a', { href: 'https://glosbe.com', target: '_blank', rel: 'noopener noreferrer' }, 'Glosbe'),
-          ' и вашим облачным словарем.'
-        )
-      ),
-      currentStep === 'dictionary' && h(DictionaryViewer, { onClose: handleCloseDictionary })
-    )
-  );
-};
-
-// ===================================================================
-// ЗАПУСК ПРИЛОЖЕНИЯ
-// ===================================================================
-
-// Запускаем приложение после загрузки DOM
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', function () {
-    const rootElement = document.getElementById('root');
-    if (rootElement) {
-      const root = ReactDOM.createRoot(rootElement);
-      root.render(h(App));
-    } else {
-      console.error("Ошибка: элемент с id 'root' не найден.");
-    }
-  });
-} else {
-  const rootElement = document.getElementById('root');
-  if (rootElement) {
-    const root = ReactDOM.createRoot(rootElement);
-    root.render(h(App));
-  } else {
-    console.error("Ошибка: элемент с id 'root' не найден во время немедленного рендеринга.");
-  }
-}
-
-// Информация о загрузке системы
-console.log('🚀 === FLASHCARDS SEZNAM ===');
-console.log('✅ Базовое приложение загружено');
-console.log('⏳ Ожидание загрузки системы нормализации и полного перевода...');
-console.log('📚 После загрузки glosbeTranslator.js будет доступна полная функциональность');
-
-</script>
-
-<!-- Загрузка утилит для нормализации и перевода -->
-<script src="/utils/CzechNormalizationRules.js"></script>
-<script src="/glosbeTranslator.js"></script>
-
-<script>
-  // Динамическая загрузка системы нормализации и перевода
-  try {
-    // Проверяем, что функция fetchTranslation доступна в глобальном контексте
-    if (typeof fetchTranslation === 'function') {
-      console.log('✅ Полная система нормализации и перевода (glosbeTranslator.js) загружена и активирована!');
-      console.log('🏁 Покрытие и производительность зависят от реализации glosbeTranslator.js');
-    } else {
-      console.warn('⚠️ Система glosbeTranslator.js загружена, но не экспортирует функцию fetchTranslation.');
-      console.log('ℹ️ Используется базовая функциональность перевода (заглушка).');
-    }
-  } catch (error) {
-    console.warn('⚠️ Не удалось загрузить систему нормализации и перевода (glosbeTranslator.js):', error);
-    console.log('ℹ️ Используется базовая функциональность перевода (заглушка). Убедитесь, что файл glosbeTranslator.js существует и не содержит ошибок.');
-  }
-</script>
+  <noscript>Для работы приложения необходимо включить JavaScript.</noscript>
+  <div id="root">
+    <div class="loading">Загрузка приложения...</div>
+  </div>
 </body>
 </html>
