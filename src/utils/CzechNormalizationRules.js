@@ -136,12 +136,12 @@ export class CzechNormalizationRules {
       { pattern: /^(.+)aly$/, base: '$1at', type: 'verb-at-past', priority: 8 },
       
       // -it глаголы (mluvit, prosit, etc.)
-      { pattern: /^(.+)ím$/, base: '$1it', type: 'verb-it', priority: 8 },
-      { pattern: /^(.+)íš$/, base: '$1it', type: 'verb-it', priority: 8 },
-      { pattern: /^(.+)í$/, base: '$1it', type: 'verb-it', priority: 8 },
-      { pattern: /^(.+)íme$/, base: '$1it', type: 'verb-it', priority: 8 },
-      { pattern: /^(.+)íte$/, base: '$1it', type: 'verb-it', priority: 8 },
-      { pattern: /^(.+)í$/, base: '$1it', type: 'verb-it', priority: 8 },
+      // Важно: минимум 3 символа, но с проверкой валидности в isValidVerb
+      { pattern: /^(.{3,})ím$/, base: '$1it', type: 'verb-it', priority: 8 },
+      { pattern: /^(.{3,})íš$/, base: '$1it', type: 'verb-it', priority: 8 },
+      { pattern: /^(.{3,})í$/, base: '$1it', type: 'verb-it', priority: 8 },
+      { pattern: /^(.{3,})íme$/, base: '$1it', type: 'verb-it', priority: 8 },
+      { pattern: /^(.{3,})íte$/, base: '$1it', type: 'verb-it', priority: 8 },
       
       // Прошедшее время -it глаголов
       { pattern: /^(.+)il$/, base: '$1it', type: 'verb-it-past', priority: 8 },
@@ -151,11 +151,12 @@ export class CzechNormalizationRules {
       { pattern: /^(.+)ily$/, base: '$1it', type: 'verb-it-past', priority: 8 },
       
       // -ět глаголы (vidět, rozumět, etc.)
-      { pattern: /^(.+)ím$/, base: '$1ět', type: 'verb-et', priority: 7 },
-      { pattern: /^(.+)íš$/, base: '$1ět', type: 'verb-et', priority: 7 },
-      { pattern: /^(.+)í$/, base: '$1ět', type: 'verb-et', priority: 7 },
-      { pattern: /^(.+)íme$/, base: '$1ět', type: 'verb-et', priority: 7 },
-      { pattern: /^(.+)íte$/, base: '$1ět', type: 'verb-et', priority: 7 },
+      // Важно: минимум 3 символа, но с проверкой валидности в isValidVerb
+      { pattern: /^(.{3,})ím$/, base: '$1ět', type: 'verb-et', priority: 7 },
+      { pattern: /^(.{3,})íš$/, base: '$1ět', type: 'verb-et', priority: 7 },
+      { pattern: /^(.{3,})í$/, base: '$1ět', type: 'verb-et', priority: 7 },
+      { pattern: /^(.{3,})íme$/, base: '$1ět', type: 'verb-et', priority: 7 },
+      { pattern: /^(.{3,})íte$/, base: '$1ět', type: 'verb-et', priority: 7 },
       
       // Прошедшее время -ět глаголов
       { pattern: /^(.+)ěl$/, base: '$1ět', type: 'verb-et-past', priority: 7 },
@@ -223,7 +224,8 @@ export class CzechNormalizationRules {
       { pattern: /^(.+)y$/, base: '$1o', type: 'noun-n-hard', priority: 5 },
       
       // Средний род (мягкое склонение)
-      { pattern: /^(.+)í$/, base: '$1e', type: 'noun-n-soft', priority: 5 },
+      // Важно: минимум 5 символов ВСЕГО (4 в основе + 'í') чтобы не ловить "nyní"
+      { pattern: /^(.{4,})í$/, base: '$1e', type: 'noun-n-soft', priority: 5 },
       { pattern: /^(.+)ích$/, base: '$1e', type: 'noun-n-soft', priority: 6 },
       
       // =====================================================================
@@ -296,6 +298,13 @@ export class CzechNormalizationRules {
 
     // Проверка слов, которые не нормализуются
     if (this.doNotNormalize.has(normalizedWord)) {
+      const result = [normalizedWord];
+      this.addToCache(normalizedWord, result);
+      return result;
+    }
+
+    // Короткие слова (≤4 символа) на 'í' не нормализуем (наречия типа "nyní", "teď")
+    if (normalizedWord.length <= 4 && normalizedWord.endsWith('í')) {
       const result = [normalizedWord];
       this.addToCache(normalizedWord, result);
       return result;
@@ -394,7 +403,16 @@ export class CzechNormalizationRules {
 
     // Проверяем, что основа заканчивается правильно для глаголов
     const validVerbEndings = ['at', 'it', 'ět', 'ovat', 'nout'];
-    return validVerbEndings.some(ending => base.endsWith(ending));
+    if (!validVerbEndings.some(ending => base.endsWith(ending))) {
+      return false;
+    }
+
+    // Для глаголов на -it и -ět минимум 5 символов (чтобы не ловить "nynit", "nynět")
+    if ((base.endsWith('it') || base.endsWith('ět')) && base.length < 5) {
+      return false;
+    }
+
+    return true;
   }
 
   /**
