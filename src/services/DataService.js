@@ -78,10 +78,11 @@ class DataService {
 
       // Запрашиваем слово в разных контекстах для получения альтернативных переводов
       const contexts = [
-        word, // Просто слово
-        `${word}.`, // Слово как предложение
+        `${word}.`, // Слово как предложение (лучше чем просто слово)
         `Musím ${word}`, // В контексте глагола (должен...)
-        `To je ${word}` // В контексте существительного/прилагательного (это...)
+        `To je ${word}`, // В контексте существительного/прилагательного (это...)
+        `Chci ${word}`, // Хочу... (для глаголов)
+        `Mám ${word}` // Имею... (для существительных)
       ];
 
       const response = await fetch(DEEPL_PROXY_URL, {
@@ -115,16 +116,11 @@ class DataService {
         const translatedText = t.text.trim();
 
         if (index === 0) {
-          // Первый вариант - просто слово
-          translations.push(translatedText);
-        } else if (index === 1) {
-          // Второй вариант - убираем точку
+          // Первый вариант - убираем точку
           const cleaned = translatedText.replace(/\.$/, '');
-          if (!translations.includes(cleaned)) {
-            translations.push(cleaned);
-          }
+          translations.push(cleaned);
         } else {
-          // Остальные - извлекаем перевод слова из контекста
+          // Извлекаем перевод слова из контекста
           const contextTranslation = this.extractWordFromContext(translatedText, index);
           if (contextTranslation && !translations.includes(contextTranslation)) {
             translations.push(contextTranslation);
@@ -164,19 +160,29 @@ class DataService {
       /^Я должен\s+(.+)$/i,
       /^Должен\s+(.+)$/i,
       /^Мне нужно\s+(.+)$/i,
+      /^Я хочу\s+(.+)$/i,
+      /^Хочу\s+(.+)$/i,
+      /^У меня есть\s+(.+)$/i,
+      /^Я имею\s+(.+)$/i,
+      /^Имею\s+(.+)$/i,
       /^Это\s+(.+)$/i,
-      /^Это -\s+(.+)$/i
+      /^Это -\s+(.+)$/i,
+      /^Это:\s+(.+)$/i
     ];
 
     for (const pattern of patterns) {
       const match = contextTranslation.match(pattern);
       if (match) {
-        return match[1].trim();
+        return match[1].trim().replace(/[.,!?;:]$/, '');
       }
     }
 
-    // Если не нашли паттерн, возвращаем последнее слово
+    // Если не нашли паттерн, возвращаем последнее слово/фразу
     const words = contextTranslation.trim().split(/\s+/);
+    if (words.length > 2) {
+      // Если больше 2 слов, берём последние 2-3 слова (это может быть фраза типа "отметить галочкой")
+      return words.slice(-3).join(' ').replace(/[.,!?;:]$/, '');
+    }
     return words[words.length - 1].replace(/[.,!?;:]$/, '');
   }
 
