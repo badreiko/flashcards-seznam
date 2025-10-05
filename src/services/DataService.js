@@ -316,8 +316,12 @@ class DataService {
     try {
       const wordRef = ref(database, `dictionary/${word.toLowerCase()}`);
       await set(wordRef, {
-        ...data,
-        updatedAt: new Date().toISOString()
+        word: word.toLowerCase(),
+        translations: data.translations || [],
+        examples: data.examples || [],
+        timestamp: new Date().toISOString(),
+        source: data.source || 'deepl',
+        detectedSourceLang: data.detectedSourceLang || 'CS'
       });
       return true;
     } catch (error) {
