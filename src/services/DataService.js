@@ -53,15 +53,18 @@ class DataService {
     try {
       const connectedRef = ref(database, '.info/connected');
       return new Promise((resolve) => {
-        const unsubscribe = onValue(connectedRef, (snap) => {
-          unsubscribe();
+        let unsubscribe = null;
+
+        unsubscribe = onValue(connectedRef, (snap) => {
+          if (unsubscribe) unsubscribe();
           resolve(snap.val() === true);
         }, () => {
+          if (unsubscribe) unsubscribe();
           resolve(false);
         });
 
         setTimeout(() => {
-          unsubscribe();
+          if (unsubscribe) unsubscribe();
           resolve(false);
         }, 3000);
       });
