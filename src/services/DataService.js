@@ -4,7 +4,7 @@
  * Приоритет источников: Cache → LocalStorage → Firebase → DeepL API → BaseDict
  */
 
-import { ref, set, get, onValue } from 'firebase/database';
+import { ref, set, get } from 'firebase/database';
 import { database } from '../firebase';
 import { BaseDict } from '../utils/BaseDict';
 import { normalizationService } from './NormalizationService';
@@ -51,23 +51,17 @@ class DataService {
    */
   async checkFirebaseConnection() {
     try {
-      const connectedRef = ref(database, '.info/connected');
-      return new Promise((resolve) => {
-        let unsubscribe = null;
+      if (!database) {
+        console.warn('Firebase database not initialized');
+        return false;
+      }
 
-        unsubscribe = onValue(connectedRef, (snap) => {
-          if (unsubscribe) unsubscribe();
-          resolve(snap.val() === true);
-        }, () => {
-          if (unsubscribe) unsubscribe();
-          resolve(false);
-        });
+      // Простая проверка - пытаемся прочитать из базы
+      const testRef = ref(database, '.info/connected');
+      const snapshot = await get(testRef);
+      const isConnected = snapshot.val() === true;
 
-        setTimeout(() => {
-          if (unsubscribe) unsubscribe();
-          resolve(false);
-        }, 3000);
-      });
+      return isConnected;
     } catch (error) {
       console.error('Error checking Firebase connection:', error);
       return false;
