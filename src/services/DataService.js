@@ -56,12 +56,12 @@ class DataService {
         return false;
       }
 
-      // Простая проверка - пытаемся прочитать из базы
-      const testRef = ref(database, '.info/connected');
+      // Простая проверка - пытаемся прочитать тестовую ноду
+      const testRef = ref(database, 'test');
       const snapshot = await get(testRef);
-      const isConnected = snapshot.val() === true;
 
-      return isConnected;
+      // Если прочитали без ошибок - соединение есть
+      return true;
     } catch (error) {
       console.error('Error checking Firebase connection:', error);
       return false;
