@@ -72,9 +72,12 @@ class DataService {
    * Перевод через DeepL API (через Netlify Function прокси)
    * Получаем несколько вариантов перевода через разные контексты
    */
-  async translateWithDeepL(word) {
+  async translateWithDeepL(word, retryCount = 0) {
+    const MAX_RETRIES = 2;
+    const RETRY_DELAY = 2000; // 2 секунды
+
     try {
-      console.log(`[DeepL] Translating: "${word}"`);
+      console.log(`[DeepL] Translating: "${word}"${retryCount > 0 ? ` (retry ${retryCount})` : ''}`);
 
       // Запрашиваем слово в разных контекстах для получения альтернативных переводов
       const contexts = [
@@ -99,6 +102,14 @@ class DataService {
 
       if (!response.ok) {
         const errorText = await response.text();
+
+        // Если 503 (Service Unavailable) или 429 (Too Many Requests) - повторяем
+        if ((response.status === 503 || response.status === 429) && retryCount < MAX_RETRIES) {
+          console.warn(`[DeepL] Rate limit hit, retrying in ${RETRY_DELAY}ms...`);
+          await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+          return this.translateWithDeepL(word, retryCount + 1);
+        }
+
         throw new Error(`DeepL Proxy error: ${response.status} - ${errorText}`);
       }
 
@@ -259,6 +270,28 @@ class DataService {
             }
           }
         }
+      }
+    }
+
+    // Шаг 4.5: Проверяем служебные слова (предлоги, союзы, частицы)
+    // Такие слова не переводятся через DeepL - сразу идём в fallback
+    const serviceWords = new Set([
+      'a', 'i', 'o', 'u', 'v', 've', 'z', 'ze', 's', 'se', 'k', 'ke', 'na', 'za', 'po', 'do', 'od', 'ode',
+      'pro', 'při', 'před', 'přede', 'bez', 'beze', 'mimo', 'skrz', 'skrze', 'mezi', 'nad', 'nade', 'pod', 'pode',
+      'ale', 'nebo', 'ani', 'že', 'když', 'pokud', 'jestli', 'protože', 'ano', 'ne', 'jo', 'už', 'ještě'
+    ]);
+
+    if (serviceWords.has(normalizedWord)) {
+      console.log(`[DeepL] Skipping service word: "${normalizedWord}"`);
+      // Пропускаем DeepL API для служебных слов - идём в fallback
+      const fallbackData = this.getFromBaseDict(normalizedWord);
+      if (fallbackData) {
+        this.stats.fallbackHits++;
+        this.translationCache.set(normalizedWord, fallbackData);
+        return {
+          ...fallbackData,
+          source: 'fallback'
+        };
       }
     }
 
