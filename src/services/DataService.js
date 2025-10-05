@@ -1,57 +1,46 @@
 /**
  * DataService.js
- * Централизованное управление данными с автоматическим переключением между источниками
- * и поддержкой batch операций
+ * Централизованное управление данными с DeepL API
+ * Приоритет источников: Cache → LocalStorage → Firebase → DeepL API → BaseDict
  */
 
-import { ref, set, get, update, onValue } from 'firebase/database';
+import { ref, set, get, onValue } from 'firebase/database';
 import { database } from '../firebase';
 import { BaseDict } from '../utils/BaseDict';
 import { normalizationService } from './NormalizationService';
 
-// Константа для API URL на Railway
-// Добавляем случайный параметр для обхода кэширования
-const API_URL = 'https://flashcards-seznam-production.up.railway.app';
-
-// Функция для генерации случайного строкового идентификатора
-function generateRandomId(length = 8) {
-  return Math.random().toString(36).substring(2, 2 + length);
-}
+// DeepL API конфигурация
+const DEEPL_API_KEY = 'f65f9da4-018b-4ab4-adc8-d8f3de9cfb9f:fx';
+const DEEPL_API_URL = 'https://api-free.deepl.com/v2/translate';
 
 class DataService {
   constructor() {
     this.baseDict = new BaseDict();
     this.connectionStatus = {
       firebase: false,
-      server: false
+      deepl: true // DeepL всегда доступен (если есть API ключ)
     };
     this.translationCache = new Map();
-    this.pendingBatchOperations = [];
     this.stats = {
       cacheHits: 0,
       firebaseHits: 0,
-      serverHits: 0,
+      deeplHits: 0,
       fallbackHits: 0,
       totalRequests: 0
     };
-    this.API_URL = API_URL; // Сохраняем ссылку на API URL в экземпляре класса
-    
-    // Инициализация и проверка соединений
+
+    // Инициализация Firebase
     this.initConnections();
   }
 
   /**
-   * Инициализирует соединения и проверяет их доступность
+   * Инициализирует соединение с Firebase
    */
   async initConnections() {
     try {
-      // Проверка Firebase
       this.connectionStatus.firebase = await this.checkFirebaseConnection();
       console.log(`Firebase connection: ${this.connectionStatus.firebase ? 'OK' : 'FAILED'}`);
-      
-      // Проверка сервера
-      this.connectionStatus.server = await this.checkServerConnection();
-      console.log(`Server connection: ${this.connectionStatus.server ? 'OK' : 'FAILED'}`);
+      console.log(`DeepL API: ${DEEPL_API_KEY ? 'Configured' : 'NOT configured'}`);
     } catch (error) {
       console.error('Error initializing connections:', error);
     }
@@ -59,7 +48,6 @@ class DataService {
 
   /**
    * Проверяет соединение с Firebase
-   * @returns {Promise<boolean>} - true, если соединение активно
    */
   async checkFirebaseConnection() {
     try {
@@ -68,11 +56,10 @@ class DataService {
         const unsubscribe = onValue(connectedRef, (snap) => {
           unsubscribe();
           resolve(snap.val() === true);
-        }, (error) => {
+        }, () => {
           resolve(false);
         });
-        
-        // Таймаут для проверки соединения
+
         setTimeout(() => {
           unsubscribe();
           resolve(false);
@@ -85,44 +72,62 @@ class DataService {
   }
 
   /**
-   * Проверяет соединение с сервером
-   * @returns {Promise<boolean>} - true, если соединение активно
+   * Перевод через DeepL API
    */
-  async checkServerConnection() {
+  async translateWithDeepL(word) {
     try {
-      // Используем абсолютный URL для Railway с дополнительными параметрами
-      const nonce = generateRandomId();
-      const response = await fetch(`${this.API_URL}/api/health?_=${Date.now()}&nonce=${nonce}`, { 
-        method: 'GET',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Origin': 'https://flashcards-seznam.netlify.app',
-          'X-Requested-With': 'XMLHttpRequest',
-          'Accept': 'application/json',
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache',
-          'Expires': '0'
+      console.log(`[DeepL] Translating: "${word}"`);
+
+      const response = await fetch(DEEPL_API_URL, {
+        method: 'POST',
+        headers: {
+          'Authorization': `DeepL-Auth-Key ${DEEPL_API_KEY}`,
+          'Content-Type': 'application/json'
         },
-        cache: 'no-cache',
-        signal: AbortSignal.timeout(5000) // Увеличиваем таймаут до 5 секунд
+        body: JSON.stringify({
+          text: [word],
+          source_lang: 'CS',
+          target_lang: 'RU',
+          preserve_formatting: true
+        })
       });
-      return response.ok;
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`DeepL API error: ${response.status} - ${errorText}`);
+      }
+
+      const data = await response.json();
+
+      if (!data.translations || data.translations.length === 0) {
+        throw new Error('No translations returned from DeepL');
+      }
+
+      const result = {
+        word: word,
+        translations: [data.translations[0].text],
+        examples: [],
+        detectedSourceLang: data.translations[0].detected_source_language || 'CS',
+        source: 'deepl',
+        success: true
+      };
+
+      console.log(`[DeepL] ✅ Success: "${result.translations[0]}"`);
+      return result;
+
     } catch (error) {
-      console.error('Error checking server connection:', error);
-      return false;
+      console.error(`[DeepL] ❌ Error:`, error);
+      return null;
     }
   }
 
   /**
-   * Получает перевод слова с автоматическим выбором источника данных
-   * @param {string} word - Слово для перевода
-   * @param {Object} options - Дополнительные опции
-   * @returns {Promise<Object>} - Данные перевода
+   * Получает перевод слова с автоматическим выбором источника
    */
   async getTranslation(word, options = {}) {
     this.stats.totalRequests++;
     const normalizedWord = word.toLowerCase().trim();
-    
+
     // Шаг 1: Проверяем локальный кэш
     const cachedTranslation = this.translationCache.get(normalizedWord);
     if (cachedTranslation) {
@@ -143,7 +148,7 @@ class DataService {
       };
     }
 
-    // Шаг 3: Проверяем Firebase, если доступен
+    // Шаг 3: Проверяем Firebase
     if (this.connectionStatus.firebase) {
       try {
         const firebaseData = await this.getFromFirebase(normalizedWord);
@@ -164,18 +169,16 @@ class DataService {
     // Шаг 4: Пробуем нормализацию и повторяем поиск
     if (!options.skipNormalization) {
       const normalizationResult = normalizationService.normalize(normalizedWord);
-      
+
       if (normalizationResult.usedNormalization) {
-        // Пробуем найти перевод для нормализованной формы
         for (const normalizedForm of normalizationResult.normalizedForms) {
           if (normalizedForm !== normalizedWord) {
-            const normalizedTranslation = await this.getTranslation(normalizedForm, { 
-              skipNormalization: true, // Предотвращаем рекурсию
+            const normalizedTranslation = await this.getTranslation(normalizedForm, {
+              skipNormalization: true,
               originalWord: normalizedWord
             });
-            
-            if (normalizedTranslation) {
-              // Добавляем информацию о нормализации
+
+            if (normalizedTranslation && normalizedTranslation.translations && normalizedTranslation.translations.length > 0) {
               const result = {
                 ...normalizedTranslation,
                 originalWord: normalizedWord,
@@ -183,11 +186,10 @@ class DataService {
                 normalizationInfo: normalizationResult,
                 usedNormalization: true
               };
-              
-              // Сохраняем результат в кэш для оригинального слова
+
               this.translationCache.set(normalizedWord, result);
               this.saveToLocalStorage(normalizedWord, result);
-              
+
               return result;
             }
           }
@@ -195,28 +197,26 @@ class DataService {
       }
     }
 
-    // Шаг 5: Запрашиваем с сервера, если доступен
-    if (this.connectionStatus.server) {
-      try {
-        const serverData = await this.fetchFromServer(normalizedWord);
-        if (serverData) {
-          this.stats.serverHits++;
-          
-          // Сохраняем в Firebase и localStorage
-          if (this.connectionStatus.firebase) {
-            this.saveToFirebase(normalizedWord, serverData);
-          }
-          this.saveToLocalStorage(normalizedWord, serverData);
-          this.translationCache.set(normalizedWord, serverData);
-          
-          return {
-            ...serverData,
-            source: 'server'
-          };
+    // Шаг 5: Запрашиваем DeepL API
+    try {
+      const deeplData = await this.translateWithDeepL(normalizedWord);
+      if (deeplData && deeplData.success) {
+        this.stats.deeplHits++;
+
+        // Сохраняем в Firebase и localStorage
+        if (this.connectionStatus.firebase) {
+          this.saveToFirebase(normalizedWord, deeplData);
         }
-      } catch (error) {
-        console.error('Error fetching from server:', error);
+        this.saveToLocalStorage(normalizedWord, deeplData);
+        this.translationCache.set(normalizedWord, deeplData);
+
+        return {
+          ...deeplData,
+          source: 'deepl'
+        };
       }
+    } catch (error) {
+      console.error('Error fetching from DeepL:', error);
     }
 
     // Шаг 6: Используем базовый словарь как fallback
@@ -236,14 +236,12 @@ class DataService {
       translations: [],
       examples: [],
       source: 'none',
-      error: 'Translation not found in any source'
+      error: 'Translation not found'
     };
   }
 
   /**
-   * Получает данные из локального хранилища
-   * @param {string} word - Слово для получения
-   * @returns {Object|null} - Данные перевода или null
+   * Получает данные из localStorage
    */
   getFromLocalStorage(word) {
     try {
@@ -257,37 +255,34 @@ class DataService {
   }
 
   /**
-   * Сохраняет данные в локальное хранилище
-   * @param {string} word - Слово для сохранения
-   * @param {Object} data - Данные перевода
-   * @returns {boolean} - Результат операции
+   * Сохраняет данные в localStorage
    */
   saveToLocalStorage(word, data) {
     try {
       const cacheKey = 'flashcards_seznam_cache';
       let cache = JSON.parse(localStorage.getItem(cacheKey) || '{}');
-      
+
       cache[word.toLowerCase()] = {
         ...data,
         cachedAt: new Date().toISOString()
       };
-      
+
       // Ограничиваем размер кэша
       const now = new Date();
       const entries = Object.entries(cache);
-      
+
       const filteredEntries = entries
         .filter(([_, entry]) => {
           const cachedAt = new Date(entry.cachedAt);
           const diffDays = (now - cachedAt) / (1000 * 60 * 60 * 24);
-          return diffDays < 30; // Хранить не более 30 дней
+          return diffDays < 30;
         })
         .sort((a, b) => new Date(b[1].cachedAt) - new Date(a[1].cachedAt))
-        .slice(0, 500); // Ограничиваем 500 словами
-      
+        .slice(0, 500);
+
       const updatedCache = Object.fromEntries(filteredEntries);
       localStorage.setItem(cacheKey, JSON.stringify(updatedCache));
-      
+
       return true;
     } catch (error) {
       console.error('Error saving to localStorage:', error);
@@ -297,14 +292,12 @@ class DataService {
 
   /**
    * Получает данные из Firebase
-   * @param {string} word - Слово для получения
-   * @returns {Promise<Object|null>} - Данные перевода или null
    */
   async getFromFirebase(word) {
     try {
       const wordRef = ref(database, `dictionary/${word.toLowerCase()}`);
       const snapshot = await get(wordRef);
-      
+
       if (snapshot.exists()) {
         return snapshot.val();
       }
@@ -317,9 +310,6 @@ class DataService {
 
   /**
    * Сохраняет данные в Firebase
-   * @param {string} word - Слово для сохранения
-   * @param {Object} data - Данные перевода
-   * @returns {Promise<boolean>} - Результат операции
    */
   async saveToFirebase(word, data) {
     try {
@@ -336,180 +326,23 @@ class DataService {
   }
 
   /**
-   * Получает данные с сервера
-   * @param {string} word - Слово для получения
-   * @returns {Promise<Object|null>} - Данные перевода или null
-   */
-  async fetchFromServer(word) {
-    try {
-      // Используем абсолютный URL для Railway с дополнительными параметрами
-      const nonce = generateRandomId();
-      const timestamp = Date.now();
-      
-      // Добавляем случайные параметры для обхода кэширования
-      const url = `${this.API_URL}/api/translate?word=${encodeURIComponent(word)}&_=${timestamp}&nonce=${nonce}`;
-      
-      console.log(`Отправка запроса на: ${url}`);
-      
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Origin': 'https://flashcards-seznam.netlify.app',
-          'X-Requested-With': 'XMLHttpRequest',
-          'Accept': 'application/json',
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache',
-          'Expires': '0'
-        },
-        cache: 'no-cache',
-        signal: AbortSignal.timeout(15000) // Увеличиваем таймаут до 15 секунд
-      });
-      
-      console.log(`Получен ответ со статусом: ${response.status}`);
-      
-      // Проверяем заголовки ответа
-      const contentType = response.headers.get('content-type');
-      console.log(`Тип контента ответа: ${contentType}`);
-      
-      if (!response.ok) {
-        // Получаем текст ошибки для диагностики
-        const errorText = await response.text();
-        console.error(`Ошибка ответа сервера: ${errorText}`);
-        throw new Error(`Server responded with status: ${response.status}, Error: ${errorText}`);
-      }
-      
-      // Проверяем, что ответ действительно JSON
-      if (!contentType || !contentType.includes('application/json')) {
-        const rawText = await response.text();
-        console.error(`Неверный тип контента: ${contentType}, текст: ${rawText.substring(0, 100)}...`);
-        
-        // Пробуем распарсить как JSON, даже если тип контента неверный
-        try {
-          const data = JSON.parse(rawText);
-          return data;
-        } catch (parseError) {
-          // Если текст содержит "Invalid Host header", возвращаем заглушку
-          if (rawText.includes('Invalid Host header')) {
-            console.error('Обнаружена ошибка "Invalid Host header", возвращаем заглушку');
-            return {
-              success: false,
-              word: word,
-              error: 'Invalid Host header',
-              data: {
-                translations: [],
-                samples: []
-              },
-              source: 'error'
-            };
-          }
-          
-          throw new Error(`Failed to parse response as JSON: ${parseError.message}, Raw text: ${rawText.substring(0, 100)}...`);
-        }
-      }
-      
-      // Обычная обработка JSON
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error('Error fetching from server:', error);
-      return null;
-    }
-  }
-
-  /**
    * Получает данные из базового словаря
-   * @param {string} word - Слово для получения
-   * @returns {Object|null} - Данные перевода или null
    */
   getFromBaseDict(word) {
     return this.baseDict.getTranslation(word);
   }
 
   /**
-   * Добавляет операцию в пакетную очередь
-   * @param {string} word - Слово для обработки
-   * @returns {Promise<void>}
-   */
-  async addToBatch(word) {
-    this.pendingBatchOperations.push(word);
-    
-    // Если набралось достаточно слов, запускаем обработку
-    if (this.pendingBatchOperations.length >= 5) {
-      await this.processBatch();
-    }
-  }
-
-  /**
-   * Обрабатывает пакет слов
-   * @returns {Promise<Object>} - Результаты обработки
-   */
-  async processBatch() {
-    if (this.pendingBatchOperations.length === 0) {
-      return { processed: 0 };
-    }
-    
-    const batchWords = [...this.pendingBatchOperations];
-    this.pendingBatchOperations = [];
-    
-    const results = {
-      total: batchWords.length,
-      success: 0,
-      failed: 0,
-      details: []
-    };
-    
-    for (let i = 0; i < batchWords.length; i++) {
-      const word = batchWords[i];
-      
-      try {
-        // Добавляем задержку между запросами
-        if (i > 0) {
-          await new Promise(resolve => setTimeout(resolve, 1000));
-        }
-        
-        const translation = await this.getTranslation(word);
-        
-        if (translation && !translation.error) {
-          results.success++;
-          results.details.push({
-            word,
-            success: true,
-            source: translation.source
-          });
-        } else {
-          results.failed++;
-          results.details.push({
-            word,
-            success: false,
-            error: translation?.error || 'Unknown error'
-          });
-        }
-      } catch (error) {
-        results.failed++;
-        results.details.push({
-          word,
-          success: false,
-          error: error.message
-        });
-      }
-    }
-    
-    return results;
-  }
-
-  /**
-   * Получает статистику использования источников данных
-   * @returns {Object} - Статистика
+   * Получает статистику
    */
   getStats() {
-    const total = this.stats.totalRequests || 1; // Избегаем деления на ноль
-    
+    const total = this.stats.totalRequests || 1;
+
     return {
       ...this.stats,
       cacheHitRate: ((this.stats.cacheHits / total) * 100).toFixed(2) + '%',
       firebaseHitRate: ((this.stats.firebaseHits / total) * 100).toFixed(2) + '%',
-      serverHitRate: ((this.stats.serverHits / total) * 100).toFixed(2) + '%',
+      deeplHitRate: ((this.stats.deeplHits / total) * 100).toFixed(2) + '%',
       fallbackHitRate: ((this.stats.fallbackHits / total) * 100).toFixed(2) + '%',
       cacheSize: this.translationCache.size,
       connectionStatus: this.connectionStatus
@@ -517,7 +350,7 @@ class DataService {
   }
 
   /**
-   * Очищает кэш переводов
+   * Очищает кэш
    */
   clearCache() {
     this.translationCache.clear();
@@ -527,49 +360,9 @@ class DataService {
       console.error('Error clearing localStorage cache:', error);
     }
   }
-
-  /**
-   * Синхронизирует данные между источниками
-   * @returns {Promise<Object>} - Результаты синхронизации
-   */
-  async syncData() {
-    const results = {
-      localToFirebase: 0,
-      firebaseToLocal: 0,
-      errors: []
-    };
-    
-    // Синхронизация из localStorage в Firebase
-    if (this.connectionStatus.firebase) {
-      try {
-        const cacheKey = 'flashcards_seznam_cache';
-        const cache = JSON.parse(localStorage.getItem(cacheKey) || '{}');
-        
-        for (const [word, data] of Object.entries(cache)) {
-          try {
-            await this.saveToFirebase(word, data);
-            results.localToFirebase++;
-          } catch (error) {
-            results.errors.push({
-              word,
-              operation: 'localToFirebase',
-              error: error.message
-            });
-          }
-        }
-      } catch (error) {
-        results.errors.push({
-          operation: 'localToFirebase',
-          error: error.message
-        });
-      }
-    }
-    
-    return results;
-  }
 }
 
-// Создаем и экспортируем экземпляр сервиса
+// Создаем и экспортируем экземпляр
 const dataService = new DataService();
 
 export { dataService, DataService };

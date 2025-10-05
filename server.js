@@ -1,4 +1,8 @@
 // server.js - Оптимизированный сервер без сохранения HTML файлов для Flashcards Seznam
+
+// ВАЖНО: Загружаем переменные окружения из .env в самом начале
+require('dotenv').config();
+
 const express = require('express');
 const axios = require('axios');
 const cheerio = require('cheerio');
@@ -7,6 +11,9 @@ const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
 const os = require('os');
+
+// DeepL API сервис для высококачественных переводов
+const deepLService = require('./src/services/DeepLService');
 
 // Инициализация приложения Express
 const app = express();
@@ -696,6 +703,125 @@ app.get('/api/translate', async (req, res) => {
       success: false, 
       error: 'Ошибка при переводе', 
       details: error.message 
+    });
+  }
+});
+
+// API для перевода через DeepL (высококачественные переводы)
+app.get('/api/translate-deepl', async (req, res) => {
+  try {
+    const { word, text, from, to } = req.query;
+
+    // Принимаем либо word, либо text
+    const textToTranslate = word || text;
+
+    if (!textToTranslate) {
+      return res.status(400).json({
+        success: false,
+        error: 'Необходимо указать word или text для перевода'
+      });
+    }
+
+    const fromLang = from || 'CS';
+    const toLang = to || 'RU';
+
+    console.log(`[DeepL API] Запрос на перевод: "${textToTranslate}" (${fromLang} -> ${toLang})`);
+
+    // Вызываем DeepL API
+    const result = await deepLService.translateText(textToTranslate, fromLang, toLang);
+
+    // Проверяем на ошибку
+    if (result.error) {
+      console.error(`[DeepL API] ❌ Ошибка перевода:`, result.message);
+      return res.status(500).json({
+        success: false,
+        error: result.message,
+        source: 'deepl'
+      });
+    }
+
+    // Возвращаем в формате, совместимом с существующим API
+    res.json({
+      success: true,
+      word: textToTranslate,
+      translations: [result.translatedText], // Массив переводов для совместимости
+      data: {
+        translations: [result.translatedText],
+        examples: [], // DeepL не возвращает примеры, но можно добавить позже
+        detected_source_language: result.detectedSourceLang
+      },
+      source: 'deepl',
+      charactersUsed: result.charactersUsed,
+      timestamp: result.timestamp
+    });
+
+  } catch (error) {
+    console.error('[DeepL API] Критическая ошибка:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Ошибка при переводе через DeepL',
+      details: error.message,
+      source: 'deepl'
+    });
+  }
+});
+
+// API для пакетного перевода через DeepL
+app.post('/api/translate-deepl/batch', async (req, res) => {
+  try {
+    const { texts, from, to } = req.body;
+
+    if (!texts || !Array.isArray(texts) || texts.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Необходимо указать массив texts для перевода'
+      });
+    }
+
+    const fromLang = from || 'CS';
+    const toLang = to || 'RU';
+
+    console.log(`[DeepL API] Пакетный запрос: ${texts.length} текстов (${fromLang} -> ${toLang})`);
+
+    // Вызываем пакетный перевод DeepL
+    const results = await deepLService.translateBatch(texts, fromLang, toLang);
+
+    res.json({
+      success: true,
+      results: results,
+      count: results.length,
+      source: 'deepl'
+    });
+
+  } catch (error) {
+    console.error('[DeepL API] Ошибка пакетного перевода:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Ошибка при пакетном переводе через DeepL',
+      details: error.message,
+      source: 'deepl'
+    });
+  }
+});
+
+// API для получения статистики использования DeepL
+app.get('/api/deepl/usage', async (req, res) => {
+  try {
+    const usage = await deepLService.getUsage();
+    const stats = deepLService.getStats();
+
+    res.json({
+      success: true,
+      usage: usage,
+      stats: stats
+    });
+
+  } catch (error) {
+    console.error('[DeepL API] Ошибка получения статистики:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Ошибка при получении статистики DeepL',
+      details: error.message
     });
   }
 });

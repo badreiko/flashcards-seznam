@@ -88,8 +88,8 @@ const Flashcard = ({ word, translations, samples, note, normalizedWord, usedNorm
         return 'var(--success)';
       case 'firebase':
         return 'var(--primary)';
-      case 'server':
-        return 'var(--warning)';
+      case 'deepl':
+        return '#0f2b46'; // DeepL brand color
       case 'fallback':
         return 'var(--error)';
       default:
@@ -106,8 +106,8 @@ const Flashcard = ({ word, translations, samples, note, normalizedWord, usedNorm
         return 'Локальное хранилище';
       case 'firebase':
         return 'Firebase';
-      case 'server':
-        return 'Сервер';
+      case 'deepl':
+        return '🤖 DeepL AI';
       case 'fallback':
         return 'Базовый словарь';
       default:
@@ -318,7 +318,7 @@ const DictionaryStats = ({ onViewDictionary }) => {
         count: dataStats.cacheSize || 0,
         cacheHitRate: dataStats.cacheHitRate,
         firebaseHitRate: dataStats.firebaseHitRate,
-        serverHitRate: dataStats.serverHitRate,
+        deeplHitRate: dataStats.deeplHitRate,
         fallbackHitRate: dataStats.fallbackHitRate,
         normalizationSuccessRate: normStats.successRate
       });
@@ -392,7 +392,7 @@ const DictionaryStats = ({ onViewDictionary }) => {
                 <h4>Источники данных</h4>
                 <p>Кэш: {stats.cacheHitRate}</p>
                 <p>Firebase: {stats.firebaseHitRate}</p>
-                <p>Сервер: {stats.serverHitRate}</p>
+                <p>🤖 DeepL AI: {stats.deeplHitRate}</p>
                 <p>Базовый словарь: {stats.fallbackHitRate}</p>
               </div>
               
@@ -512,8 +512,8 @@ const DictionaryViewer = ({ onClose }) => {
         return 'var(--success)';
       case 'firebase':
         return 'var(--primary)';
-      case 'server':
-        return 'var(--warning)';
+      case 'deepl':
+        return '#0f2b46'; // DeepL brand color
       case 'fallback':
         return 'var(--error)';
       default:
@@ -530,8 +530,8 @@ const DictionaryViewer = ({ onClose }) => {
         return 'Локальное хранилище';
       case 'firebase':
         return 'Firebase';
-      case 'server':
-        return 'Сервер';
+      case 'deepl':
+        return '🤖 DeepL AI';
       case 'fallback':
         return 'Базовый словарь';
       default:

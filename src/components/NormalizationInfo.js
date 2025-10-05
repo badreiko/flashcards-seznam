@@ -34,8 +34,8 @@ const NormalizationInfo = ({
         return 'var(--success)';
       case 'firebase':
         return 'var(--primary)';
-      case 'server':
-        return 'var(--warning)';
+      case 'deepl':
+        return '#0f2b46';
       case 'fallback':
         return 'var(--error)';
       default:
@@ -52,8 +52,8 @@ const NormalizationInfo = ({
         return 'Локальное хранилище';
       case 'firebase':
         return 'Firebase';
-      case 'server':
-        return 'Сервер';
+      case 'deepl':
+        return '🤖 DeepL AI';
       case 'fallback':
         return 'Базовый словарь';
       default:
