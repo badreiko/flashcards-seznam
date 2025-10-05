@@ -21,6 +21,7 @@ class DataService {
       deepl: true // DeepL всегда доступен (если есть API ключ)
     };
     this.translationCache = new Map();
+    this.pendingBatchOperations = [];
     this.stats = {
       cacheHits: 0,
       firebaseHits: 0,
@@ -359,6 +360,78 @@ class DataService {
     } catch (error) {
       console.error('Error clearing localStorage cache:', error);
     }
+  }
+
+  /**
+   * Добавляет слово в пакетную очередь
+   */
+  async addToBatch(word) {
+    if (!this.pendingBatchOperations) {
+      this.pendingBatchOperations = [];
+    }
+    this.pendingBatchOperations.push(word);
+
+    // Если набралось достаточно слов, запускаем обработку
+    if (this.pendingBatchOperations.length >= 5) {
+      await this.processBatch();
+    }
+  }
+
+  /**
+   * Обрабатывает пакет слов
+   */
+  async processBatch() {
+    if (!this.pendingBatchOperations || this.pendingBatchOperations.length === 0) {
+      return { processed: 0 };
+    }
+
+    const batchWords = [...this.pendingBatchOperations];
+    this.pendingBatchOperations = [];
+
+    const results = {
+      total: batchWords.length,
+      success: 0,
+      failed: 0,
+      details: []
+    };
+
+    for (let i = 0; i < batchWords.length; i++) {
+      const word = batchWords[i];
+
+      try {
+        // Добавляем задержку между запросами (чтобы не перегрузить DeepL)
+        if (i > 0) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+
+        const translation = await this.getTranslation(word);
+
+        if (translation && translation.translations && translation.translations.length > 0) {
+          results.success++;
+          results.details.push({
+            word,
+            success: true,
+            source: translation.source
+          });
+        } else {
+          results.failed++;
+          results.details.push({
+            word,
+            success: false,
+            error: translation?.error || 'Translation not found'
+          });
+        }
+      } catch (error) {
+        results.failed++;
+        results.details.push({
+          word,
+          success: false,
+          error: error.message
+        });
+      }
+    }
+
+    return results;
   }
 }
 
