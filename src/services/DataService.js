@@ -70,10 +70,19 @@ class DataService {
 
   /**
    * Перевод через DeepL API (через Netlify Function прокси)
+   * Получаем несколько вариантов перевода через разные контексты
    */
   async translateWithDeepL(word) {
     try {
       console.log(`[DeepL] Translating: "${word}"`);
+
+      // Запрашиваем слово в разных контекстах для получения альтернативных переводов
+      const contexts = [
+        word, // Просто слово
+        `${word}.`, // Слово как предложение
+        `Musím ${word}`, // В контексте глагола (должен...)
+        `To je ${word}` // В контексте существительного/прилагательного (это...)
+      ];
 
       const response = await fetch(DEEPL_PROXY_URL, {
         method: 'POST',
@@ -81,7 +90,7 @@ class DataService {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          text: word,
+          text: contexts,
           source_lang: 'CS',
           target_lang: 'RU'
         })
@@ -98,22 +107,77 @@ class DataService {
         throw new Error('No translations returned from DeepL');
       }
 
+      // Собираем уникальные переводы из всех вариантов
+      const translations = [];
+      const examples = [];
+
+      data.translations.forEach((t, index) => {
+        const translatedText = t.text.trim();
+
+        if (index === 0) {
+          // Первый вариант - просто слово
+          translations.push(translatedText);
+        } else if (index === 1) {
+          // Второй вариант - убираем точку
+          const cleaned = translatedText.replace(/\.$/, '');
+          if (!translations.includes(cleaned)) {
+            translations.push(cleaned);
+          }
+        } else {
+          // Остальные - извлекаем перевод слова из контекста
+          const contextTranslation = this.extractWordFromContext(translatedText, index);
+          if (contextTranslation && !translations.includes(contextTranslation)) {
+            translations.push(contextTranslation);
+          }
+          // Добавляем примеры использования
+          examples.push({
+            czech: contexts[index],
+            russian: translatedText
+          });
+        }
+      });
+
       const result = {
         word: word,
-        translations: [data.translations[0].text],
-        examples: [],
+        translations: translations.slice(0, 5), // Максимум 5 вариантов
+        examples: examples.slice(0, 3), // Максимум 3 примера
         detectedSourceLang: data.translations[0].detected_source_language || 'CS',
         source: 'deepl',
         success: true
       };
 
-      console.log(`[DeepL] ✅ Success: "${result.translations[0]}"`);
+      console.log(`[DeepL] ✅ Success: ${translations.length} translations:`, translations);
       return result;
 
     } catch (error) {
       console.error(`[DeepL] ❌ Error:`, error);
       return null;
     }
+  }
+
+  /**
+   * Извлекает перевод слова из контекстного перевода
+   */
+  extractWordFromContext(contextTranslation, contextIndex) {
+    // Убираем известные контекстные фразы
+    const patterns = [
+      /^Я должен\s+(.+)$/i,
+      /^Должен\s+(.+)$/i,
+      /^Мне нужно\s+(.+)$/i,
+      /^Это\s+(.+)$/i,
+      /^Это -\s+(.+)$/i
+    ];
+
+    for (const pattern of patterns) {
+      const match = contextTranslation.match(pattern);
+      if (match) {
+        return match[1].trim();
+      }
+    }
+
+    // Если не нашли паттерн, возвращаем последнее слово
+    const words = contextTranslation.trim().split(/\s+/);
+    return words[words.length - 1].replace(/[.,!?;:]$/, '');
   }
 
   /**
