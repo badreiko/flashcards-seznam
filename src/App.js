@@ -163,28 +163,19 @@ const Flashcard = ({ word, translations, samples, note, normalizedWord, usedNorm
               <p className="no-translations">Переводы не найдены</p>
             )}
           </div>
-          
-          {samples && samples.length > 0 && (
-            <div className="examples">
-              <h4>Примеры:</h4>
-              <ul>
-                {samples.map((sample, index) => (
-                  <li key={index}>
-                    <div className="sample-phrase">{sample.phrase}</div>
-                    <div className="sample-translation">{sample.translation}</div>
-                  </li>
-                ))}
-              </ul>
+
+          {note && <p className="note">{note}</p>}
+
+          {source && (
+            <div className="card-source">
+              <span
+                className="source-badge"
+                style={{ backgroundColor: getSourceColor() }}
+              >
+                {getSourceText()}
+              </span>
             </div>
           )}
-          
-          {note && <p className="note">{note}</p>}
-          
-          <p className="hint">Нажмите, чтобы вернуться к слову</p>
-          
-          <div className="attribution">
-            Источник: Glosbe
-          </div>
         </div>
       </div>
     </div>
