@@ -9,9 +9,8 @@ import { database } from '../firebase';
 import { BaseDict } from '../utils/BaseDict';
 import { normalizationService } from './NormalizationService';
 
-// DeepL API конфигурация
-const DEEPL_API_KEY = 'f65f9da4-018b-4ab4-adc8-d8f3de9cfb9f:fx';
-const DEEPL_API_URL = 'https://api-free.deepl.com/v2/translate';
+// Netlify Function URL для DeepL API (через прокси для обхода CORS)
+const DEEPL_PROXY_URL = '/.netlify/functions/translate-deepl';
 
 class DataService {
   constructor() {
@@ -41,7 +40,7 @@ class DataService {
     try {
       this.connectionStatus.firebase = await this.checkFirebaseConnection();
       console.log(`Firebase connection: ${this.connectionStatus.firebase ? 'OK' : 'FAILED'}`);
-      console.log(`DeepL API: ${DEEPL_API_KEY ? 'Configured' : 'NOT configured'}`);
+      console.log(`DeepL API: via Netlify Functions`);
     } catch (error) {
       console.error('Error initializing connections:', error);
     }
@@ -73,29 +72,27 @@ class DataService {
   }
 
   /**
-   * Перевод через DeepL API
+   * Перевод через DeepL API (через Netlify Function прокси)
    */
   async translateWithDeepL(word) {
     try {
       console.log(`[DeepL] Translating: "${word}"`);
 
-      const response = await fetch(DEEPL_API_URL, {
+      const response = await fetch(DEEPL_PROXY_URL, {
         method: 'POST',
         headers: {
-          'Authorization': `DeepL-Auth-Key ${DEEPL_API_KEY}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          text: [word],
+          text: word,
           source_lang: 'CS',
-          target_lang: 'RU',
-          preserve_formatting: true
+          target_lang: 'RU'
         })
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`DeepL API error: ${response.status} - ${errorText}`);
+        throw new Error(`DeepL Proxy error: ${response.status} - ${errorText}`);
       }
 
       const data = await response.json();
