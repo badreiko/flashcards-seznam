@@ -189,6 +189,10 @@ export class CzechNormalizationRules {
       { pattern: /^(.+)ům$/, base: '$1', type: 'noun-m-hard', priority: 6 },
       { pattern: /^(.+)ech$/, base: '$1', type: 'noun-m-hard', priority: 6 },
       { pattern: /^(.+)y$/, base: '$1', type: 'noun-m-hard', priority: 5 },
+      // Родительный/дательный падеж мужского рода (důvodu → důvod)
+      // Высокий приоритет, но проверяем что это не женский род (не заканчивается на типичные для женского рода согласные перед -u)
+      // Исключаем: -hu (knihu), -ru после гласной (kůru), -tu после гласной (minutu)
+      { pattern: /^(.+[^aieouhřtů])u$/, base: '$1', type: 'noun-m-gen', priority: 7 },
       
       // Мужской род (мягкое склонение)
       { pattern: /^(.+)i$/, base: '$1', type: 'noun-m-soft', priority: 6 },
@@ -350,9 +354,14 @@ export class CzechNormalizationRules {
             }
             results.push(base);
             processedBases.add(base);
-            
+
             // Для глаголов возвращаем только первый (наиболее точный) результат
             if (pattern.type && pattern.type.startsWith('verb-') && results.length === 1) {
+              break;
+            }
+
+            // Для существительных с высоким приоритетом (≥7) тоже возвращаем первый результат
+            if (pattern.type && pattern.type.startsWith('noun-') && (pattern.priority || 0) >= 7 && results.length === 1) {
               break;
             }
           }
