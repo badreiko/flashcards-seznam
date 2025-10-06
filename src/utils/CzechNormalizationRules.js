@@ -33,7 +33,34 @@ export class CzechNormalizationRules {
       
       ['vím', 'vědět'], ['víš', 'vědět'], ['ví', 'vědět'], ['víme', 'vědět'], ['víte', 'vědět'], ['vědí', 'vědět'],
       ['věděl', 'vědět'], ['věděla', 'vědět'], ['vědělo', 'vědět'], ['věděli', 'vědět'], ['věděly', 'vědět'],
-      
+
+      // Глаголы с чередованием á/a (hrát, znát, stát, etc.)
+      ['hraji', 'hrát'], ['hraju', 'hrát'], ['hraješ', 'hrát'], ['hraje', 'hrát'], ['hrajeme', 'hrát'], ['hrajete', 'hrát'], ['hrají', 'hrát'],
+      ['hrál', 'hrát'], ['hrála', 'hrát'], ['hrálo', 'hrát'], ['hráli', 'hrát'], ['hrály', 'hrát'],
+
+      ['znám', 'znát'], ['znáš', 'znát'], ['zná', 'znát'], ['známe', 'znát'], ['známe', 'znát'], ['znají', 'znát'],
+      ['znal', 'znát'], ['znala', 'znát'], ['znalo', 'znát'], ['znali', 'znát'], ['znaly', 'znát'],
+
+      ['stojím', 'stát'], ['stojíš', 'stát'], ['stojí', 'stát'], ['stojíme', 'stát'], ['stojíte', 'stát'], ['stojí', 'stát'],
+      ['stál', 'stát'], ['stála', 'stát'], ['stálo', 'stát'], ['stáli', 'stát'], ['stály', 'stát'],
+
+      // Популярные глаголы на -ět (чтобы избежать нормализации к -it)
+      ['vidím', 'vidět'], ['vidíš', 'vidět'], ['vidí', 'vidět'], ['vidíme', 'vidět'], ['vidíte', 'vidět'],
+
+      ['rozumím', 'rozumět'], ['rozumíš', 'rozumět'], ['rozumí', 'rozumět'], ['rozumíme', 'rozumět'], ['rozumíte', 'rozumět'],
+
+      ['seděl', 'sedět'], ['seděla', 'sedět'], ['sedělo', 'sedět'], ['seděli', 'sedět'], ['seděly', 'sedět'],
+      ['sedím', 'sedět'], ['sedíš', 'sedět'], ['sedí', 'sedět'], ['sedíme', 'sedět'], ['sedíte', 'sedět'],
+
+      ['ležím', 'ležet'], ['ležíš', 'ležet'], ['leží', 'ležet'], ['ležíme', 'ležet'], ['ležíte', 'ležet'],
+      ['ležel', 'ležet'], ['ležela', 'ležet'], ['leželo', 'ležet'], ['leželi', 'ležet'], ['ležely', 'ležet'],
+
+      // Другие глаголы с неправильной нормализацией
+      ['učím', 'učit'], ['učíš', 'učit'], ['učí', 'učit'], ['učíme', 'učit'], ['učíte', 'učit'],
+      ['učil', 'učit'], ['učila', 'učit'], ['učilo', 'učit'], ['učili', 'učit'], ['učily', 'učit'],
+
+      ['myslel', 'myslit'], ['myslela', 'myslit'], ['myslelo', 'myslit'], ['mysleli', 'myslit'], ['myslely', 'myslit'],
+
       // Супплетивные формы - только те, где корень полностью меняется
       ['lidé', 'člověk'], ['lidi', 'člověk'], ['lidí', 'člověk'], ['lidem', 'člověk'], ['lidech', 'člověk'], ['lidmi', 'člověk'],
       ['děti', 'dítě'], ['dětí', 'dítě'], ['dětem', 'dítě'], ['dětech', 'dítě'], ['dětmi', 'dítě'],
@@ -85,7 +112,9 @@ export class CzechNormalizationRules {
       'vše', 'všude', 'všechno', 'všichni', 'všem', 'všemi',
       
       // Наречия, которые не должны нормализоваться
-      'více', 'méně', 'nejméně', 'nejvíce', 'trochu', 'hodně', 'málo', 'dost'
+      'více', 'méně', 'nejméně', 'nejvíce', 'trochu', 'hodně', 'málo', 'dost',
+      'brzy', 'pomalu', 'vždy', 'špatně', 'rychle', 'dobře', 'často', 'zrovna', 'právě',
+      'hned', 'ihned', 'vzápětí', 'okamžitě', 'skutečně', 'opravdu', 'vlastně', 'zřejmě'
     ]);
 
     // Морфологические паттерны (компактные регулярные выражения)
@@ -105,65 +134,65 @@ export class CzechNormalizationRules {
       // ГЛАГОЛЫ (высокий приоритет)
       // =====================================================================
       
-      // -ovat глаголы (pracovat, studovat, etc.)
-      { pattern: /^(.+)uji$/, base: '$1ovat', type: 'verb-ovat', priority: 9 },
-      { pattern: /^(.+)uješ$/, base: '$1ovat', type: 'verb-ovat', priority: 9 },
-      { pattern: /^(.+)uje$/, base: '$1ovat', type: 'verb-ovat', priority: 9 },
-      { pattern: /^(.+)ujeme$/, base: '$1ovat', type: 'verb-ovat', priority: 9 },
-      { pattern: /^(.+)ujete$/, base: '$1ovat', type: 'verb-ovat', priority: 9 },
-      { pattern: /^(.+)ují$/, base: '$1ovat', type: 'verb-ovat', priority: 9 },
-      
+      // -ovat глаголы (pracovat, studovat, etc.) - ВЫСОКИЙ приоритет!
+      { pattern: /^(.+)uji$/, base: '$1ovat', type: 'verb-ovat', priority: 99 },
+      { pattern: /^(.+)uješ$/, base: '$1ovat', type: 'verb-ovat', priority: 99 },
+      { pattern: /^(.+)uje$/, base: '$1ovat', type: 'verb-ovat', priority: 99 },
+      { pattern: /^(.+)ujeme$/, base: '$1ovat', type: 'verb-ovat', priority: 99 },
+      { pattern: /^(.+)ujete$/, base: '$1ovat', type: 'verb-ovat', priority: 99 },
+      { pattern: /^(.+)ují$/, base: '$1ovat', type: 'verb-ovat', priority: 99 },
+
       // Прошедшее время -ovat глаголов
-      { pattern: /^(.+)oval$/, base: '$1ovat', type: 'verb-ovat-past', priority: 9 },
-      { pattern: /^(.+)ovala$/, base: '$1ovat', type: 'verb-ovat-past', priority: 9 },
-      { pattern: /^(.+)ovalo$/, base: '$1ovat', type: 'verb-ovat-past', priority: 9 },
-      { pattern: /^(.+)ovali$/, base: '$1ovat', type: 'verb-ovat-past', priority: 9 },
-      { pattern: /^(.+)ovaly$/, base: '$1ovat', type: 'verb-ovat-past', priority: 9 },
-      
-      // -at глаголы (dělat, hrát, etc.)
-      { pattern: /^(.+)ám$/, base: '$1at', type: 'verb-at', priority: 8 },
-      { pattern: /^(.+)áš$/, base: '$1at', type: 'verb-at', priority: 8 },
-      { pattern: /^(.+)á$/, base: '$1at', type: 'verb-at', priority: 8 },
-      { pattern: /^(.+)áme$/, base: '$1at', type: 'verb-at', priority: 8 },
-      { pattern: /^(.+)áte$/, base: '$1at', type: 'verb-at', priority: 8 },
-      { pattern: /^(.+)ají$/, base: '$1at', type: 'verb-at', priority: 8 },
-      
+      { pattern: /^(.+)oval$/, base: '$1ovat', type: 'verb-ovat-past', priority: 99 },
+      { pattern: /^(.+)ovala$/, base: '$1ovat', type: 'verb-ovat-past', priority: 99 },
+      { pattern: /^(.+)ovalo$/, base: '$1ovat', type: 'verb-ovat-past', priority: 99 },
+      { pattern: /^(.+)ovali$/, base: '$1ovat', type: 'verb-ovat-past', priority: 99 },
+      { pattern: /^(.+)ovaly$/, base: '$1ovat', type: 'verb-ovat-past', priority: 99 },
+
+      // -at глаголы (dělat, hrát, etc.) - ВЫСОКИЙ приоритет!
+      { pattern: /^(.+)ám$/, base: '$1at', type: 'verb-at', priority: 99 },
+      { pattern: /^(.+)áš$/, base: '$1at', type: 'verb-at', priority: 99 },
+      { pattern: /^(.+)á$/, base: '$1at', type: 'verb-at', priority: 99 },
+      { pattern: /^(.+)áme$/, base: '$1at', type: 'verb-at', priority: 99 },
+      { pattern: /^(.+)áte$/, base: '$1at', type: 'verb-at', priority: 99 },
+      { pattern: /^(.+)ají$/, base: '$1at', type: 'verb-at', priority: 99 },
+
       // Прошедшее время -at глаголов
-      { pattern: /^(.+)al$/, base: '$1at', type: 'verb-at-past', priority: 8 },
-      { pattern: /^(.+)ala$/, base: '$1at', type: 'verb-at-past', priority: 8 },
-      { pattern: /^(.+)alo$/, base: '$1at', type: 'verb-at-past', priority: 8 },
-      { pattern: /^(.+)ali$/, base: '$1at', type: 'verb-at-past', priority: 8 },
-      { pattern: /^(.+)aly$/, base: '$1at', type: 'verb-at-past', priority: 8 },
+      { pattern: /^(.+)al$/, base: '$1at', type: 'verb-at-past', priority: 99 },
+      { pattern: /^(.+)ala$/, base: '$1at', type: 'verb-at-past', priority: 99 },
+      { pattern: /^(.+)alo$/, base: '$1at', type: 'verb-at-past', priority: 99 },
+      { pattern: /^(.+)ali$/, base: '$1at', type: 'verb-at-past', priority: 99 },
+      { pattern: /^(.+)aly$/, base: '$1at', type: 'verb-at-past', priority: 99 },
       
-      // -it глаголы (mluvit, prosit, etc.)
+      // -it глаголы (mluvit, prosit, etc.) - ВЫСОКИЙ приоритет!
       // Важно: минимум 3 символа, но с проверкой валидности в isValidVerb
-      { pattern: /^(.{3,})ím$/, base: '$1it', type: 'verb-it', priority: 8 },
-      { pattern: /^(.{3,})íš$/, base: '$1it', type: 'verb-it', priority: 8 },
-      { pattern: /^(.{3,})í$/, base: '$1it', type: 'verb-it', priority: 8 },
-      { pattern: /^(.{3,})íme$/, base: '$1it', type: 'verb-it', priority: 8 },
-      { pattern: /^(.{3,})íte$/, base: '$1it', type: 'verb-it', priority: 8 },
-      
+      { pattern: /^(.{3,})ím$/, base: '$1it', type: 'verb-it', priority: 99 },
+      { pattern: /^(.{3,})íš$/, base: '$1it', type: 'verb-it', priority: 99 },
+      { pattern: /^(.{3,})í$/, base: '$1it', type: 'verb-it', priority: 99 },
+      { pattern: /^(.{3,})íme$/, base: '$1it', type: 'verb-it', priority: 99 },
+      { pattern: /^(.{3,})íte$/, base: '$1it', type: 'verb-it', priority: 99 },
+
       // Прошедшее время -it глаголов
-      { pattern: /^(.+)il$/, base: '$1it', type: 'verb-it-past', priority: 8 },
-      { pattern: /^(.+)ila$/, base: '$1it', type: 'verb-it-past', priority: 8 },
-      { pattern: /^(.+)ilo$/, base: '$1it', type: 'verb-it-past', priority: 8 },
-      { pattern: /^(.+)ili$/, base: '$1it', type: 'verb-it-past', priority: 8 },
-      { pattern: /^(.+)ily$/, base: '$1it', type: 'verb-it-past', priority: 8 },
-      
-      // -ět глаголы (vidět, rozumět, etc.)
+      { pattern: /^(.+)il$/, base: '$1it', type: 'verb-it-past', priority: 99 },
+      { pattern: /^(.+)ila$/, base: '$1it', type: 'verb-it-past', priority: 99 },
+      { pattern: /^(.+)ilo$/, base: '$1it', type: 'verb-it-past', priority: 99 },
+      { pattern: /^(.+)ili$/, base: '$1it', type: 'verb-it-past', priority: 99 },
+      { pattern: /^(.+)ily$/, base: '$1it', type: 'verb-it-past', priority: 99 },
+
+      // -ět глаголы (vidět, rozumět, etc.) - ВЫСОКИЙ приоритет!
       // Важно: минимум 3 символа, но с проверкой валидности в isValidVerb
-      { pattern: /^(.{3,})ím$/, base: '$1ět', type: 'verb-et', priority: 7 },
-      { pattern: /^(.{3,})íš$/, base: '$1ět', type: 'verb-et', priority: 7 },
-      { pattern: /^(.{3,})í$/, base: '$1ět', type: 'verb-et', priority: 7 },
-      { pattern: /^(.{3,})íme$/, base: '$1ět', type: 'verb-et', priority: 7 },
-      { pattern: /^(.{3,})íte$/, base: '$1ět', type: 'verb-et', priority: 7 },
-      
+      { pattern: /^(.{3,})ím$/, base: '$1ět', type: 'verb-et', priority: 98 },
+      { pattern: /^(.{3,})íš$/, base: '$1ět', type: 'verb-et', priority: 98 },
+      { pattern: /^(.{3,})í$/, base: '$1ět', type: 'verb-et', priority: 98 },
+      { pattern: /^(.{3,})íme$/, base: '$1ět', type: 'verb-et', priority: 98 },
+      { pattern: /^(.{3,})íte$/, base: '$1ět', type: 'verb-et', priority: 98 },
+
       // Прошедшее время -ět глаголов
-      { pattern: /^(.+)ěl$/, base: '$1ět', type: 'verb-et-past', priority: 7 },
-      { pattern: /^(.+)ěla$/, base: '$1ět', type: 'verb-et-past', priority: 7 },
-      { pattern: /^(.+)ělo$/, base: '$1ět', type: 'verb-et-past', priority: 7 },
-      { pattern: /^(.+)ěli$/, base: '$1ět', type: 'verb-et-past', priority: 7 },
-      { pattern: /^(.+)ěly$/, base: '$1ět', type: 'verb-et-past', priority: 7 },
+      { pattern: /^(.+)ěl$/, base: '$1ět', type: 'verb-et-past', priority: 99 },
+      { pattern: /^(.+)ěla$/, base: '$1ět', type: 'verb-et-past', priority: 99 },
+      { pattern: /^(.+)ělo$/, base: '$1ět', type: 'verb-et-past', priority: 99 },
+      { pattern: /^(.+)ěli$/, base: '$1ět', type: 'verb-et-past', priority: 99 },
+      { pattern: /^(.+)ěly$/, base: '$1ět', type: 'verb-et-past', priority: 99 },
       
       // =====================================================================
       // ГЕРУНДИИ И ОТГЛАГОЛЬНЫЕ СУЩЕСТВИТЕЛЬНЫЕ
@@ -179,39 +208,47 @@ export class CzechNormalizationRules {
       
       // Существительные - направительный падеж
       { pattern: /^(.+)ů$/, base: '$1', type: 'noun-dir', priority: 85 },
-      
-      // Существительные - творительный падеж
-      { pattern: /^(.+)em$/, base: '$1o', type: 'noun-instr', priority: 80, minLength: 4 },
-      
+
       // Мужской род (твердое склонение)
       { pattern: /^(.+)ové$/, base: '$1', type: 'noun-m-hard', priority: 6 },
       { pattern: /^(.+)ů$/, base: '$1', type: 'noun-m-hard', priority: 6 },
       { pattern: /^(.+)ům$/, base: '$1', type: 'noun-m-hard', priority: 6 },
       { pattern: /^(.+)ech$/, base: '$1', type: 'noun-m-hard', priority: 6 },
       { pattern: /^(.+)y$/, base: '$1', type: 'noun-m-hard', priority: 5 },
+      // Творительный падеж мужского рода: mužem → muž, stromem → strom
+      { pattern: /^(.+[^o])em$/, base: '$1', type: 'noun-m-instr', priority: 87 },
       // Родительный/дательный падеж мужского рода (důvodu → důvod)
       // Высокий приоритет, но проверяем что это не женский род (не заканчивается на типичные для женского рода согласные перед -u)
       // Исключаем: -hu (knihu), -ru после гласной (kůru), -tu после гласной (minutu)
       { pattern: /^(.+[^aieouhřtů])u$/, base: '$1', type: 'noun-m-gen', priority: 7 },
       
       // Мужской род (мягкое склонение)
+      { pattern: /^(.+)ové$/, base: '$1', type: 'noun-m-soft', priority: 7 },
+      // Винительный падеж мужского рода: učitele → učitel, але НЕ růže, НЕ pracuje
+      { pattern: /^(.+[lnrt])e$/, base: '$1', type: 'noun-m-soft-acc', priority: 85 }, // učitele → učitel (специфичные согласные перед -e)
       { pattern: /^(.+)i$/, base: '$1', type: 'noun-m-soft', priority: 6 },
       { pattern: /^(.+)ích$/, base: '$1', type: 'noun-m-soft', priority: 6 },
       { pattern: /^(.+)ům$/, base: '$1', type: 'noun-m-soft', priority: 6 },
-      
+
       // Женский род (твердое склонение)
+      // ВАЖНО: Слова на -a могут быть УЖЕ в именительном падеже, поэтому низкий приоритет
+      { pattern: /^(.+[bcčdfghjklmnpřrsštvzž])a$/, base: '$1a', type: 'noun-f-hard-nom', priority: 97 }, // žena → žena (УЖЕ правильная форма)
       { pattern: /^(.+)y$/, base: '$1a', type: 'noun-f-hard', priority: 6 },
       { pattern: /^(.+)ě$/, base: '$1a', type: 'noun-f-hard', priority: 6 },
-      { pattern: /^(.+)u$/, base: '$1a', type: 'noun-f-hard', priority: 5 },
+      { pattern: /^(.+[hk])u$/, base: '$1a', type: 'noun-f-hard-acc', priority: 7 }, // knihu → kniha, mouchu → moucha
       { pattern: /^(.+)ou$/, base: '$1a', type: 'noun-f-hard', priority: 6 },
       { pattern: /^(.+)ách$/, base: '$1a', type: 'noun-f-hard', priority: 6 },
       { pattern: /^(.+)ami$/, base: '$1a', type: 'noun-f-hard', priority: 6 },
       
       // Женский род (мягкое склонение) - исправленные паттерны
+      // ВАЖНО: Слова на -ce могут быть УЖЕ в именительном падеже (ulice, práce, etc.)
+      { pattern: /^(.+[clnřst])ce$/, base: '$1ce', type: 'noun-f-soft-nom', priority: 98 }, // ulice → ulice, práce → práce (УЖЕ правильная форма)
+      { pattern: /^(.+)e$/, base: '$1e', type: 'noun-f-soft-nom', priority: 96 }, // růže → růže (УЖЕ правильная форма)
+
       { pattern: /^(.+)aci$/, base: '$1ace', type: 'noun-f-soft-acc', priority: 90 },
       { pattern: /^(.+)izi$/, base: '$1ize', type: 'noun-f-soft-acc', priority: 90 },
       { pattern: /^(.+)ici$/, base: '$1ice', type: 'noun-f-soft-acc', priority: 90 },
-      
+
       // Дополнительные правила для существительных женского рода на -ce, -se, -ze
       { pattern: /^(.+)ikaci$/, base: '$1ikace', type: 'noun-f-soft-acc-special', priority: 95 },
       { pattern: /^(.+)likaci$/, base: '$1likace', type: 'noun-f-soft-acc-special', priority: 95 },
@@ -220,12 +257,21 @@ export class CzechNormalizationRules {
       { pattern: /^(.+)anci$/, base: '$1ance', type: 'noun-f-soft-acc-special', priority: 95 },
       { pattern: /^(.+)usi$/, base: '$1use', type: 'noun-f-soft-acc-special', priority: 95 },
       { pattern: /^(.+)esi$/, base: '$1ese', type: 'noun-f-soft-acc-special', priority: 95 },
+
+      // Родительный падеж женского рода на -ce: ulic → ulice, prací → práce, růží → růže
+      { pattern: /^(.+)ic$/, base: '$1ice', type: 'noun-f-soft-gen', priority: 88 },
+      { pattern: /^(.+)ací$/, base: '$1ace', type: 'noun-f-soft-gen', priority: 88 },
+      { pattern: /^(.+[^i])í$/, base: '$1e', type: 'noun-f-soft-gen', priority: 4 }, // růží → růže (низкий приоритет, чтобы не ловить прилагательные)
       
       // Средний род (твердое склонение)
       { pattern: /^(.+)a$/, base: '$1o', type: 'noun-n-hard', priority: 5 },
       { pattern: /^(.+)ech$/, base: '$1o', type: 'noun-n-hard', priority: 6 },
       { pattern: /^(.+)ům$/, base: '$1o', type: 'noun-n-hard', priority: 6 },
       { pattern: /^(.+)y$/, base: '$1o', type: 'noun-n-hard', priority: 5 },
+      // Творительный падеж среднего рода: městem → město, oknem → okno
+      { pattern: /^(.+[o])em$/, base: '$1', type: 'noun-n-instr', priority: 86 }, // только если перед -em есть 'o'
+      // Дательный/местный падеж среднего рода: městu → město, oknu → okno
+      { pattern: /^(.+[ěo])u$/, base: '$1', type: 'noun-n-dat', priority: 6 },
       
       // Средний род (мягкое склонение)
       // Важно: минимум 5 символов ВСЕГО (4 в основе + 'í') чтобы не ловить "nyní"
@@ -247,12 +293,15 @@ export class CzechNormalizationRules {
       // Прилагательные твердого типа (мужской род)
       { pattern: /^(.+)ý$/, base: '$1ý', priority: 2 }, // dobrý → dobrý
       { pattern: /^(.+)ého$/, base: '$1ý', priority: 2 }, // dobrého → dobrý
-      { pattern: /^(.+)ému$/, base: '$1ý', priority: 2 }, // dobrému → dobrý
+      { pattern: /^(.+)ému$/, base: '$1ý', priority: 3 }, // dobrému → dobrý (повышен приоритет)
       { pattern: /^(.+)ým$/, base: '$1ý', priority: 2 }, // dobrým → dobrý
       { pattern: /^(.+)é$/, base: '$1ý', priority: 2 }, // dobré → dobrý (женский/средний род)
-      { pattern: /^(.+)ou$/, base: '$1ý', priority: 2 }, // dobrou → dobrý
+      { pattern: /^(.+)ou$/, base: '$1ý', priority: 3 }, // dobrou → dobrý (повышен приоритет)
       { pattern: /^(.+)ých$/, base: '$1ý', priority: 2 }, // dobrých → dobrý
-      { pattern: /^(.+)ými$/, base: '$1ý', priority: 2 }, // dobrými → dobrý
+      { pattern: /^(.+)ými$/, base: '$1ý', priority: 3 }, // dobrými → dobrý (повышен приоритет)
+
+      // Прилагательные женского рода - ВАЖНО: высокий приоритет чтобы обработать ДО существительных!
+      { pattern: /^(.+[bcčdfghjklmnpřrsštvzž])á$/, base: '$1ý', type: 'adj-fem-nom', priority: 89 }, // dobrá → dobrý, velká → velký
       
       // Прилагательные мягкого типа (мужской род)
       { pattern: /^(.+)ího$/, base: '$1í', priority: 2 }, // dobrého → dobrý
@@ -267,14 +316,26 @@ export class CzechNormalizationRules {
       // =====================================================================
       // ПРИЧАСТИЯ И ДЕЕПРИЧАСТИЯ
       // =====================================================================
-      { pattern: /^(.+)ující$/, base: '$1ovat', type: 'participle', priority: 7 },
-      { pattern: /^(.+)ovaný$/, base: '$1ovat', type: 'participle', priority: 7 },
-      { pattern: /^(.+)ovaná$/, base: '$1ovat', type: 'participle', priority: 7 },
-      { pattern: /^(.+)ané$/, base: '$1ovat', type: 'participle', priority: 7 },
-      
-      // Наречия от прилагательных
-      { pattern: /^(.+)ně$/, base: '$1ný', type: 'adverb', priority: 4 },
-      { pattern: /^(.+)ce$/, base: '$1cký', type: 'adverb', priority: 4 }
+      // Причастия настоящего времени действительные (-ící, -ající)
+      { pattern: /^(.+)ující$/, base: '$1ovat', type: 'participle-pres-act', priority: 92 }, // pracující → pracovat
+      { pattern: /^(.+)ající$/, base: '$1at', type: 'participle-pres-act', priority: 92 }, // dělající → dělat
+
+      // Причастия прошедшего времени страдательные (-aný, -ený, -itý, -tý)
+      { pattern: /^(.+)ovaný$/, base: '$1ovat', type: 'participle-past-pass', priority: 92 },
+      { pattern: /^(.+)ovaná$/, base: '$1ovat', type: 'participle-past-pass', priority: 92 },
+      { pattern: /^(.+)ované$/, base: '$1ovat', type: 'participle-past-pass', priority: 92 },
+
+      { pattern: /^(.+)aný$/, base: '$1at', type: 'participle-past-pass', priority: 91 }, // dělaný → dělat
+      { pattern: /^(.+)aná$/, base: '$1at', type: 'participle-past-pass', priority: 91 },
+      { pattern: /^(.+)ané$/, base: '$1at', type: 'participle-past-pass', priority: 91 },
+
+      { pattern: /^psaný$/, base: 'psát', type: 'participle-irregular', priority: 99 }, // psaný → psát (исключение)
+      { pattern: /^psaná$/, base: 'psát', type: 'participle-irregular', priority: 99 },
+      { pattern: /^psané$/, base: 'psát', type: 'participle-irregular', priority: 99 },
+
+      // Наречия от прилагательных - СНИЖЕН приоритет, чтобы НЕ ловить существительные на -ce
+      { pattern: /^(.+)ně$/, base: '$1ný', type: 'adverb', priority: 1 },
+      { pattern: /^(.+[^i])ce$/, base: '$1cký', type: 'adverb', priority: 1 } // НЕ ловить ulice, práce
     ];
   }
 
@@ -307,11 +368,18 @@ export class CzechNormalizationRules {
       return result;
     }
 
-    // Короткие слова (≤4 символа) на 'í' не нормализуем (наречия типа "nyní", "teď")
+    // Короткие слова (≤4 символа) на 'í' - НЕ нормализуем ТОЛЬКО если это НЕ глаголы
+    // Глаголы: vidí, prosí, chytí, mají и т.д. ДОЛЖНЫ нормализоваться
     if (normalizedWord.length <= 4 && normalizedWord.endsWith('í')) {
-      const result = [normalizedWord];
-      this.addToCache(normalizedWord, result);
-      return result;
+      // Проверяем исключения для глаголов (они ДОЛЖНЫ нормализоваться)
+      const verbExceptions = ['vidí', 'prosí', 'chytí', 'učí', 'mají', 'stojí', 'leží', 'sedí', 'rozumí'];
+      if (!verbExceptions.includes(normalizedWord)) {
+        // Это наречие или другое неизменяемое слово - НЕ нормализуем
+        const result = [normalizedWord];
+        this.addToCache(normalizedWord, result);
+        return result;
+      }
+      // Глаголы продолжают обработку
     }
 
     // Применение морфологических паттернов
