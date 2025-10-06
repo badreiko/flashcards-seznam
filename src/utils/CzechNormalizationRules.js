@@ -71,7 +71,10 @@ export class CzechNormalizationRules {
       ['můj', 'můj'], ['moje', 'můj'], ['moji', 'můj'], ['mého', 'můj'], ['mému', 'můj'], ['mým', 'můj'], ['mých', 'můj'], ['mými', 'můj'], ['mojí', 'můj'], ['mou', 'můj'],
       ['tvůj', 'tvůj'], ['tvoje', 'tvůj'], ['tvoji', 'tvůj'], ['tvého', 'tvůj'], ['tvému', 'tvůj'], ['tvým', 'tvůj'], ['tvých', 'tvůj'], ['tvými', 'tvůj'], ['tvou', 'tvůj'],
       ['náš', 'náš'], ['naše', 'náš'], ['naši', 'náš'], ['našeho', 'náš'], ['našemu', 'náš'], ['naším', 'náš'], ['našich', 'náš'], ['našimi', 'náš'], ['naší', 'náš'],
-      ['váš', 'váš'], ['vaše', 'váš'], ['vaši', 'váš'], ['vašeho', 'váš'], ['vašemu', 'váš'], ['vaším', 'váš'], ['vašich', 'váš'], ['vašimi', 'váš'], ['vaší', 'váš']
+      ['váš', 'váš'], ['vaše', 'váš'], ['vaši', 'váš'], ['vašeho', 'váš'], ['vašemu', 'váš'], ['vaším', 'váš'], ['vašich', 'váš'], ['vašimi', 'váš'], ['vaší', 'váš'],
+
+      // Существительные среднего рода - частые слова (для гарантированной правильной нормализации)
+      ['okna', 'okno'], ['města', 'město'], ['slova', 'slovo']
     ]);
 
     // Слова, которые не нормализуются (предлоги, союзы, частицы, наречия)
@@ -264,14 +267,26 @@ export class CzechNormalizationRules {
       { pattern: /^(.+[^i])í$/, base: '$1e', type: 'noun-f-soft-gen', priority: 4 }, // růží → růže (низкий приоритет, чтобы не ловить прилагательные)
       
       // Средний род (твердое склонение)
-      { pattern: /^(.+)a$/, base: '$1o', type: 'noun-n-hard', priority: 5 },
+      // ВАЖНО: Именительный падеж множественного числа среднего рода: okna → okno, města → město
+      // Проверяем что перед -a есть согласная (не гласная), чтобы не ловить глаголы
+      { pattern: /^(.+[bcčdfghjklmnpřrsštvzž])a$/, base: '$1o', type: 'noun-n-hard-pl', priority: 88 },
+
+      // Местный падеж множественного числа: oknech → okno, městech → město
+      // Проверяем что это средний род по контексту (перед -ech есть согласная, характерная для среднего рода)
+      { pattern: /^(.+[kntslm])ech$/, base: '$1o', type: 'noun-n-hard-loc-pl', priority: 89 },
+
+      // Творительный падеж среднего рода: městem → město, oknem → okno, slovem → slovo
+      // Проверяем что перед -em есть согласная (не гласная o, т.к. это мужской род)
+      { pattern: /^(.+[kntslmv])em$/, base: '$1o', type: 'noun-n-instr', priority: 88 },
+
+      // Дательный падеж среднего рода: městu → město, oknu → okno, slovu → slovo
+      // Повышаем приоритет и проверяем что перед -u есть согласная
+      { pattern: /^(.+[kntslmv])u$/, base: '$1o', type: 'noun-n-dat', priority: 89 },
+
+      // Старые паттерны с низким приоритетом (fallback)
       { pattern: /^(.+)ech$/, base: '$1o', type: 'noun-n-hard', priority: 6 },
       { pattern: /^(.+)ům$/, base: '$1o', type: 'noun-n-hard', priority: 6 },
       { pattern: /^(.+)y$/, base: '$1o', type: 'noun-n-hard', priority: 5 },
-      // Творительный падеж среднего рода: městem → město, oknem → okno
-      { pattern: /^(.+[o])em$/, base: '$1', type: 'noun-n-instr', priority: 86 }, // только если перед -em есть 'o'
-      // Дательный/местный падеж среднего рода: městu → město, oknu → okno
-      { pattern: /^(.+[ěo])u$/, base: '$1', type: 'noun-n-dat', priority: 6 },
       
       // Средний род (мягкое склонение)
       // Важно: минимум 5 символов ВСЕГО (4 в основе + 'í') чтобы не ловить "nyní"
@@ -281,27 +296,34 @@ export class CzechNormalizationRules {
       // =====================================================================
       // ПРИЛАГАТЕЛЬНЫЕ
       // =====================================================================
-      
-      // Прилагательные в сравнительной степени - приводим к мужскому роду именительного падежа
-      { pattern: /^(.+)ší$/, base: '$1ší', priority: 95 }, // lepší → lepší, větší → větší
-      { pattern: /^(.+)šího$/, base: '$1ší', priority: 95 }, // lepšího → lepší
-      { pattern: /^(.+)šímu$/, base: '$1ší', priority: 95 }, // lepšímu → lepší
-      { pattern: /^(.+)ším$/, base: '$1ší', priority: 95 }, // lepším → lepší
-      { pattern: /^(.+)ších$/, base: '$1ší', priority: 95 }, // lepších → lepší
-      { pattern: /^(.+)šími$/, base: '$1ší', priority: 95 }, // lepšími → lepší
-      
-      // Прилагательные твердого типа (мужской род)
-      { pattern: /^(.+)ý$/, base: '$1ý', priority: 2 }, // dobrý → dobrý
-      { pattern: /^(.+)ého$/, base: '$1ý', priority: 2 }, // dobrého → dobrý
-      { pattern: /^(.+)ému$/, base: '$1ý', priority: 3 }, // dobrému → dobrý (повышен приоритет)
-      { pattern: /^(.+)ým$/, base: '$1ý', priority: 2 }, // dobrým → dobrý
-      { pattern: /^(.+)é$/, base: '$1ý', priority: 2 }, // dobré → dobrý (женский/средний род)
-      { pattern: /^(.+)ou$/, base: '$1ý', priority: 3 }, // dobrou → dobrý (повышен приоритет)
-      { pattern: /^(.+)ých$/, base: '$1ý', priority: 2 }, // dobrých → dobrý
-      { pattern: /^(.+)ými$/, base: '$1ý', priority: 3 }, // dobrými → dobrý (повышен приоритет)
 
-      // Прилагательные женского рода - ВАЖНО: высокий приоритет чтобы обработать ДО существительных!
-      { pattern: /^(.+[bcčdfghjklmnpřrsštvzž])á$/, base: '$1ý', type: 'adj-fem-nom', priority: 89 }, // dobrá → dobrý, velká → velký
+      // Прилагательные в именительном падеже сравнительной степени на -ší, -čí
+      // КРИТИЧЕСКИ ВАЖНО: должны обрабатываться ДО глаголов! Приоритет 100!
+      // lepší, větší, menší, hezčí, rychlejší и т.д. должны оставаться как есть
+      { pattern: /^(.+[pbkvdtgszřlnmčšjc])ší$/, base: '$1ší', type: 'adj-comp-nom', priority: 100 }, // lepší → lepší, větší → větší, rychlejší → rychlejší
+      { pattern: /^(.+[pbkvdtgszřlnmčšjc])čí$/, base: '$1čí', type: 'adj-comp-nom-ci', priority: 100 }, // hezčí → hezčí
+
+      // Остальные падежи сравнительной степени
+      { pattern: /^(.+)šího$/, base: '$1ší', type: 'adj-comp-gen', priority: 100 }, // lepšího → lepší
+      { pattern: /^(.+)šímu$/, base: '$1ší', type: 'adj-comp-dat', priority: 100 }, // lepšímu → lepší
+      { pattern: /^(.+)ším$/, base: '$1ší', type: 'adj-comp-instr', priority: 100 }, // lepším → lepší
+      { pattern: /^(.+)ších$/, base: '$1ší', type: 'adj-comp-loc', priority: 100 }, // lepších → lepší
+      { pattern: /^(.+)šími$/, base: '$1ší', type: 'adj-comp-instr-pl', priority: 100 }, // lepšími → lepší
+
+      // Прилагательные женского рода - КРИТИЧЕСКИ ВАЖНО: обработать ДО глаголов, но ПОСЛЕ глагольных форм!
+      // dobrá → dobrý, НЕ dobrat! Но dělá → dělat (глагол)!
+      // Проверяем что перед -á есть ДВА согласных подряд или специфичные сочетания для прилагательных
+      { pattern: /^(.+[rbvdtnmklp][rbvdtnmklp])á$/, base: '$1ý', type: 'adj-fem-nom', priority: 100 }, // dobrá → dobrý (две согласные перед á)
+      { pattern: /^(.+[rbvdtnmklp][rbvdtnmklp])ou$/, base: '$1ý', type: 'adj-fem-acc', priority: 100 }, // dobrou → dobrý
+
+      // Прилагательные твердого типа (мужской род) - ВЫСОКИЙ приоритет
+      { pattern: /^(.+)ý$/, base: '$1ý', type: 'adj-m-nom', priority: 90 }, // dobrý → dobrý
+      { pattern: /^(.+)ého$/, base: '$1ý', type: 'adj-m-gen', priority: 90 }, // dobrého → dobrý
+      { pattern: /^(.+)ému$/, base: '$1ý', type: 'adj-m-dat', priority: 90 }, // dobrému → dobrý
+      { pattern: /^(.+)ým$/, base: '$1ý', type: 'adj-m-instr', priority: 90 }, // dobrým → dobrý
+      { pattern: /^(.+)é$/, base: '$1ý', type: 'adj-n-nom', priority: 90 }, // dobré → dobrý (женский/средний род)
+      { pattern: /^(.+)ých$/, base: '$1ý', type: 'adj-m-loc-pl', priority: 90 }, // dobrých → dobrý
+      { pattern: /^(.+)ými$/, base: '$1ý', type: 'adj-m-instr-pl', priority: 90 }, // dobrými → dobrý
       
       // Прилагательные мягкого типа (мужской род)
       { pattern: /^(.+)ího$/, base: '$1í', priority: 2 }, // dobrého → dobrý
@@ -430,6 +452,11 @@ export class CzechNormalizationRules {
 
             // Для существительных с высоким приоритетом (≥7) тоже возвращаем первый результат
             if (pattern.type && pattern.type.startsWith('noun-') && (pattern.priority || 0) >= 7 && results.length === 1) {
+              break;
+            }
+
+            // Для прилагательных с высоким приоритетом (≥90) возвращаем первый результат
+            if (pattern.type && pattern.type.startsWith('adj-') && (pattern.priority || 0) >= 90 && results.length === 1) {
               break;
             }
           }
