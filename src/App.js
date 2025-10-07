@@ -683,12 +683,9 @@ const App = () => {
       // Обрабатываем слова пакетами по 5 для уменьшения нагрузки
       for (let i = 0; i < uniqueWords.length; i += 5) {
         const batch = uniqueWords.slice(i, i + 5);
-        
-        // Используем processBatch для пакетной обработки слов
-        const batchResult = await processBatch(batch);
-        console.log('Batch processing result:', batchResult);
-        
+
         // Получаем переводы для каждого слова в пакете
+        // Метод translateWord внутри уже добавляет слова в очередь через addToBatch
         const batchTranslations = await Promise.all(
           batch.map(async (word) => {
             try {

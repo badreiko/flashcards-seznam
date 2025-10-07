@@ -483,7 +483,8 @@ class DataService {
    */
   async processBatch() {
     if (!this.pendingBatchOperations || this.pendingBatchOperations.length === 0) {
-      return { processed: 0 };
+      // Тихо возвращаем, если нет слов для обработки (например, только служебные слова)
+      return { processed: 0, total: 0, success: 0, failed: 0, details: [] };
     }
 
     const batchWords = [...this.pendingBatchOperations];
@@ -533,6 +534,74 @@ class DataService {
     }
 
     return results;
+  }
+
+  /**
+   * Синхронизирует данные между источниками (Firebase, localStorage, cache)
+   */
+  async syncData() {
+    try {
+      const results = {
+        firebaseToLocal: 0,
+        localToFirebase: 0,
+        total: 0
+      };
+
+      // Получаем все данные из Firebase
+      const firebaseData = await this.getAllFromFirebase();
+
+      // Получаем данные из localStorage
+      const localData = JSON.parse(localStorage.getItem(this.localStorageKey) || '{}');
+
+      // Синхронизация: Firebase → localStorage
+      if (firebaseData) {
+        for (const [word, data] of Object.entries(firebaseData)) {
+          if (!localData[word]) {
+            localData[word] = data;
+            results.firebaseToLocal++;
+          }
+        }
+      }
+
+      // Синхронизация: localStorage → Firebase
+      for (const [word, data] of Object.entries(localData)) {
+        if (!firebaseData || !firebaseData[word]) {
+          await this.saveToFirebase(word, data);
+          results.localToFirebase++;
+        }
+      }
+
+      // Сохраняем обновленный localStorage
+      localStorage.setItem(this.localStorageKey, JSON.stringify(localData));
+
+      results.total = Object.keys(localData).length;
+
+      console.log('[DataService] Sync completed:', results);
+      return results;
+    } catch (error) {
+      console.error('[DataService] Sync error:', error);
+      throw new Error(`Ошибка синхронизации: ${error.message}`);
+    }
+  }
+
+  /**
+   * Получает все данные из Firebase
+   */
+  async getAllFromFirebase() {
+    try {
+      const response = await fetch(
+        `${this.firebaseUrl}/${this.firebaseKey}.json`
+      );
+
+      if (!response.ok) {
+        throw new Error(`Firebase error: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('[DataService] Error fetching all from Firebase:', error);
+      return null;
+    }
   }
 }
 
