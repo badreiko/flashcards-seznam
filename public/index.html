@@ -394,7 +394,6 @@
       justify-content: center;
       gap: 24px;
       margin-bottom: 32px;
-      min-height: 540px;
     }
 
     .nav-btn {
@@ -483,7 +482,6 @@
       cursor: pointer;
       width: 100%;
       max-width: 420px;
-      max-height: 500px;
       margin: 0 auto;
       transition: transform 0.3s ease;
     }
@@ -496,6 +494,7 @@
       position: relative;
       width: 100%;
       min-height: 360px;
+      height: auto;
       text-align: center;
       transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
       transform-style: preserve-3d;
@@ -508,10 +507,8 @@
 
     .card-front,
     .card-back {
-      position: absolute;
       width: 100%;
       min-height: 360px;
-      max-height: 500px;
       backface-visibility: hidden;
       border-radius: var(--border-radius);
       border: 1px solid rgba(226, 232, 240, 0.8);
@@ -524,6 +521,23 @@
       flex-direction: column;
       padding: 32px 24px;
       transition: all 0.3s ease;
+    }
+
+    /* Позиционирование только для неактивной стороны */
+    .flashcard:not(.flipped) .card-back {
+      position: absolute;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+      opacity: 0;
+    }
+
+    .flashcard.flipped .card-front {
+      position: absolute;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+      opacity: 0;
     }
 
     .flashcard:hover .card-front,
