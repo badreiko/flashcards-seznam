@@ -62,7 +62,7 @@
     .app {
       max-width: 1200px;
       margin: 0 auto;
-      padding: 20px;
+      padding: 16px 20px;
       min-height: 100vh;
     }
 
@@ -72,8 +72,8 @@
 
     .header {
       text-align: center;
-      margin-bottom: 40px;
-      padding: 30px 20px;
+      margin-bottom: 24px;
+      padding: 20px 20px;
       background: var(--surface);
       border-radius: var(--border-radius);
       box-shadow: var(--shadow-sm);
@@ -345,8 +345,8 @@
 
     .flashcards-header {
       text-align: center;
-      margin-bottom: 32px;
-      padding: 24px 20px;
+      margin-bottom: 20px;
+      padding: 16px 20px;
       background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
       border: 2px solid rgba(37, 99, 235, 0.15);
       border-radius: 16px;
@@ -354,8 +354,8 @@
     }
 
     .flashcards-header h2 {
-      margin: 0 0 12px 0;
-      font-size: 1.75rem;
+      margin: 0 0 8px 0;
+      font-size: 1.5rem;
       font-weight: 700;
       background: linear-gradient(135deg, #2563eb 0%, #7c3aed 50%, #db2777 100%);
       -webkit-background-clip: text;
@@ -1114,16 +1114,16 @@
       }
 
       .header {
-        padding: 24px 16px;
-        margin-bottom: 24px;
+        padding: 16px 12px;
+        margin-bottom: 16px;
       }
 
       .header h1 {
-        font-size: 2rem;
+        font-size: 1.75rem;
       }
 
       .main-content {
-        padding: 24px 16px;
+        padding: 16px 12px;
       }
 
       .text-area {
@@ -1131,27 +1131,42 @@
       }
 
       .flashcard {
-        max-width: 340px;
-        height: 320px;
+        max-width: 100%;
+      }
+
+      .flashcards-header {
+        padding: 12px 16px;
+        margin-bottom: 16px;
+      }
+
+      .flashcards-header h2 {
+        font-size: 1.25rem;
+        margin: 0 0 6px 0;
+      }
+
+      .flashcards-count {
+        font-size: 0.85rem;
+        padding: 6px 12px;
       }
 
       .word {
-        font-size: 2rem;
+        font-size: 1.75rem;
       }
 
       .original-word {
-        font-size: 1.25rem;
+        font-size: 1.125rem;
       }
 
       .card-container {
-        gap: 16px;
-        min-height: 340px;
+        gap: 12px;
+        flex-wrap: nowrap;
       }
 
       .nav-btn {
-        width: 44px;
-        height: 44px;
-        font-size: 1.25rem;
+        width: 40px;
+        height: 40px;
+        font-size: 1.125rem;
+        flex-shrink: 0;
       }
 
       .card-front,
