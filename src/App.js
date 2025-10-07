@@ -257,14 +257,14 @@ const FlashcardViewer = ({ flashcards }) => {
           <h3>Все карточки</h3>
           <div className="cards-grid">
             {flashcards.map((card, index) => (
-              <div 
-                key={index} 
+              <div
+                key={index}
                 className={`card-item ${index === currentIndex ? 'active' : ''} ${card.usedNormalization ? 'normalized' : ''}`}
                 onClick={() => setCurrentIndex(index)}
               >
-                {card.word}
-                {card.usedNormalization && card.normalizedWord && (
-                  <span className="card-item-normalized">{card.normalizedWord}</span>
+                <span className="card-item-word">{card.word}</span>
+                {card.usedNormalization && card.normalizedWord && card.normalizedWord !== card.word && (
+                  <span className="card-item-normalized">→ {card.normalizedWord}</span>
                 )}
               </div>
             ))}
