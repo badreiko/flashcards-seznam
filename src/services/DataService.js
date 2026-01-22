@@ -276,107 +276,60 @@ class DataService {
 
   /**
    * Получает перевод слова с автоматическим выбором источника
-   * Приоритет: Cache → Firebase → DeepL → BaseDict
+   * Приоритет: Cache → Firebase (Golden DB) → BaseDict → DeepL (последний шанс)
    */
   async getTranslation(word, options = {}) {
     this.stats.totalRequests++;
-    const normalizedWord = word.toLowerCase().trim();
+    const normalizedWord = word.toLowerCase().strip ? word.toLowerCase().trim() : word;
 
-    // Шаг 1: Проверяем локальный кэш в памяти
+    // 1. Локальный кэш (самый быстрый)
     const cachedTranslation = this.translationCache.get(normalizedWord);
     if (cachedTranslation) {
       this.stats.cacheHits++;
-      return {
-        ...cachedTranslation,
-        source: 'cache'
-      };
+      return { ...cachedTranslation, source: 'cache' };
     }
 
-    // Шаг 2: Проверяем Firebase (главный источник после кэша)
+    // 2. Firebase (Ваша Золотая База)
     if (this.connectionStatus.firebase) {
       try {
         const firebaseData = await this.getFromFirebase(normalizedWord);
-        if (firebaseData && firebaseData.translations && firebaseData.translations.length > 0) {
+        // Если нашли в Firebase - это победа, даже если данных пока мало
+        if (firebaseData) {
           this.stats.firebaseHits++;
-          // Сохраняем в кэш для быстрого доступа
           this.translationCache.set(normalizedWord, firebaseData);
           this.saveToLocalStorage(normalizedWord, firebaseData);
           return {
             ...firebaseData,
-            source: 'firebase'
+            source: firebaseData.source || 'firebase'
           };
         }
       } catch (error) {
-        console.error('[Firebase] Error fetching from Firebase:', error);
+        console.error('[Firebase] Error:', error);
       }
     }
 
-    // Шаг 3: Проверяем служебные слова (предлоги, союзы, частицы)
-    // Такие слова не переводятся через DeepL - сразу идём в fallback
-    const serviceWords = new Set([
-      'a', 'i', 'o', 'u', 'v', 've', 'z', 'ze', 's', 'se', 'k', 'ke', 'na', 'za', 'po', 'do', 'od', 'ode',
-      'pro', 'při', 'před', 'přede', 'bez', 'beze', 'mimo', 'skrz', 'skrze', 'mezi', 'nad', 'nade', 'pod', 'pode',
-      'ale', 'nebo', 'ani', 'že', 'když', 'pokud', 'jestli', 'protože', 'ano', 'ne', 'jo', 'už', 'ještě'
-    ]);
-
-    if (serviceWords.has(normalizedWord)) {
-      console.log(`[DeepL] Skipping service word: "${normalizedWord}"`);
-      // Пропускаем DeepL API для служебных слов - идём в fallback
-      const fallbackData = this.getFromBaseDict(normalizedWord);
-      if (fallbackData) {
-        this.stats.fallbackHits++;
-        this.translationCache.set(normalizedWord, fallbackData);
-        return {
-          ...fallbackData,
-          source: 'fallback'
-        };
-      }
+    // 3. Базовый словарь (быстрый fallback для простых слов)
+    const fallbackData = this.getFromBaseDict(normalizedWord);
+    if (fallbackData) {
+      this.stats.fallbackHits++;
+      return { ...fallbackData, source: 'fallback' };
     }
 
-    // Шаг 4: Запрашиваем DeepL API (если не нашли в Firebase)
+    // 4. DeepL API (Только если слова нет в Золотой Базе)
     try {
       const deeplData = await this.translateWithDeepL(normalizedWord);
       if (deeplData && deeplData.success) {
         this.stats.deeplHits++;
-
-        // Сохраняем в Firebase (главное хранилище) и localStorage
         if (this.connectionStatus.firebase) {
           await this.saveToFirebase(normalizedWord, deeplData);
         }
-        this.saveToLocalStorage(normalizedWord, deeplData);
-        this.translationCache.set(normalizedWord, deeplData);
-
-        return {
-          ...deeplData,
-          source: 'deepl'
-        };
+        return { ...deeplData, source: 'deepl' };
       }
     } catch (error) {
-      console.error('[DeepL] Error fetching from DeepL:', error);
+      console.error('[DeepL] Error:', error);
     }
 
-    // Шаг 5: Используем базовый словарь как fallback
-    const fallbackData = this.getFromBaseDict(normalizedWord);
-    if (fallbackData) {
-      this.stats.fallbackHits++;
-      this.translationCache.set(normalizedWord, fallbackData);
-      return {
-        ...fallbackData,
-        source: 'fallback'
-      };
-    }
-
-    // Ничего не найдено
-    return {
-      word: normalizedWord,
-      translations: [],
-      examples: [],
-      gender: '',
-      grammar: '',
-      forms: [],
-      source: 'none',
-      error: 'Translation not found'
-    };
+    return { word: normalizedWord, translations: [], forms: [], source: 'none' };
   }
 
   /**

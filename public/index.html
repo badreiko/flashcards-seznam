@@ -663,18 +663,47 @@
     }
 
     .forms-grid {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
+      display: grid;
+      grid-template-columns: 1fr 1fr; /* Строго 2 колонки, как в словаре */
+      gap: 4px 20px; /* Увеличили горизонтальный отступ между колонками */
+      margin-top: 12px;
     }
 
     .form-item {
-      font-size: 0.9rem;
-      background: var(--background);
-      color: var(--text-main);
-      padding: 6px 12px;
-      border-radius: 8px;
-      border: 1px solid transparent;
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      padding: 4px 0;
+      line-height: 1.2;
+      
+      /* Защита от длинных слов */
+      overflow-wrap: break-word; /* Перенос слова, если оно не влезает */
+      word-wrap: break-word;
+      hyphens: auto; /* Автоматические дефисы при переносе */
+      border-bottom: 1px solid rgba(0,0,0,0.03); /* Легкая разделительная черта */
+    }
+    
+    .form-item:nth-last-child(-n+2) {
+      border-bottom: none; /* Убираем черту у последних элементов */
+    }
+
+    .form-item.current {
+      color: var(--primary);
+      font-weight: 700;
+      background: rgba(79, 70, 229, 0.05);
+      border-left: 3px solid var(--primary);
+      padding-left: 8px;
+      margin-left: -8px; /* Компенсируем отступ, чтобы текст остался в колонке */
+      border-bottom-color: transparent;
+    }
+
+    .search-context {
+      font-size: 0.8rem;
+      font-style: italic;
+      color: var(--text-muted);
+      margin-top: 8px;
+      background: rgba(0,0,0,0.03);
+      padding: 4px 12px;
+      border-radius: 20px;
     }
 
     .form-more {
