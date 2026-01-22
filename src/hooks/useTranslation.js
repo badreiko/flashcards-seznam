@@ -4,9 +4,8 @@
  * управляет состоянием загрузки и обрабатывает ошибки
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { dataService } from '../services/DataService';
-import { normalizationService } from '../services/NormalizationService';
 
 /**
  * Хук для работы с переводами чешских слов
@@ -18,9 +17,8 @@ const useTranslation = (options = {}) => {
   const [translation, setTranslation] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [normalizationInfo, setNormalizationInfo] = useState(null);
   const [source, setSource] = useState(null);
-  
+
   // Состояние для истории переводов
   const [history, setHistory] = useState([]);
   const [historyEnabled] = useState(options.historyEnabled !== false);
@@ -37,46 +35,37 @@ const useTranslation = (options = {}) => {
       setError('Слово не может быть пустым');
       return null;
     }
-    
+
     const normalizedWord = word.trim().toLowerCase();
-    
+
     try {
       setLoading(true);
       setError(null);
-      
+
       // Получаем перевод с помощью DataService
       const result = await dataService.getTranslation(normalizedWord, translationOptions);
-      
+
       // Проверяем результат
       if (result.error) {
         setError(result.error);
         return null;
       }
-      
+
       // Сохраняем результат в состояние
       setTranslation(result);
-      
-      // Сохраняем информацию о нормализации
-      if (result.usedNormalization && result.normalizationInfo) {
-        setNormalizationInfo(result.normalizationInfo);
-      } else {
-        setNormalizationInfo(null);
-      }
-      
+
       // Сохраняем информацию об источнике данных
       setSource(result.source);
-      
+
       // Добавляем в историю, если она включена
       if (historyEnabled) {
         addToHistory({
           word: normalizedWord,
           timestamp: new Date().toISOString(),
-          source: result.source,
-          usedNormalization: result.usedNormalization,
-          normalizedWord: result.normalizedWord
+          source: result.source
         });
       }
-      
+
       return result;
     } catch (err) {
       console.error('Error translating word:', err);
@@ -95,10 +84,10 @@ const useTranslation = (options = {}) => {
     setHistory(prevHistory => {
       // Удаляем дубликаты
       const filteredHistory = prevHistory.filter(item => item.word !== entry.word);
-      
+
       // Добавляем новую запись в начало
       const newHistory = [entry, ...filteredHistory];
-      
+
       // Ограничиваем размер истории
       return newHistory.slice(0, historyLimit);
     });
@@ -124,11 +113,9 @@ const useTranslation = (options = {}) => {
    */
   const getStats = useCallback(() => {
     const dataStats = dataService.getStats();
-    const normalizationStats = normalizationService.getStats();
-    
+
     return {
       data: dataStats,
-      normalization: normalizationStats,
       history: {
         count: history.length,
         limit: historyLimit
@@ -145,12 +132,12 @@ const useTranslation = (options = {}) => {
     if (!Array.isArray(words) || words.length === 0) {
       return { processed: 0, error: 'Список слов пуст или неверного формата' };
     }
-    
+
     // Добавляем слова в очередь
     for (const word of words) {
       await dataService.addToBatch(word);
     }
-    
+
     // Запускаем обработку
     return await dataService.processBatch();
   }, []);
@@ -161,10 +148,9 @@ const useTranslation = (options = {}) => {
     translation,
     loading,
     error,
-    normalizationInfo,
     source,
     history,
-    
+
     // Функции
     translateWord,
     clearHistory,

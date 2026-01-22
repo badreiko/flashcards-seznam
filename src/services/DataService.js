@@ -8,7 +8,6 @@
 import { ref, set, get } from 'firebase/database';
 import { database } from '../firebase';
 import { BaseDict } from '../utils/BaseDict';
-import { normalizationService } from './NormalizationService';
 
 // Netlify Function URL для DeepL API (через прокси для обхода CORS)
 const DEEPL_PROXY_URL = '/.netlify/functions/translate-deepl';
@@ -274,40 +273,7 @@ class DataService {
       }
     }
 
-    // Шаг 3: Пробуем нормализацию и повторяем поиск в Firebase
-    if (!options.skipNormalization) {
-      const normalizationResult = normalizationService.normalize(normalizedWord);
-
-      if (normalizationResult.usedNormalization) {
-        for (const normalizedForm of normalizationResult.normalizedForms) {
-          if (normalizedForm !== normalizedWord) {
-            // Рекурсивно ищем нормализованную форму (начиная с Firebase)
-            const normalizedTranslation = await this.getTranslation(normalizedForm, {
-              skipNormalization: true,
-              originalWord: normalizedWord
-            });
-
-            if (normalizedTranslation && normalizedTranslation.translations && normalizedTranslation.translations.length > 0) {
-              const result = {
-                ...normalizedTranslation,
-                originalWord: normalizedWord,
-                normalizedWord: normalizedForm,
-                normalizationInfo: normalizationResult,
-                usedNormalization: true
-              };
-
-              // Кэшируем результат
-              this.translationCache.set(normalizedWord, result);
-              this.saveToLocalStorage(normalizedWord, result);
-
-              return result;
-            }
-          }
-        }
-      }
-    }
-
-    // Шаг 4: Проверяем служебные слова (предлоги, союзы, частицы)
+    // Шаг 3: Проверяем служебные слова (предлоги, союзы, частицы)
     // Такие слова не переводятся через DeepL - сразу идём в fallback
     const serviceWords = new Set([
       'a', 'i', 'o', 'u', 'v', 've', 'z', 'ze', 's', 'se', 'k', 'ke', 'na', 'za', 'po', 'do', 'od', 'ode',
@@ -329,7 +295,7 @@ class DataService {
       }
     }
 
-    // Шаг 5: Запрашиваем DeepL API (если не нашли в Firebase)
+    // Шаг 4: Запрашиваем DeepL API (если не нашли в Firebase)
     try {
       const deeplData = await this.translateWithDeepL(normalizedWord);
       if (deeplData && deeplData.success) {
@@ -351,7 +317,7 @@ class DataService {
       console.error('[DeepL] Error fetching from DeepL:', error);
     }
 
-    // Шаг 6: Используем базовый словарь как fallback
+    // Шаг 5: Используем базовый словарь как fallback
     const fallbackData = this.getFromBaseDict(normalizedWord);
     if (fallbackData) {
       this.stats.fallbackHits++;

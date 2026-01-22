@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import useTranslation from './hooks/useTranslation';
-import NormalizationInfo from './components/NormalizationInfo';
 import { dataService } from './services/DataService';
-import { normalizationService } from './services/NormalizationService';
 
 // Функция для извлечения уникальных слов из текста
 const extractUniqueWords = (text) => {
@@ -12,18 +10,18 @@ const extractUniqueWords = (text) => {
 
   // Приводим к нижнему регистру
   const lowerCaseText = text.toLowerCase();
-  
+
   // Удаляем символы пунктуации и заменяем их пробелами
   const cleanedText = lowerCaseText.replace(/[.,/#!$%^&*;:{}=\-_`~()«»„"[\]]/g, ' ');
-  
+
   // Разбиваем на слова и убираем лишние пробелы
   const words = cleanedText
     .split(/\s+/)
     .filter(word => word.length > 1); // Исключаем односимвольные слова
-  
+
   // Создаем множество (Set) для исключения дубликатов
   const uniqueWordsSet = new Set(words);
-  
+
   // Преобразуем множество обратно в массив
   return Array.from(uniqueWordsSet).sort();
 };
@@ -36,7 +34,7 @@ const TextInput = ({ text, onTextChange, onExtractWords }) => {
       <p className="instruction">
         Вставьте текст (статью, рассказ, диалог) на чешском языке, из которого нужно извлечь слова для изучения.
       </p>
-      
+
       <textarea
         className="text-area"
         value={text}
@@ -44,8 +42,8 @@ const TextInput = ({ text, onTextChange, onExtractWords }) => {
         placeholder="Вставьте текст на чешском языке..."
         rows={10}
       />
-      
-      <button 
+
+      <button
         className="btn btn-primary"
         onClick={onExtractWords}
         disabled={!text.trim()}
@@ -56,29 +54,128 @@ const TextInput = ({ text, onTextChange, onExtractWords }) => {
   );
 };
 
-// Компонент индикатора прогресса
-const ProgressIndicator = ({ progress }) => {
+// Компонент индикатора прогресса с текущим словом
+const ProgressIndicator = ({ progress, currentWord, totalWords, processedWords }) => {
   return (
-    <div className="progress-container">
-      <div className="progress-bar">
-        <div 
-          className="progress-bar-fill" 
-          style={{ width: `${progress}%` }}
-        />
+    <div className="loading-indicator">
+      <div className="loading-spinner"></div>
+      {currentWord && (
+        <div className="loading-current-word">
+          {currentWord}
+        </div>
+      )}
+      <div className="progress-container" style={{ width: '100%', maxWidth: '300px' }}>
+        <div className="progress-bar">
+          <div
+            className="progress-bar-fill"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+        <div className="loading-status">
+          {processedWords !== undefined && totalWords !== undefined
+            ? `${processedWords} из ${totalWords} слов (${progress}%)`
+            : `${progress}% завершено`
+          }
+        </div>
       </div>
-      <div className="progress-text">{progress}% завершено</div>
     </div>
   );
 };
 
-// Компонент карточки
-const Flashcard = ({ word, translations, samples, note, normalizedWord, usedNormalization, source }) => {
+// Компонент переключения темы
+const ThemeToggle = () => {
+  const [isDark, setIsDark] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('theme') === 'dark' ||
+        (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    }
+    return false;
+  });
+
+  useEffect(() => {
+    if (isDark) {
+      document.documentElement.style.setProperty('--primary', '#3b82f6');
+      document.documentElement.style.setProperty('--background', '#0f172a');
+      document.documentElement.style.setProperty('--surface', '#1e293b');
+      document.documentElement.style.setProperty('--border', '#334155');
+      document.documentElement.style.setProperty('--text-primary', '#f1f5f9');
+      document.documentElement.style.setProperty('--text-secondary', '#cbd5e1');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.style.setProperty('--primary', '#2563eb');
+      document.documentElement.style.setProperty('--background', '#f8fafc');
+      document.documentElement.style.setProperty('--surface', '#ffffff');
+      document.documentElement.style.setProperty('--border', '#e2e8f0');
+      document.documentElement.style.setProperty('--text-primary', '#0f172a');
+      document.documentElement.style.setProperty('--text-secondary', '#64748b');
+      localStorage.setItem('theme', 'light');
+    }
+  }, [isDark]);
+
+  return (
+    <button
+      className="theme-toggle"
+      onClick={() => setIsDark(!isDark)}
+      title={isDark ? 'Светлая тема' : 'Темная тема'}
+    >
+      {isDark ? '☀️' : '🌙'}
+    </button>
+  );
+};
+
+// Компонент карточки с 3D эффектом и звуком
+const Flashcard = ({ word, translations, samples, note, source }) => {
   const [isFlipped, setIsFlipped] = useState(false);
-  
+  const [rotateX, setRotateX] = useState(0);
+  const [rotateY, setRotateY] = useState(0);
+  const [glarePosition, setGlarePosition] = useState({ x: 50, y: 50 });
+
   const handleFlip = () => {
     setIsFlipped(!isFlipped);
+    // Сбрасываем наклон при перевороте, чтобы анимация была чистой
+    setRotateX(0);
+    setRotateY(0);
   };
-  
+
+  const handleSpeak = (e) => {
+    e.stopPropagation(); // Не переворачивать карточку при клике на звук
+    
+    if ('speechSynthesis' in window) {
+      const utterance = new SpeechSynthesisUtterance(word);
+      utterance.lang = 'cs-CZ'; // Чешский язык
+      utterance.rate = 0.9; // Чуть медленнее для обучения
+      window.speechSynthesis.speak(utterance);
+    } else {
+      alert('Ваш браузер не поддерживает озвучивание.');
+    }
+  };
+
+  const handleMouseMove = (e) => {
+    if (isFlipped) return; // Не применять эффект к обратной стороне для читаемости
+
+    const card = e.currentTarget;
+    const rect = card.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+    
+    // Вычисляем угол поворота (максимум 10 градусов)
+    const rotateXValue = ((y - centerY) / centerY) * -10; 
+    const rotateYValue = ((x - centerX) / centerX) * 10;
+
+    setRotateX(rotateXValue);
+    setRotateY(rotateYValue);
+    setGlarePosition({ x: (x / rect.width) * 100, y: (y / rect.height) * 100 });
+  };
+
+  const handleMouseLeave = () => {
+    setRotateX(0);
+    setRotateY(0);
+    setGlarePosition({ x: 50, y: 50 });
+  };
+
   // Определяем цвет индикатора источника
   const getSourceColor = () => {
     switch (source) {
@@ -96,7 +193,7 @@ const Flashcard = ({ word, translations, samples, note, normalizedWord, usedNorm
         return 'var(--text-secondary)';
     }
   };
-  
+
   // Определяем текст источника
   const getSourceText = () => {
     switch (source) {
@@ -114,41 +211,52 @@ const Flashcard = ({ word, translations, samples, note, normalizedWord, usedNorm
         return 'Неизвестный';
     }
   };
-  
+
   return (
-    <div 
-      className={`flashcard ${isFlipped ? 'flipped' : ''}`} 
+    <div
+      className={`flashcard ${isFlipped ? 'flipped' : ''}`}
       onClick={handleFlip}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      style={{
+        transform: isFlipped 
+          ? 'rotateY(180deg)' 
+          : `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`,
+        transition: isFlipped ? 'transform 0.6s' : 'transform 0.1s ease-out'
+      }}
     >
       <div className="card-inner">
         <div className="card-front">
-          <div className="word">{word}</div>
-          {usedNormalization && normalizedWord && (
-            <div className="normalization-hint">
-              Нормализовано: <span className="normalized-form">{normalizedWord}</span>
-            </div>
+          {/* Блик света */}
+          {!isFlipped && (
+            <div 
+              className="card-glare"
+              style={{
+                background: `radial-gradient(circle at ${glarePosition.x}% ${glarePosition.y}%, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0) 80%)`
+              }}
+            />
           )}
+
+          <div className="word-container">
+            <div className="word">{word}</div>
+            <button 
+              className="audio-btn" 
+              onClick={handleSpeak}
+              title="Прослушать произношение"
+              aria-label="Прослушать"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
+                <path d="M13.5 4.06c0-1.336-1.616-2.005-2.56-1.06l-4.5 4.5H4.508c-1.141 0-2.318.664-2.66 1.905A9.76 9.76 0 001.5 12c0 .898.121 1.768.35 2.595.341 1.24 1.518 1.905 2.659 1.905h1.93l4.5 4.5c.945.945 2.561.276 2.561-1.06V4.06zM18.584 5.106a.75.75 0 011.06 0c3.808 3.807 3.808 9.98 0 13.788a.75.75 0 11-1.06-1.06 8.25 8.25 0 000-11.668.75.75 0 010-1.06z" />
+                <path d="M15.932 7.757a.75.75 0 011.061 0 6 6 0 010 8.486.75.75 0 01-1.06-1.061 4.5 4.5 0 000-6.364.75.75 0 010-1.06z" />
+              </svg>
+            </button>
+          </div>
           <p className="hint">Нажмите, чтобы увидеть перевод</p>
         </div>
-        
+
         <div className="card-back">
           <h3 className="original-word">{word}</h3>
-          
-          {usedNormalization && normalizedWord && (
-            <div className="normalization-info-card">
-              <span className="normalized-label">Нормализовано:</span>
-              <span className="normalized-value">{normalizedWord}</span>
-              {source && (
-                <span 
-                  className="source-badge-small" 
-                  style={{ backgroundColor: getSourceColor() }}
-                >
-                  {getSourceText()}
-                </span>
-              )}
-            </div>
-          )}
-          
+
           <div className="translations">
             {translations && translations.length > 0 ? (
               <div>
@@ -182,30 +290,63 @@ const Flashcard = ({ word, translations, samples, note, normalizedWord, usedNorm
   );
 };
 
-// Компонент просмотра карточек
+// Компонент просмотра карточек с клавиатурной навигацией
 const FlashcardViewer = ({ flashcards }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showAll, setShowAll] = useState(false);
-  
-  // Если нет карточек, показываем сообщение
+  const [isFlipping, setIsFlipping] = useState(false);
+
+  // Клавиатурная навигация
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        goToPrevious();
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        goToNext();
+      } else if (e.key === ' ') {
+        e.preventDefault();
+        // Отправляем клик на карточку для переворота
+        setIsFlipping(prev => !prev);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [flashcards?.length]);
+
+  // Если нет карточек, показываем пустое состояние
   if (!flashcards || flashcards.length === 0) {
-    return <div className="no-cards">Нет карточек для отображения</div>;
+    return (
+      <div className="empty-state">
+        <div className="empty-state-icon">📚</div>
+        <div className="empty-state-title">Нет карточек для отображения</div>
+        <div className="empty-state-description">
+          Введите текст и извлеките слова для создания карточек
+        </div>
+      </div>
+    );
   }
-  
+
   const goToPrevious = () => {
     setCurrentIndex(prevIndex => {
       return prevIndex > 0 ? prevIndex - 1 : flashcards.length - 1;
     });
   };
-  
+
   const goToNext = () => {
     setCurrentIndex(prevIndex => {
       return prevIndex < flashcards.length - 1 ? prevIndex + 1 : 0;
     });
   };
-  
+
   const currentCard = flashcards[currentIndex];
-  
+
+  // Показываем только ограниченное количество progress dots
+  const maxDots = 20;
+  const showDots = flashcards.length <= maxDots;
+
   return (
     <div className="flashcards-container">
       <div className="flashcards-header">
@@ -214,44 +355,64 @@ const FlashcardViewer = ({ flashcards }) => {
           Карточка {currentIndex + 1} из {flashcards.length}
         </div>
       </div>
-      
+
       <div className="card-container">
-        <button 
-          className="nav-btn prev-btn" 
+        <button
+          className="nav-btn prev-btn"
           onClick={goToPrevious}
-          aria-label="Предыдущая карточка"
+          aria-label="Предыдущая карточка (←)"
+          title="← Предыдущая"
         >
           &#8249;
         </button>
-        
-        <Flashcard 
+
+        <Flashcard
+          key={currentIndex}
           word={currentCard.word}
           translations={currentCard.translations}
           samples={currentCard.samples}
-          normalizedWord={currentCard.normalizedWord}
-          usedNormalization={currentCard.usedNormalization}
           source={currentCard.source}
           note={currentCard.note}
+          forceFlip={isFlipping}
         />
-        
-        <button 
-          className="nav-btn next-btn" 
+
+        <button
+          className="nav-btn next-btn"
           onClick={goToNext}
-          aria-label="Следующая карточка"
+          aria-label="Следующая карточка (→)"
+          title="→ Следующая"
         >
           &#8250;
         </button>
       </div>
-      
+
+      {/* Progress dots */}
+      {showDots && (
+        <div className="progress-dots">
+          {flashcards.map((_, index) => (
+            <div
+              key={index}
+              className={`progress-dot ${index === currentIndex ? 'active' : ''} ${index < currentIndex ? 'completed' : ''}`}
+              onClick={() => setCurrentIndex(index)}
+              title={`Карточка ${index + 1}`}
+            />
+          ))}
+        </div>
+      )}
+
       <div className="flashcards-actions">
-        <button 
-          className="btn btn-secondary"
+        <button
+          className="btn btn-secondary btn-grid-view"
           onClick={() => setShowAll(!showAll)}
         >
-          {showAll ? 'Скрыть все карточки' : 'Показать все карточки'}
+          {showAll ? 'Скрыть сетку' : 'Сетка карточек'}
         </button>
       </div>
-      
+
+      <p style={{ textAlign: 'center', fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '8px' }}>
+        Подсказка: используйте ← → для навигации, Пробел для переворота
+      </p>
+
       {showAll && (
         <div className="all-cards">
           <h3>Все карточки</h3>
@@ -259,13 +420,13 @@ const FlashcardViewer = ({ flashcards }) => {
             {flashcards.map((card, index) => (
               <div
                 key={index}
-                className={`card-item ${index === currentIndex ? 'active' : ''} ${card.usedNormalization ? 'normalized' : ''}`}
-                onClick={() => setCurrentIndex(index)}
+                className={`card-item ${index === currentIndex ? 'active' : ''}`}
+                onClick={() => {
+                  setCurrentIndex(index);
+                  setShowAll(false);
+                }}
               >
                 <span className="card-item-word">{card.word}</span>
-                {card.usedNormalization && card.normalizedWord && card.normalizedWord !== card.word && (
-                  <span className="card-item-normalized">→ {card.normalizedWord}</span>
-                )}
               </div>
             ))}
           </div>
@@ -282,36 +443,33 @@ const DictionaryStats = ({ onViewDictionary }) => {
   const [error, setError] = useState('');
   const [detailedStats, setDetailedStats] = useState(null);
   const [showDetailedStats, setShowDetailedStats] = useState(false);
-  
+
   const loadStats = async () => {
     setLoading(true);
     setError('');
-    
+
     try {
-      // Используем новый DataService для получения статистики
+      // Используем DataService для получения статистики
       const dataStats = await dataService.getStats();
-      const normStats = normalizationService.getStats();
-      
+
       // Получаем количество слов в базовом словаре
       const baseDictSize = dataService.baseDict.getWordCount();
-      
+
       // Сохраняем подробную статистику
       setDetailedStats({
         data: dataStats,
-        normalization: normStats,
         baseDict: {
           wordCount: baseDictSize
         }
       });
-      
+
       // Сохраняем основную статистику
       setStats({
         count: dataStats.cacheSize || 0,
         cacheHitRate: dataStats.cacheHitRate,
         firebaseHitRate: dataStats.firebaseHitRate,
         deeplHitRate: dataStats.deeplHitRate,
-        fallbackHitRate: dataStats.fallbackHitRate,
-        normalizationSuccessRate: normStats.successRate
+        fallbackHitRate: dataStats.fallbackHitRate
       });
     } catch (error) {
       console.error('Error loading dictionary stats:', error);
@@ -320,23 +478,23 @@ const DictionaryStats = ({ onViewDictionary }) => {
       setLoading(false);
     }
   };
-  
+
   // Загружаем статистику при монтировании компонента
   useEffect(() => {
     loadStats();
   }, []);
-  
+
   const handleExportDictionary = async () => {
     try {
       setLoading(true);
-      
+
       // Синхронизируем данные между источниками
       const syncResult = await dataService.syncData();
       console.log('Sync result:', syncResult);
-      
+
       // Обновляем статистику
       await loadStats();
-      
+
       alert('Словарь успешно синхронизирован');
     } catch (error) {
       console.error('Error exporting dictionary:', error);
@@ -345,11 +503,10 @@ const DictionaryStats = ({ onViewDictionary }) => {
       setLoading(false);
     }
   };
-  
+
   const handleClearCache = () => {
     try {
       dataService.clearCache();
-      normalizationService.clearCache();
       loadStats();
       alert('Кэш очищен');
     } catch (error) {
@@ -357,11 +514,11 @@ const DictionaryStats = ({ onViewDictionary }) => {
       setError('Ошибка при очистке кэша: ' + error.message);
     }
   };
-  
+
   return (
     <div className="dictionary-stats">
       <h3>Словарь и статистика</h3>
-      
+
       {loading ? (
         <p>Загрузка статистики...</p>
       ) : error ? (
@@ -369,14 +526,14 @@ const DictionaryStats = ({ onViewDictionary }) => {
       ) : stats ? (
         <div className="stats-container">
           <p>В кэше {stats.count} слов</p>
-          
-          <button 
-            className="stats-toggle-btn" 
+
+          <button
+            className="stats-toggle-btn"
             onClick={() => setShowDetailedStats(!showDetailedStats)}
           >
             {showDetailedStats ? 'Скрыть подробную статистику' : 'Показать подробную статистику'}
           </button>
-          
+
           {showDetailedStats && detailedStats && (
             <div className="detailed-stats">
               <div className="stats-section">
@@ -386,17 +543,16 @@ const DictionaryStats = ({ onViewDictionary }) => {
                 <p>🤖 DeepL AI: {stats.deeplHitRate}</p>
                 <p>Базовый словарь: {stats.fallbackHitRate}</p>
               </div>
-              
+
               <div className="stats-section">
-                <h4>Нормализация</h4>
-                <p>Успешность: {stats.normalizationSuccessRate}</p>
-                <p>Всего слов в базовом словаре: {detailedStats.baseDict.wordCount}</p>
+                <h4>Базовый словарь</h4>
+                <p>Всего слов: {detailedStats.baseDict.wordCount}</p>
               </div>
             </div>
           )}
         </div>
       ) : null}
-      
+
       <div className="dictionary-actions">
         <button className="dictionary-button" onClick={onViewDictionary}>
           Просмотреть словарь
@@ -419,32 +575,29 @@ const DictionaryViewer = ({ onClose }) => {
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [sourceFilter, setSourceFilter] = useState('all');
-  const [showNormalizationInfo, setShowNormalizationInfo] = useState(false);
-  
+
   const loadDictionary = async () => {
     setLoading(true);
     setError('');
-    
+
     try {
       // Используем новый DataService для получения словаря
       // Собираем данные из localStorage
       const cacheKey = 'flashcards_seznam_cache';
       const cache = JSON.parse(localStorage.getItem(cacheKey) || '{}');
-      
+
       // Преобразуем в массив слов
       const dictArray = Object.entries(cache).map(([word, data]) => ({
         word,
         translations: data.translations || [],
         examples: data.examples || [],
-        normalizedWord: data.normalizedWord,
-        usedNormalization: data.usedNormalization,
         source: data.source || 'localStorage',
         cachedAt: data.cachedAt
       }));
-      
+
       // Сортируем по алфавиту
       dictArray.sort((a, b) => a.word.localeCompare(b.word));
-      
+
       setDictionary(dictArray);
     } catch (error) {
       console.error('Error loading dictionary:', error);
@@ -453,47 +606,37 @@ const DictionaryViewer = ({ onClose }) => {
       setLoading(false);
     }
   };
-  
+
   useEffect(() => {
     loadDictionary();
   }, []);
-  
+
   // Фильтрация словаря по поисковому запросу и источнику
   const filteredDictionary = dictionary.filter(item => {
     // Фильтр по источнику
     if (sourceFilter !== 'all' && item.source !== sourceFilter) {
       return false;
     }
-    
-    // Фильтр по нормализации
-    if (showNormalizationInfo && !item.usedNormalization) {
-      return false;
-    }
-    
+
     if (!searchTerm) return true;
-    
+
     const lowerSearchTerm = searchTerm.toLowerCase();
-    
+
     // Поиск по слову
     if (item.word.toLowerCase().includes(lowerSearchTerm)) {
       return true;
     }
-    
-    // Поиск по нормализованному слову
-    if (item.normalizedWord && item.normalizedWord.toLowerCase().includes(lowerSearchTerm)) {
-      return true;
-    }
-    
+
     // Поиск по переводам
-    if (item.translations && item.translations.some(translation => 
+    if (item.translations && item.translations.some(translation =>
       translation.toLowerCase().includes(lowerSearchTerm)
     )) {
       return true;
     }
-    
+
     return false;
   });
-  
+
   // Получаем цвет для источника
   const getSourceColor = (source) => {
     switch (source) {
@@ -511,7 +654,7 @@ const DictionaryViewer = ({ onClose }) => {
         return 'var(--text-secondary)';
     }
   };
-  
+
   // Получаем текст для источника
   const getSourceText = (source) => {
     switch (source) {
@@ -529,14 +672,14 @@ const DictionaryViewer = ({ onClose }) => {
         return 'Неизвестный';
     }
   };
-  
+
   return (
     <div className="dictionary-viewer">
       <div className="dictionary-header">
         <h2>Словарь</h2>
         <button className="close-btn" onClick={onClose}>Закрыть</button>
       </div>
-      
+
       <div className="search-container">
         <input
           type="text"
@@ -545,12 +688,12 @@ const DictionaryViewer = ({ onClose }) => {
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
-        
+
         <div className="filter-container">
           <div className="filter-group">
             <label>Источник:</label>
-            <select 
-              value={sourceFilter} 
+            <select
+              value={sourceFilter}
               onChange={(e) => setSourceFilter(e.target.value)}
               className="filter-select"
             >
@@ -562,24 +705,13 @@ const DictionaryViewer = ({ onClose }) => {
               <option value="fallback">Базовый словарь</option>
             </select>
           </div>
-          
-          <div className="filter-group">
-            <label>
-              <input 
-                type="checkbox" 
-                checked={showNormalizationInfo} 
-                onChange={() => setShowNormalizationInfo(!showNormalizationInfo)}
-              />
-              Только нормализованные
-            </label>
-          </div>
         </div>
       </div>
-      
+
       <div className="dictionary-stats-summary">
         Найдено: {filteredDictionary.length} из {dictionary.length} слов
       </div>
-      
+
       {loading ? (
         <div className="loading">Загрузка словаря...</div>
       ) : error ? (
@@ -592,14 +724,9 @@ const DictionaryViewer = ({ onClose }) => {
             <div key={index} className="dict-word-item">
               <div className="dict-word-header">
                 <div className="dict-word">{item.word}</div>
-                {item.usedNormalization && item.normalizedWord && (
-                  <div className="dict-normalized">
-                    → {item.normalizedWord}
-                  </div>
-                )}
                 {item.source && (
-                  <div 
-                    className="dict-source-badge" 
+                  <div
+                    className="dict-source-badge"
                     style={{ backgroundColor: getSourceColor(item.source) }}
                   >
                     {getSourceText(item.source)}
@@ -633,15 +760,15 @@ const App = () => {
   const [currentStep, setCurrentStep] = useState('input');
   const [isLoading, setIsLoading] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [currentWord, setCurrentWord] = useState('');
+  const [processedCount, setProcessedCount] = useState(0);
   const [error, setError] = useState('');
-  const [lastTranslation, setLastTranslation] = useState(null);
-  
+
   // Используем хук useTranslation для работы с переводами
   const {
     translation,
     loading: translationLoading,
     error: translationError,
-    normalizationInfo,
     source,
     translateWord,
     getStats,
@@ -656,7 +783,7 @@ const App = () => {
   // Извлечение уникальных слов из текста
   const handleExtractWords = () => {
     if (!text.trim()) return;
-    
+
     const words = extractUniqueWords(text);
     setUniqueWords(words);
     setCurrentStep('extracted');
@@ -669,16 +796,18 @@ const App = () => {
       setError('Нет слов для перевода');
       return;
     }
-    
+
     setIsLoading(true);
     setProgress(0);
+    setCurrentWord('');
+    setProcessedCount(0);
     setError('');
-    
+
     try {
       const translatedCards = [];
       const total = uniqueWords.length;
       let completed = 0;
-      
+
       // Используем пакетную обработку из нашего хука useTranslation
       // Обрабатываем слова пакетами по 5 для уменьшения нагрузки
       for (let i = 0; i < uniqueWords.length; i += 5) {
@@ -689,20 +818,18 @@ const App = () => {
         const batchTranslations = await Promise.all(
           batch.map(async (word) => {
             try {
+              // Устанавливаем текущее обрабатываемое слово
+              setCurrentWord(word);
+
               // Используем translateWord из хука useTranslation
               const result = await translateWord(word);
               const translationData = {
                 word,
                 translations: result?.translations || [],
                 samples: result?.examples || [],
-                normalizedWord: result?.normalizedWord,
-                usedNormalization: result?.usedNormalization,
                 source: result?.source
               };
-              
-              // Сохраняем последний перевод для отображения информации о нормализации
-              setLastTranslation(translationData);
-              
+
               return translationData;
             } catch (error) {
               console.error(`Error translating word ${word}:`, error);
@@ -715,20 +842,21 @@ const App = () => {
             }
           })
         );
-        
+
         // Добавляем результаты в общий массив
         translatedCards.push(...batchTranslations.filter(item => item));
-        
+
         // Обновляем прогресс
         completed += batch.length;
+        setProcessedCount(completed);
         setProgress(Math.floor((completed / total) * 100));
-        
+
         // Небольшая задержка между пакетами
         if (i + 5 < uniqueWords.length) {
           await new Promise(resolve => setTimeout(resolve, 1000)); // 1 секунда задержки
         }
       }
-      
+
       if (translatedCards.length === 0) {
         setError('Не удалось получить переводы. Пожалуйста, попробуйте позже.');
       } else {
@@ -753,12 +881,12 @@ const App = () => {
     setProgress(0);
     setError('');
   };
-  
+
   // Просмотр словаря
   const handleViewDictionary = () => {
     setCurrentStep('dictionary');
   };
-  
+
   // Возврат из просмотра словаря
   const handleCloseDictionary = () => {
     setCurrentStep('input');
@@ -766,6 +894,7 @@ const App = () => {
 
   return (
     <div className="app">
+      <ThemeToggle />
       <header className="header">
         <h1>Flashcards Seznam</h1>
         <p className="subtitle">Изучение чешских слов с помощью карточек</p>
@@ -774,8 +903,8 @@ const App = () => {
       <main className="main-content">
         {currentStep === 'input' && (
           <React.Fragment>
-            <TextInput 
-              text={text} 
+            <TextInput
+              text={text}
               onTextChange={handleTextChange}
               onExtractWords={handleExtractWords}
             />
@@ -792,7 +921,7 @@ const App = () => {
               ))}
             </div>
             <div className="actions">
-              <button 
+              <button
                 className="btn btn-primary"
                 onClick={handleGetTranslations}
                 disabled={isLoading || translationLoading}
@@ -803,24 +932,17 @@ const App = () => {
                 Сбросить
               </button>
             </div>
-            
-            {isLoading && <ProgressIndicator progress={progress} />}
+
+            {isLoading && (
+              <ProgressIndicator
+                progress={progress}
+                currentWord={currentWord}
+                totalWords={uniqueWords.length}
+                processedWords={processedCount}
+              />
+            )}
             {error && <div className="error-message">{error}</div>}
             {translationError && <div className="error-message">{translationError}</div>}
-            
-            {/* Отображаем информацию о нормализации для последнего переведенного слова */}
-            {lastTranslation && lastTranslation.usedNormalization && (
-              <div className="normalization-container">
-                <h3>Информация о нормализации</h3>
-                <NormalizationInfo 
-                  originalWord={lastTranslation.word}
-                  normalizedWord={lastTranslation.normalizedWord}
-                  normalizationInfo={normalizationInfo}
-                  usedNormalization={lastTranslation.usedNormalization}
-                  source={lastTranslation.source}
-                />
-              </div>
-            )}
           </div>
         )}
 
@@ -840,7 +962,7 @@ const App = () => {
             </div>
           </div>
         )}
-        
+
         {currentStep === 'dictionary' && (
           <DictionaryViewer onClose={handleCloseDictionary} />
         )}
