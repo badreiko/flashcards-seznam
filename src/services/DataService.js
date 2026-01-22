@@ -1,7 +1,8 @@
 /**
  * DataService.js
  * Централизованное управление данными с DeepL API
- * Приоритет источников: Cache → LocalStorage → Firebase → DeepL API → BaseDict
+ * Приоритет источников: Cache → Firebase → DeepL API → BaseDict
+ * LocalStorage используется только для кэширования
  */
 
 import { ref, set, get } from 'firebase/database';
@@ -163,6 +164,45 @@ class DataService {
   }
 
   /**
+   * TODO: Перевод через DeepSeek API (будущая интеграция)
+   * DeepSeek будет использоваться как дополнительный источник для:
+   * - Проверки качества переводов DeepL
+   * - Получения альтернативных вариантов перевода
+   * - Генерации дополнительных примеров использования
+   *
+   * Приоритет после добавления DeepSeek:
+   * 1. Cache
+   * 2. Firebase
+   * 3. DeepL API (основной)
+   * 4. DeepSeek API (вспомогательный/fallback)
+   * 5. BaseDict
+   *
+   * @param {string} word - Слово для перевода
+   * @returns {Promise<Object>} - Результат перевода
+   */
+  async translateWithDeepSeek(word) {
+    // TODO: Реализовать интеграцию с DeepSeek API
+    // URL: https://api.deepseek.com/v1/chat/completions
+    // Модель: deepseek-chat
+    //
+    // Пример промпта:
+    // "Переведи чешское слово '{word}' на русский язык.
+    //  Верни только перевод без объяснений."
+    //
+    // Формат ответа должен быть:
+    // {
+    //   word: word,
+    //   translations: [...],
+    //   examples: [...],
+    //   source: 'deepseek',
+    //   success: true
+    // }
+
+    console.log(`[DeepSeek] TODO: Implement DeepSeek translation for: "${word}"`);
+    return null;
+  }
+
+  /**
    * Извлекает перевод слова из контекстного перевода
    */
   extractWordFromContext(contextTranslation, contextIndex) {
@@ -199,12 +239,13 @@ class DataService {
 
   /**
    * Получает перевод слова с автоматическим выбором источника
+   * Приоритет: Cache → Firebase → DeepL → BaseDict
    */
   async getTranslation(word, options = {}) {
     this.stats.totalRequests++;
     const normalizedWord = word.toLowerCase().trim();
 
-    // Шаг 1: Проверяем локальный кэш
+    // Шаг 1: Проверяем локальный кэш в памяти
     const cachedTranslation = this.translationCache.get(normalizedWord);
     if (cachedTranslation) {
       this.stats.cacheHits++;
@@ -214,41 +255,33 @@ class DataService {
       };
     }
 
-    // Шаг 2: Проверяем localStorage
-    const localData = this.getFromLocalStorage(normalizedWord);
-    if (localData) {
-      this.translationCache.set(normalizedWord, localData);
-      return {
-        ...localData,
-        source: 'localStorage'
-      };
-    }
-
-    // Шаг 3: Проверяем Firebase
+    // Шаг 2: Проверяем Firebase (главный источник после кэша)
     if (this.connectionStatus.firebase) {
       try {
         const firebaseData = await this.getFromFirebase(normalizedWord);
-        if (firebaseData) {
+        if (firebaseData && firebaseData.translations && firebaseData.translations.length > 0) {
           this.stats.firebaseHits++;
-          this.saveToLocalStorage(normalizedWord, firebaseData);
+          // Сохраняем в кэш для быстрого доступа
           this.translationCache.set(normalizedWord, firebaseData);
+          this.saveToLocalStorage(normalizedWord, firebaseData);
           return {
             ...firebaseData,
             source: 'firebase'
           };
         }
       } catch (error) {
-        console.error('Error fetching from Firebase:', error);
+        console.error('[Firebase] Error fetching from Firebase:', error);
       }
     }
 
-    // Шаг 4: Пробуем нормализацию и повторяем поиск
+    // Шаг 3: Пробуем нормализацию и повторяем поиск в Firebase
     if (!options.skipNormalization) {
       const normalizationResult = normalizationService.normalize(normalizedWord);
 
       if (normalizationResult.usedNormalization) {
         for (const normalizedForm of normalizationResult.normalizedForms) {
           if (normalizedForm !== normalizedWord) {
+            // Рекурсивно ищем нормализованную форму (начиная с Firebase)
             const normalizedTranslation = await this.getTranslation(normalizedForm, {
               skipNormalization: true,
               originalWord: normalizedWord
@@ -263,6 +296,7 @@ class DataService {
                 usedNormalization: true
               };
 
+              // Кэшируем результат
               this.translationCache.set(normalizedWord, result);
               this.saveToLocalStorage(normalizedWord, result);
 
@@ -273,7 +307,7 @@ class DataService {
       }
     }
 
-    // Шаг 4.5: Проверяем служебные слова (предлоги, союзы, частицы)
+    // Шаг 4: Проверяем служебные слова (предлоги, союзы, частицы)
     // Такие слова не переводятся через DeepL - сразу идём в fallback
     const serviceWords = new Set([
       'a', 'i', 'o', 'u', 'v', 've', 'z', 'ze', 's', 'se', 'k', 'ke', 'na', 'za', 'po', 'do', 'od', 'ode',
@@ -295,15 +329,15 @@ class DataService {
       }
     }
 
-    // Шаг 5: Запрашиваем DeepL API
+    // Шаг 5: Запрашиваем DeepL API (если не нашли в Firebase)
     try {
       const deeplData = await this.translateWithDeepL(normalizedWord);
       if (deeplData && deeplData.success) {
         this.stats.deeplHits++;
 
-        // Сохраняем в Firebase и localStorage
+        // Сохраняем в Firebase (главное хранилище) и localStorage
         if (this.connectionStatus.firebase) {
-          this.saveToFirebase(normalizedWord, deeplData);
+          await this.saveToFirebase(normalizedWord, deeplData);
         }
         this.saveToLocalStorage(normalizedWord, deeplData);
         this.translationCache.set(normalizedWord, deeplData);
@@ -314,7 +348,7 @@ class DataService {
         };
       }
     } catch (error) {
-      console.error('Error fetching from DeepL:', error);
+      console.error('[DeepL] Error fetching from DeepL:', error);
     }
 
     // Шаг 6: Используем базовый словарь как fallback

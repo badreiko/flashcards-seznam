@@ -836,7 +836,7 @@ const App = () => {
               </button>
             </div>
             <div className="api-attribution">
-              Переводы предоставлены словарем <a href="https://glosbe.com" target="_blank" rel="noopener noreferrer">Glosbe</a>
+              Переводы предоставлены <a href="https://www.deepl.com" target="_blank" rel="noopener noreferrer">DeepL API</a>
             </div>
           </div>
         )}
