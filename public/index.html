@@ -842,8 +842,8 @@
         transform: scale(1.1) rotate(10deg);
     }
 
-    @media (prefers-color-scheme: dark) {
-      :root {
+    /* Apply dark theme variables when data-theme="dark" is present on root */
+    :root[data-theme="dark"] {
         --background: #0f172a; /* Deep Night */
         --surface: #1e293b;    /* Lighter Night */
         --surface-raised: #334155;
@@ -861,38 +861,38 @@
         /* Invert shadows for glow effect */
         --shadow-lg: 0 20px 40px -10px rgba(0, 0, 0, 0.5);
         --shadow-md: 0 10px 20px -5px rgba(0, 0, 0, 0.4);
-      }
+    }
       
-      body {
+    :root[data-theme="dark"] body {
         /* Invert dot pattern opacity */
         background-image: radial-gradient(#334155 1px, transparent 1px);
-      }
+    }
       
-      .header {
+    :root[data-theme="dark"] .header {
           background: rgba(15, 23, 42, 0.7);
           border-color: rgba(255,255,255,0.1);
-      }
+    }
       
-      .word-chip {
+    :root[data-theme="dark"] .word-chip {
           background: var(--surface);
-      }
+    }
       
-      .card-front, .card-back {
+    :root[data-theme="dark"] .card-front, 
+    :root[data-theme="dark"] .card-back {
           border-color: #334155;
           background: var(--surface);
-      }
+    }
       
-      .card-front {
+    :root[data-theme="dark"] .card-front {
           background: linear-gradient(to bottom right, #1e293b, #111827);
-      }
+    }
       
-      .original-word {
+    :root[data-theme="dark"] .original-word {
           border-bottom-color: var(--border);
-      }
+    }
       
-      .nav-btn:hover:not(:disabled) {
+    :root[data-theme="dark"] .nav-btn:hover:not(:disabled) {
           background: var(--surface-raised);
-      }
     }
 
     /* ===================================================================== */
