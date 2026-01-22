@@ -148,6 +148,9 @@ class DataService {
         word: word,
         translations: translations.slice(0, 5), // Максимум 5 вариантов
         examples: examples.slice(0, 3), // Максимум 3 примера
+        gender: '', // Будет заполнено из SQLite
+        grammar: '', // Будет заполнено из SQLite
+        forms: [],   // Будет заполнено из SQLite
         detectedSourceLang: data.translations[0].detected_source_language || 'CS',
         source: 'deepl',
         success: true
@@ -234,6 +237,41 @@ class DataService {
       return words.slice(-3).join(' ').replace(/[.,!?;:]$/, '');
     }
     return words[words.length - 1].replace(/[.,!?;:]$/, '');
+  }
+
+  /**
+   * Пакетная проверка существования слов в базе (кэш + Firebase)
+   * Помогает избежать лишних вызовов DeepL
+   */
+  async checkWordsExistence(words) {
+    const results = {};
+    const wordsToCheck = [...new Set(words.map(w => w.toLowerCase().trim()))];
+
+    for (const word of wordsToCheck) {
+      // Сначала смотрим кэш
+      if (this.translationCache.has(word)) {
+        results[word] = true;
+        continue;
+      }
+
+      // Затем Firebase
+      if (this.connectionStatus.firebase) {
+        try {
+          const data = await this.getFromFirebase(word);
+          if (data && data.translations && data.translations.length > 0) {
+            results[word] = true;
+            // Сразу кэшируем, чтобы потом не лезть в сеть
+            this.translationCache.set(word, data);
+            continue;
+          }
+        } catch (e) {
+          console.error(`Error checking ${word}:`, e);
+        }
+      }
+      
+      results[word] = false;
+    }
+    return results;
   }
 
   /**
@@ -333,6 +371,9 @@ class DataService {
       word: normalizedWord,
       translations: [],
       examples: [],
+      gender: '',
+      grammar: '',
+      forms: [],
       source: 'none',
       error: 'Translation not found'
     };
@@ -416,6 +457,9 @@ class DataService {
         word: word.toLowerCase(),
         translations: data.translations || [],
         examples: data.examples || [],
+        gender: data.gender || '',
+        grammar: data.grammar || '',
+        forms: data.forms || [],
         timestamp: new Date().toISOString(),
         source: data.source || 'deepl',
         detectedSourceLang: data.detectedSourceLang || 'CS'

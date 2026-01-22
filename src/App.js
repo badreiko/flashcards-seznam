@@ -123,8 +123,8 @@ const ThemeToggle = () => {
   );
 };
 
-// Компонент карточки с 3D эффектом и звуком
-const Flashcard = ({ word, translations, samples, note, source }) => {
+// Компонент карточки с 3D эффектом, звуком и поддержкой богатых данных (SQLite)
+const Flashcard = ({ word, translations, samples, note, source, gender, grammar, forms }) => {
   const [isFlipped, setIsFlipped] = useState(false);
   const [rotateX, setRotateX] = useState(0);
   const [rotateY, setRotateY] = useState(0);
@@ -132,18 +132,17 @@ const Flashcard = ({ word, translations, samples, note, source }) => {
 
   const handleFlip = () => {
     setIsFlipped(!isFlipped);
-    // Сбрасываем наклон при перевороте, чтобы анимация была чистой
     setRotateX(0);
     setRotateY(0);
   };
 
   const handleSpeak = (e) => {
-    e.stopPropagation(); // Не переворачивать карточку при клике на звук
+    e.stopPropagation();
     
     if ('speechSynthesis' in window) {
       const utterance = new SpeechSynthesisUtterance(word);
-      utterance.lang = 'cs-CZ'; // Чешский язык
-      utterance.rate = 0.9; // Чуть медленнее для обучения
+      utterance.lang = 'cs-CZ';
+      utterance.rate = 0.9;
       window.speechSynthesis.speak(utterance);
     } else {
       alert('Ваш браузер не поддерживает озвучивание.');
@@ -151,7 +150,7 @@ const Flashcard = ({ word, translations, samples, note, source }) => {
   };
 
   const handleMouseMove = (e) => {
-    if (isFlipped) return; // Не применять эффект к обратной стороне для читаемости
+    if (isFlipped) return;
 
     const card = e.currentTarget;
     const rect = card.getBoundingClientRect();
@@ -161,7 +160,6 @@ const Flashcard = ({ word, translations, samples, note, source }) => {
     const centerX = rect.width / 2;
     const centerY = rect.height / 2;
     
-    // Вычисляем угол поворота (максимум 10 градусов)
     const rotateXValue = ((y - centerY) / centerY) * -10; 
     const rotateYValue = ((x - centerX) / centerX) * 10;
 
@@ -176,39 +174,24 @@ const Flashcard = ({ word, translations, samples, note, source }) => {
     setGlarePosition({ x: 50, y: 50 });
   };
 
-  // Определяем цвет индикатора источника
+  // Цвет источника
   const getSourceColor = () => {
     switch (source) {
-      case 'cache':
-        return 'var(--success)';
-      case 'localStorage':
-        return 'var(--success)';
-      case 'firebase':
-        return 'var(--primary)';
-      case 'deepl':
-        return '#0f2b46'; // DeepL brand color
-      case 'fallback':
-        return 'var(--error)';
-      default:
-        return 'var(--text-secondary)';
+      case 'sqlite': return '#8b5cf6'; // Violet for Golden DB
+      case 'cache': return 'var(--success)';
+      case 'firebase': return 'var(--primary)';
+      case 'deepl': return '#0f2b46';
+      default: return 'var(--text-secondary)';
     }
   };
 
-  // Определяем текст источника
   const getSourceText = () => {
     switch (source) {
-      case 'cache':
-        return 'Кэш';
-      case 'localStorage':
-        return 'Локальное хранилище';
-      case 'firebase':
-        return 'Firebase';
-      case 'deepl':
-        return '🤖 DeepL AI';
-      case 'fallback':
-        return 'Базовый словарь';
-      default:
-        return 'Неизвестный';
+      case 'sqlite': return '★ Golden DB';
+      case 'cache': return 'Кэш';
+      case 'firebase': return 'Firebase';
+      case 'deepl': return '🤖 DeepL AI';
+      default: return 'Неизвестный';
     }
   };
 
@@ -227,7 +210,6 @@ const Flashcard = ({ word, translations, samples, note, source }) => {
     >
       <div className="card-inner">
         <div className="card-front">
-          {/* Блик света */}
           {!isFlipped && (
             <div 
               className="card-glare"
@@ -239,11 +221,19 @@ const Flashcard = ({ word, translations, samples, note, source }) => {
 
           <div className="word-container">
             <div className="word">{word}</div>
+            
+            {/* Future Data Preview on Front (optional) */}
+            {(gender || grammar) && (
+              <div className="front-meta">
+                {gender && <span className="meta-badge gender">{gender}</span>}
+                {grammar && <span className="meta-badge grammar">{grammar}</span>}
+              </div>
+            )}
+
             <button 
               className="audio-btn" 
               onClick={handleSpeak}
-              title="Прослушать произношение"
-              aria-label="Прослушать"
+              title="Прослушать"
             >
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
                 <path d="M13.5 4.06c0-1.336-1.616-2.005-2.56-1.06l-4.5 4.5H4.508c-1.141 0-2.318.664-2.66 1.905A9.76 9.76 0 001.5 12c0 .898.121 1.768.35 2.595.341 1.24 1.518 1.905 2.659 1.905h1.93l4.5 4.5c.945.945 2.561.276 2.561-1.06V4.06zM18.584 5.106a.75.75 0 011.06 0c3.808 3.807 3.808 9.98 0 13.788a.75.75 0 11-1.06-1.06 8.25 8.25 0 000-11.668.75.75 0 010-1.06z" />
@@ -255,7 +245,16 @@ const Flashcard = ({ word, translations, samples, note, source }) => {
         </div>
 
         <div className="card-back">
-          <h3 className="original-word">{word}</h3>
+          <div className="back-header">
+            <h3 className="original-word">{word}</h3>
+            {/* Грамматические метки (Future Data) */}
+            {(gender || grammar) && (
+              <div className="grammar-tags">
+                {gender && <span className="tag tag-gender">{gender}</span>}
+                {grammar && <span className="tag tag-grammar">{grammar}</span>}
+              </div>
+            )}
+          </div>
 
           <div className="translations">
             {translations && translations.length > 0 ? (
@@ -271,6 +270,19 @@ const Flashcard = ({ word, translations, samples, note, source }) => {
               <p className="no-translations">Переводы не найдены</p>
             )}
           </div>
+          
+          {/* Секция Форм Слова (Future Data) */}
+          {forms && forms.length > 0 && (
+            <div className="word-forms">
+              <h4>Формы слова:</h4>
+              <div className="forms-grid">
+                {forms.slice(0, 6).map((form, idx) => (
+                  <span key={idx} className="form-item">{form}</span>
+                ))}
+                {forms.length > 6 && <span className="form-more">+{forms.length - 6}</span>}
+              </div>
+            </div>
+          )}
 
           {note && <p className="note">{note}</p>}
 
@@ -372,6 +384,9 @@ const FlashcardViewer = ({ flashcards }) => {
           translations={currentCard.translations}
           samples={currentCard.samples}
           source={currentCard.source}
+          gender={currentCard.gender}
+          grammar={currentCard.grammar}
+          forms={currentCard.forms}
           note={currentCard.note}
           forceFlip={isFlipping}
         />
