@@ -65,24 +65,18 @@ const ThemeToggle = () => {
 };
 
 // КАРТОЧКА (С 3D эффектом, Звуком и Поддержкой SQLite)
-const Flashcard = ({ word, translations, source, gender, grammar, forms, searchedWord, forceFlip }) => {
+const Flashcard = ({ word, translations, source, gender, grammar, forms, searchedWord, flipTrigger }) => {
   const [isFlipped, setIsFlipped] = useState(false);
   const [rotateX, setRotateX] = useState(0);
   const [rotateY, setRotateY] = useState(0);
   const [glarePosition, setGlarePosition] = useState({ x: 50, y: 50 });
-  
-  // Ref для отслеживания монтирования, чтобы не переворачивать сразу
-  const isMounted = React.useRef(false);
 
   // Синхронизация внешнего переворота (например, пробелом)
   useEffect(() => {
-    // Игнорируем первый рендер, чтобы карточка всегда появлялась лицом
-    if (isMounted.current) {
+    if (flipTrigger > 0) {
       setIsFlipped(prev => !prev);
-    } else {
-      isMounted.current = true;
     }
-  }, [forceFlip]);
+  }, [flipTrigger]);
 
   const handleFlip = () => {
     setIsFlipped(!isFlipped);
@@ -105,15 +99,17 @@ const Flashcard = ({ word, translations, source, gender, grammar, forms, searche
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-    const rotateXVal = ((y - rect.height / 2) / (rect.height / 2)) * -10;
-    const rotateYVal = ((x - rect.width / 2) / (rect.width / 2)) * 10;
+    const rotateXVal = ((y - rect.height / 2) / (rect.height / 2)) * -5;
+    const rotateYVal = ((x - rect.width / 2) / (rect.width / 2)) * 5;
     setRotateX(rotateXVal);
     setRotateY(rotateYVal);
     setGlarePosition({ x: (x / rect.width) * 100, y: (y / rect.height) * 100 });
   };
 
   const handleMouseLeave = () => {
-    setRotateX(0); setRotateY(0); setGlarePosition({ x: 50, y: 50 });
+    setRotateX(0);
+    setRotateY(0);
+    setGlarePosition({ x: 50, y: 50 });
   };
 
   const getSourceText = () => {
@@ -129,17 +125,11 @@ const Flashcard = ({ word, translations, source, gender, grammar, forms, searche
   };
 
   return (
-    <div 
+    <div
       className={`flashcard ${isFlipped ? 'flipped' : ''}`}
       onClick={handleFlip}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
-      style={{
-        transform: isFlipped 
-          ? 'perspective(1000px) rotateX(0deg) rotateY(0deg)' 
-          : `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`,
-        transition: isFlipped ? 'transform 0.6s' : 'transform 0.1s ease-out'
-      }}
     >
       <div className="card-inner">
         <div className="card-front">
@@ -165,13 +155,14 @@ const Flashcard = ({ word, translations, source, gender, grammar, forms, searche
         </div>
 
         <div className="card-back">
-          <div className="back-header">
-            <h3 className="original-word">{word}</h3>
-            <div className="grammar-tags">
-              {gender && <span className="tag tag-gender">{gender}</span>}
-              {grammar && <span className="tag tag-grammar">{grammar}</span>}
+          {(gender || grammar) && (
+            <div className="back-header">
+              <div className="grammar-tags">
+                {gender && <span className="tag tag-gender">{gender}</span>}
+                {grammar && <span className="tag tag-grammar">{grammar}</span>}
+              </div>
             </div>
-          </div>
+          )}
           <div className="translations">
             {translations?.length > 0 ? (
               <ul>{translations.map((t, i) => <li key={i}>{t}</li>)}</ul>
@@ -201,7 +192,7 @@ const Flashcard = ({ word, translations, source, gender, grammar, forms, searche
 // ПРОСМОТРЩИК КАРТОЧЕК
 const FlashcardViewer = ({ flashcards }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [isFlipping, setIsFlipping] = useState(false);
+  const [flipTrigger, setFlipTrigger] = useState(0);
 
   const goToPrevious = useCallback(() => {
     setCurrentIndex(prev => (prev > 0 ? prev - 1 : flashcards.length - 1));
@@ -215,7 +206,7 @@ const FlashcardViewer = ({ flashcards }) => {
     const handleKeyDown = (e) => {
       if (e.key === 'ArrowLeft') goToPrevious();
       else if (e.key === 'ArrowRight') goToNext();
-      else if (e.key === ' ') { e.preventDefault(); setIsFlipping(f => !f); }
+      else if (e.key === ' ') { e.preventDefault(); setFlipTrigger(t => t + 1); }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
@@ -233,7 +224,7 @@ const FlashcardViewer = ({ flashcards }) => {
       </div>
       <div className="card-container">
         <button className="nav-btn" onClick={goToPrevious}>&#8249;</button>
-        <Flashcard key={currentIndex} {...currentCard} forceFlip={isFlipping} />
+        <Flashcard key={currentCard.word} {...currentCard} flipTrigger={flipTrigger} />
         <button className="nav-btn" onClick={goToNext}>&#8250;</button>
       </div>
       <div className="progress-dots">
@@ -291,12 +282,48 @@ const App = () => {
     setText(''); setUniqueWords([]); setFlashcards([]); setCurrentStep('input');
   };
 
+  const handleDebug = async () => {
+    console.log("🔍 ЗАПУСК ГЛУБОКОЙ ДИАГНОСТИКИ...");
+    try {
+      const testWord = "haldamáš";
+      
+      // 1. Прямой поиск
+      const result = await dataService.getFromFirebase(testWord);
+      console.log(`Результат для "${testWord}":`, result);
+
+      // 2. Поиск без диакритики (на случай, если база нормализована)
+      const flatWord = testWord.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      console.log(`Проверка версии без акцентов: "${flatWord}"`);
+      const resultFlat = await dataService.getFromFirebase(flatWord);
+      console.log(`Результат для "${flatWord}":`, resultFlat);
+
+      // 3. Получаем список ключей, чтобы понять структуру
+      const { ref, get, query, limitToFirst } = await import('firebase/database');
+      const dbRef = ref(dataService.baseDict.database || (await import('./firebase')).database, 'dictionary');
+      const firstWordsQuery = query(dbRef, limitToFirst(20));
+      const snapshot = await get(firstWordsQuery);
+      
+      if (snapshot.exists()) {
+        console.log("ПЕРВЫЕ 20 КЛЮЧЕЙ В БАЗЕ:");
+        console.table(Object.keys(snapshot.val()));
+      } else {
+        console.log("❌ База 'dictionary' пуста или недоступна");
+      }
+
+      alert("Диагностика завершена. Проверьте консоль (F12)");
+    } catch (e) {
+      console.error("Ошибка диагностики:", e);
+      alert("Ошибка: " + e.message);
+    }
+  };
+
   return (
     <div className="app">
       <ThemeToggle />
       <header className="header">
         <h1>Flashcards Seznam</h1>
         <p className="subtitle">Ваша золотая база чешского языка</p>
+        <button onClick={handleDebug} style={{opacity: 0.5, fontSize: '10px'}}>Debug Firebase</button>
       </header>
 
       <main className="main-content">
