@@ -290,6 +290,70 @@ app.get('/', (req, res) => {
 // NETLIFY FUNCTION EMULATION (FOR LOCAL DEV)
 // ==============================================
 
+// Эмуляция Netlify Function для DeepSeek
+app.post('/.netlify/functions/translate-deepseek', async (req, res) => {
+  try {
+    const { text } = req.body;
+    const word = Array.isArray(text) ? text[0] : text;
+    const apiKey = process.env.DEEPSEEK_API_KEY;
+
+    if (!apiKey) return res.status(500).json({ error: 'DEEPSEEK_API_KEY missing' });
+
+    console.log(`[Dev Proxy] DeepSeek request for: "${word}"`);
+
+    const systemPrompt = `Ты эксперт по чешскому языку. Твоя задача — проанализировать слово и вернуть строгий JSON объект.
+    
+    Формат ответа JSON:
+    {
+      "word": "базовая форма слова (лемма)",
+      "word_normalized": "базовая форма lowercase",
+      "translations": ["русский перевод 1", "русский перевод 2", "русский перевод 3"],
+      "gender": "род (m/f/n) или пустая строка",
+      "grammar": "часть речи (noun/verb/adj...)",
+      "forms": ["список", "основных", "словоформ", "этого", "слова", "(до 12 штук)"],
+      "examples": [
+        {"czech": "Пример на чешском", "russian": "Перевод на русский"}
+      ]
+    }
+
+    ВАЖНО:
+    1. Если слово "zkontroluj", то базовая форма "zkontrolovat".
+    2. ОТВЕЧАЙ ТОЛЬКО ВАЛИДНЫМ JSON.`;
+
+    const response = await fetch('https://api.deepseek.com/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: "deepseek-chat",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: `Проанализируй чешское слово: "${word}"` }
+        ],
+        temperature: 0.1,
+        response_format: { type: "json_object" }
+      })
+    });
+
+    const data = await response.json();
+    
+    if (data.error) {
+      throw new Error(data.error.message);
+    }
+
+    const resultJSON = JSON.parse(data.choices[0].message.content);
+    resultJSON.source = 'deepseek';
+    
+    res.json(resultJSON);
+
+  } catch (error) {
+    console.error('[Dev Proxy] DeepSeek Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Эмуляция Netlify Function для локальной разработки
 // Клиент стучится сюда через прокси (http://localhost:3000 -> http://localhost:3001)
 app.post('/.netlify/functions/translate-deepl', async (req, res) => {

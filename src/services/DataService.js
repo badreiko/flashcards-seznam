@@ -166,42 +166,27 @@ class DataService {
   }
 
   /**
-   * TODO: Перевод через DeepSeek API (будущая интеграция)
-   * DeepSeek будет использоваться как дополнительный источник для:
-   * - Проверки качества переводов DeepL
-   * - Получения альтернативных вариантов перевода
-   * - Генерации дополнительных примеров использования
-   *
-   * Приоритет после добавления DeepSeek:
-   * 1. Cache
-   * 2. Firebase
-   * 3. DeepL API (основной)
-   * 4. DeepSeek API (вспомогательный/fallback)
-   * 5. BaseDict
-   *
-   * @param {string} word - Слово для перевода
-   * @returns {Promise<Object>} - Результат перевода
+   * Перевод через DeepSeek API (через прокси)
+   * Создает "Золотую запись" на лету
    */
   async translateWithDeepSeek(word) {
-    // TODO: Реализовать интеграцию с DeepSeek API
-    // URL: https://api.deepseek.com/v1/chat/completions
-    // Модель: deepseek-chat
-    //
-    // Пример промпта:
-    // "Переведи чешское слово '{word}' на русский язык.
-    //  Верни только перевод без объяснений."
-    //
-    // Формат ответа должен быть:
-    // {
-    //   word: word,
-    //   translations: [...],
-    //   examples: [...],
-    //   source: 'deepseek',
-    //   success: true
-    // }
+    try {
+      console.log(`[DeepSeek] Requesting: "${word}"`);
+      const response = await fetch('/.netlify/functions/translate-deepseek', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: word })
+      });
 
-    console.log(`[DeepSeek] TODO: Implement DeepSeek translation for: "${word}"`);
-    return null;
+      if (!response.ok) throw new Error(`DeepSeek Error: ${response.status}`);
+      
+      const data = await response.json();
+      console.log(`[DeepSeek] Success: ${data.word}`);
+      return { ...data, success: true };
+    } catch (error) {
+      console.error('[DeepSeek] Error:', error);
+      return null;
+    }
   }
 
   /**
@@ -276,60 +261,53 @@ class DataService {
 
   /**
    * Получает перевод слова с автоматическим выбором источника
-   * Приоритет: Cache → Firebase (Golden DB) → BaseDict → DeepL (последний шанс)
+   * Приоритет: Cache → Firebase (Golden DB) → DeepSeek → BaseDict → DeepL
    */
   async getTranslation(word, options = {}) {
     this.stats.totalRequests++;
-    const normalizedWord = word.toLowerCase().strip ? word.toLowerCase().trim() : word;
+    const normalizedWord = word.toLowerCase().trim();
 
-    // 1. Локальный кэш (самый быстрый)
+    // 1. Локальный кэш
     const cachedTranslation = this.translationCache.get(normalizedWord);
-    if (cachedTranslation) {
-      this.stats.cacheHits++;
-      return { ...cachedTranslation, source: 'cache' };
-    }
+    if (cachedTranslation) return { ...cachedTranslation, source: 'cache' };
 
-    // 2. Firebase (Ваша Золотая База)
+    // 2. Firebase (Golden DB)
     if (this.connectionStatus.firebase) {
       try {
         const firebaseData = await this.getFromFirebase(normalizedWord);
-        // Если нашли в Firebase - это победа, даже если данных пока мало
         if (firebaseData) {
-          this.stats.firebaseHits++;
           this.translationCache.set(normalizedWord, firebaseData);
           this.saveToLocalStorage(normalizedWord, firebaseData);
-          return {
-            ...firebaseData,
-            source: firebaseData.source || 'firebase'
-          };
+          return { ...firebaseData, source: firebaseData.source || 'firebase' };
         }
-      } catch (error) {
-        console.error('[Firebase] Error:', error);
+      } catch (e) { console.error(e); }
+    }
+
+    // 3. DeepSeek API (Генерация новой золотой записи)
+    try {
+      const deepSeekData = await this.translateWithDeepSeek(normalizedWord);
+      if (deepSeekData && deepSeekData.success) {
+        if (this.connectionStatus.firebase) {
+          // Сохраняем в Firebase, чтобы в следующий раз взять оттуда
+          await this.saveToFirebase(deepSeekData.word_normalized || normalizedWord, deepSeekData);
+        }
+        return { ...deepSeekData, source: 'deepseek' };
       }
-    }
+    } catch (e) { console.error(e); }
 
-    // 3. Базовый словарь (быстрый fallback для простых слов)
+    // 4. Fallback (BaseDict) - для простых слов, если DeepSeek не ответил
     const fallbackData = this.getFromBaseDict(normalizedWord);
-    if (fallbackData) {
-      this.stats.fallbackHits++;
-      return { ...fallbackData, source: 'fallback' };
-    }
+    if (fallbackData) return { ...fallbackData, source: 'fallback' };
 
-    // 4. DeepL API (Только если слова нет в Золотой Базе)
+    // 5. DeepL (Last Resort)
     try {
       const deeplData = await this.translateWithDeepL(normalizedWord);
       if (deeplData && deeplData.success) {
-        this.stats.deeplHits++;
-        if (this.connectionStatus.firebase) {
-          await this.saveToFirebase(normalizedWord, deeplData);
-        }
         return { ...deeplData, source: 'deepl' };
       }
-    } catch (error) {
-      console.error('[DeepL] Error:', error);
-    }
+    } catch (e) { console.error(e); }
 
-    return { word: normalizedWord, translations: [], forms: [], source: 'none' };
+    return { word: normalizedWord, translations: [], forms: [], source: 'none', error: 'Not found' };
   }
 
   /**
