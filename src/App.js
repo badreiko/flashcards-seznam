@@ -70,10 +70,18 @@ const Flashcard = ({ word, translations, source, gender, grammar, forms, searche
   const [rotateX, setRotateX] = useState(0);
   const [rotateY, setRotateY] = useState(0);
   const [glarePosition, setGlarePosition] = useState({ x: 50, y: 50 });
+  
+  // Ref для отслеживания монтирования, чтобы не переворачивать сразу
+  const isMounted = React.useRef(false);
 
   // Синхронизация внешнего переворота (например, пробелом)
   useEffect(() => {
-    if (forceFlip !== undefined) setIsFlipped(prev => !prev);
+    // Игнорируем первый рендер, чтобы карточка всегда появлялась лицом
+    if (isMounted.current) {
+      setIsFlipped(prev => !prev);
+    } else {
+      isMounted.current = true;
+    }
   }, [forceFlip]);
 
   const handleFlip = () => {
