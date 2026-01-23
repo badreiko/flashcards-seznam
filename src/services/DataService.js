@@ -41,6 +41,10 @@ class DataService {
       this.connectionStatus.firebase = await this.checkFirebaseConnection();
       console.log(`Firebase connection: ${this.connectionStatus.firebase ? 'OK' : 'FAILED'}`);
       console.log(`DeepL API: via Netlify Functions`);
+
+      if (this.connectionStatus.firebase) {
+        console.log(`[Firebase] 🔗 Database URL:`, database.app.options.databaseURL);
+      }
     } catch (error) {
       console.error('Error initializing connections:', error);
     }
@@ -265,22 +269,31 @@ class DataService {
    */
   async getTranslation(word, options = {}) {
     this.stats.totalRequests++;
-    const normalizedWord = word.toLowerCase().trim();
+    const normalizedWord = this.normalizeUnicode(word);
+
+    console.log(`🔍 Translating: "${word}"`);
 
     // 1. Локальный кэш
     const cachedTranslation = this.translationCache.get(normalizedWord);
-    if (cachedTranslation) return { ...cachedTranslation, source: 'cache' };
+    if (cachedTranslation) {
+      console.log(`✅ Found in cache`);
+      return { ...cachedTranslation, source: 'cache' };
+    }
 
     // 2. Firebase (Golden DB)
     if (this.connectionStatus.firebase) {
       try {
         const firebaseData = await this.getFromFirebase(normalizedWord);
         if (firebaseData) {
+          console.log(`✅ Found in Firebase`);
+          this.stats.firebaseHits++;
           this.translationCache.set(normalizedWord, firebaseData);
           this.saveToLocalStorage(normalizedWord, firebaseData);
           return { ...firebaseData, source: firebaseData.source || 'firebase' };
         }
-      } catch (e) { console.error(e); }
+      } catch (e) {
+        console.error(`❌ Firebase error:`, e);
+      }
     }
 
     // 3. DeepSeek API (Генерация новой золотой записи)
@@ -317,7 +330,8 @@ class DataService {
     try {
       const cacheKey = 'flashcards_seznam_cache';
       const cache = JSON.parse(localStorage.getItem(cacheKey) || '{}');
-      return cache[word.toLowerCase()] || null;
+      const normalizedKey = this.normalizeUnicode(word);
+      return cache[normalizedKey] || null;
     } catch (error) {
       console.error('Error getting from localStorage:', error);
       return null;
@@ -331,8 +345,9 @@ class DataService {
     try {
       const cacheKey = 'flashcards_seznam_cache';
       let cache = JSON.parse(localStorage.getItem(cacheKey) || '{}');
+      const normalizedKey = this.normalizeUnicode(word);
 
-      cache[word.toLowerCase()] = {
+      cache[normalizedKey] = {
         ...data,
         cachedAt: new Date().toISOString()
       };
@@ -361,19 +376,74 @@ class DataService {
   }
 
   /**
+   * Нормализует Unicode строку (NFC форма для совместимости с Firebase)
+   */
+  normalizeUnicode(str) {
+    // Приводим к NFC (Canonical Decomposition, followed by Canonical Composition)
+    return str.normalize('NFC').toLowerCase().trim();
+  }
+
+  /**
    * Получает данные из Firebase
    */
   async getFromFirebase(word) {
     try {
-      const wordRef = ref(database, `dictionary/${word.toLowerCase()}`);
-      const snapshot = await get(wordRef);
+      const normalizedKey = this.normalizeUnicode(word);
 
-      if (snapshot.exists()) {
-        return snapshot.val();
+      // Пробуем несколько путей
+      const pathsToTry = [
+        normalizedKey,                    // Корень: /haldamáš
+        `dictionary/${normalizedKey}`,    // dictionary/haldamáš
+        `words/${normalizedKey}`          // words/haldamáš
+      ];
+
+      for (const path of pathsToTry) {
+        const wordRef = ref(database, path);
+        const snapshot = await get(wordRef);
+
+        if (snapshot.exists()) {
+          const data = snapshot.val();
+          return data;
+        }
       }
+
+      // ПОИСК ПО ИНДЕКСУ СЛОВОФОРМ (БЫСТРО!)
+      try {
+        console.log(`🔍 Searching in forms_index...`);
+        const indexRef = ref(database, `forms_index/${normalizedKey}`);
+        const indexSnapshot = await get(indexRef);
+
+        if (indexSnapshot.exists()) {
+          const baseWordKey = indexSnapshot.val();
+          console.log(`✅ Found in index: "${word}" → "${baseWordKey}"`);
+
+          // Получаем базовое слово напрямую (без рекурсии)
+          const basePathsToTry = [
+            baseWordKey,
+            `dictionary/${baseWordKey}`,
+            `words/${baseWordKey}`
+          ];
+
+          for (const basePath of basePathsToTry) {
+            const baseRef = ref(database, basePath);
+            const baseSnapshot = await get(baseRef);
+
+            if (baseSnapshot.exists()) {
+              const data = baseSnapshot.val();
+              console.log(`✅ Found base word at: ${basePath}`);
+              return data;
+            }
+          }
+        } else {
+          console.log(`❌ Not found in forms_index`);
+        }
+      } catch (indexError) {
+        console.log(`⚠️ forms_index not available:`, indexError.message);
+      }
+
       return null;
     } catch (error) {
-      console.error('Error getting from Firebase:', error);
+      console.error('[Firebase] 💥 Error getting from Firebase:', error);
       return null;
     }
   }
@@ -383,9 +453,11 @@ class DataService {
    */
   async saveToFirebase(word, data) {
     try {
-      const wordRef = ref(database, `dictionary/${word.toLowerCase()}`);
+      const normalizedKey = this.normalizeUnicode(word);
+      const wordRef = ref(database, `dictionary/${normalizedKey}`);
+
       await set(wordRef, {
-        word: word.toLowerCase(),
+        word: normalizedKey,
         translations: data.translations || [],
         examples: data.examples || [],
         gender: data.gender || '',
@@ -395,9 +467,10 @@ class DataService {
         source: data.source || 'deepl',
         detectedSourceLang: data.detectedSourceLang || 'CS'
       });
+
       return true;
     } catch (error) {
-      console.error('Error saving to Firebase:', error);
+      console.error('❌ Firebase save error:', error.message);
       return false;
     }
   }

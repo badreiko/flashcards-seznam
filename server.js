@@ -12,7 +12,7 @@ const deepLService = require('./src/services/DeepLService');
 
 // Инициализация приложения Express
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = 3005; // Force port 3005
 
 // Отключаем проверку Host заголовка для Railway deployment
 app.set('trust proxy', true);
@@ -354,50 +354,12 @@ app.post('/.netlify/functions/translate-deepseek', async (req, res) => {
   }
 });
 
-// Эмуляция Netlify Function для локальной разработки
-// Клиент стучится сюда через прокси (http://localhost:3000 -> http://localhost:3001)
-app.post('/.netlify/functions/translate-deepl', async (req, res) => {
-  try {
-    console.log('[Dev Proxy] Received request to Netlify Function emulation');
-    
-    const { text, source_lang = 'CS', target_lang = 'RU' } = req.body;
-
-    if (!text) {
-      return res.status(400).json({ error: 'Text parameter is required' });
-    }
-
-    // Приводим text к массиву, как это делает реальная функция
-    const textsToTranslate = Array.isArray(text) ? text : [text];
-
-    console.log(`[Dev Proxy] Translating ${textsToTranslate.length} items:`, textsToTranslate);
-
-    // Используем существующий сервис
-    const results = await deepLService.translateBatch(
-      textsToTranslate, 
-      source_lang, 
-      target_lang
-    );
-
-    // Формируем ответ в формате DeepL API (как это делает прокси)
-    // Реальная функция возвращает сырой ответ от DeepL API
-    const responseData = {
-      translations: results.map(r => ({
-        text: r.translatedText,
-        detected_source_language: r.detectedSourceLang
-      }))
-    };
-
-    console.log('[Dev Proxy] Success, returning:', responseData);
-    res.json(responseData);
-
-  } catch (error) {
-    console.error('[Dev Proxy] Error:', error);
-    res.status(500).json({
-      error: 'Internal server error (Dev Proxy)',
-      message: error.message
-    });
-  }
-});
+// ==============================================
+// FIREBASE DEBUG ENDPOINT
+// ==============================================
+// Note: This requires firebase-admin to be initialized on backend, 
+// which is not currently set up in this project (frontend only).
+// So we cannot add a backend route easily without keys.
 
 // Catch-all для React приложения (если есть build)
 app.get('*', (req, res) => {

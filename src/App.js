@@ -48,8 +48,8 @@ const ProgressIndicator = ({ progress, currentWord, totalWords, processedWords }
 // Компонент переключения темы
 const ThemeToggle = () => {
   const [isDark, setIsDark] = useState(() => {
-    return localStorage.getItem('theme') === 'dark' || 
-           (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    return localStorage.getItem('theme') === 'dark' ||
+      (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
   });
 
   useEffect(() => {
@@ -165,18 +165,21 @@ const Flashcard = ({ word, translations, source, gender, grammar, forms, searche
           )}
           <div className="translations">
             {translations?.length > 0 ? (
-              <ul>{translations.map((t, i) => <li key={i}>{t}</li>)}</ul>
+              <p>{translations.join(', ')}</p>
             ) : <p className="no-translations">Переводы не найдены</p>}
           </div>
           {forms?.length > 0 && (
             <div className="word-forms">
               <h4>Словоформы:</h4>
               <div className="forms-grid">
-                {forms.map((f, i) => (
-                  <span key={i} className={`form-item ${searchedWord && f.toLowerCase() === searchedWord.toLowerCase() ? 'current' : ''}`}>
-                    {f}
-                  </span>
-                ))}
+                {forms.map((f, i) => {
+                  const isSearched = searchedWord && f.toLowerCase() === searchedWord.toLowerCase();
+                  return (
+                    <span key={i} className={`form-item ${isSearched ? 'current' : ''}`}>
+                      {f}
+                    </span>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -190,7 +193,7 @@ const Flashcard = ({ word, translations, source, gender, grammar, forms, searche
 };
 
 // ПРОСМОТРЩИК КАРТОЧЕК
-const FlashcardViewer = ({ flashcards }) => {
+const FlashcardViewer = ({ flashcards, onReset }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [flipTrigger, setFlipTrigger] = useState(0);
 
@@ -220,17 +223,31 @@ const FlashcardViewer = ({ flashcards }) => {
     <div className="flashcards-container">
       <div className="flashcards-header">
         <h2>Карточки</h2>
-        <div className="flashcards-count">{currentIndex + 1} / {flashcards.length}</div>
+        <div className="flashcards-count desktop-only">{currentIndex + 1} / {flashcards.length}</div>
       </div>
+
       <div className="card-container">
-        <button className="nav-btn" onClick={goToPrevious}>&#8249;</button>
+        <button className="nav-btn desktop-only" onClick={goToPrevious}>&#8249;</button>
         <Flashcard key={currentCard.word} {...currentCard} flipTrigger={flipTrigger} />
-        <button className="nav-btn" onClick={goToNext}>&#8250;</button>
+        <button className="nav-btn desktop-only" onClick={goToNext}>&#8250;</button>
       </div>
-      <div className="progress-dots">
-        {flashcards.slice(0, 20).map((_, i) => (
-          <div key={i} className={`progress-dot ${i === currentIndex ? 'active' : ''}`} onClick={() => setCurrentIndex(i)} />
-        ))}
+
+      <div className="card-viewer-bottom">
+        <div className="nav-controls mobile-only">
+          <button className="nav-btn" onClick={goToPrevious}>&#8249;</button>
+          <div className="flashcards-count">{currentIndex + 1} / {flashcards.length}</div>
+          <button className="nav-btn" onClick={goToNext}>&#8250;</button>
+        </div>
+
+        <div className="progress-dots">
+          {flashcards.slice(0, 20).map((_, i) => (
+            <div key={i} className={`progress-dot ${i === currentIndex ? 'active' : ''}`} onClick={() => setCurrentIndex(i)} />
+          ))}
+        </div>
+
+        <div className="actions-bottom">
+          <button className="btn btn-secondary" onClick={onReset}>Начать заново</button>
+        </div>
       </div>
     </div>
   );
@@ -258,7 +275,7 @@ const App = () => {
   const handleGetTranslations = async () => {
     setIsLoading(true); setProgress(0); setProcessedCount(0);
     const translatedCards = [];
-    
+
     for (let i = 0; i < uniqueWords.length; i++) {
       const word = uniqueWords[i];
       setCurrentWord(word);
@@ -272,7 +289,7 @@ const App = () => {
       setProcessedCount(i + 1);
       setProgress(Math.floor(((i + 1) / uniqueWords.length) * 100));
     }
-    
+
     setFlashcards(translatedCards);
     setCurrentStep('translated');
     setIsLoading(false);
@@ -286,7 +303,7 @@ const App = () => {
     console.log("🔍 ЗАПУСК ГЛУБОКОЙ ДИАГНОСТИКИ...");
     try {
       const testWord = "haldamáš";
-      
+
       // 1. Прямой поиск
       const result = await dataService.getFromFirebase(testWord);
       console.log(`Результат для "${testWord}":`, result);
@@ -302,7 +319,7 @@ const App = () => {
       const dbRef = ref(dataService.baseDict.database || (await import('./firebase')).database, 'dictionary');
       const firstWordsQuery = query(dbRef, limitToFirst(20));
       const snapshot = await get(firstWordsQuery);
-      
+
       if (snapshot.exists()) {
         console.log("ПЕРВЫЕ 20 КЛЮЧЕЙ В БАЗЕ:");
         console.table(Object.keys(snapshot.val()));
@@ -323,7 +340,7 @@ const App = () => {
       <header className="header">
         <h1>Flashcards Seznam</h1>
         <p className="subtitle">Ваша золотая база чешского языка</p>
-        <button onClick={handleDebug} style={{opacity: 0.5, fontSize: '10px'}}>Debug Firebase</button>
+        <button onClick={handleDebug} style={{ opacity: 0.5, fontSize: '10px' }}>Debug Firebase</button>
       </header>
 
       <main className="main-content">
@@ -348,12 +365,7 @@ const App = () => {
         )}
 
         {currentStep === 'translated' && (
-          <div>
-            <FlashcardViewer flashcards={flashcards} />
-            <div className="actions">
-              <button className="btn btn-secondary" onClick={handleReset}>Начать заново</button>
-            </div>
-          </div>
+          <FlashcardViewer flashcards={flashcards} onReset={handleReset} />
         )}
       </main>
     </div>

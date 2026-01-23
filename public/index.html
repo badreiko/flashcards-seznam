@@ -15,7 +15,9 @@
   <!-- Шрифты -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Outfit:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet">
 
   <title>Flashcards Seznam</title>
 
@@ -26,37 +28,50 @@
 
     :root {
       /* Palette: Sophisticated & Deep (No Gradients) */
-      --primary: #4f46e5;       /* Indigo 600 - Deep, confident blue-purple */
-      --primary-hover: #4338ca; /* Indigo 700 */
-      --primary-active: #3730a3; /* Indigo 800 */
-      
-      --accent: #ec4899;        /* Pink 500 - For highlights/actions */
-      
-      --background: #f8fafc;    /* Slate 50 - Very light grey, almost white */
-      --surface: #ffffff;       /* Pure White */
-      --surface-raised: #ffffff;
-      
-      --text-main: #1e293b;     /* Slate 800 - Soft Black */
-      --text-secondary: #64748b; /* Slate 500 */
-      --text-muted: #94a3b8;    /* Slate 400 */
+      --primary: #4f46e5;
+      /* Indigo 600 - Deep, confident blue-purple */
+      --primary-hover: #4338ca;
+      /* Indigo 700 */
+      --primary-active: #3730a3;
+      /* Indigo 800 */
 
-      --border: #e2e8f0;        /* Slate 200 */
-      
+      --accent: #ec4899;
+      /* Pink 500 - For highlights/actions */
+
+      --background: #f8fafc;
+      /* Slate 50 - Very light grey, almost white */
+      --surface: #ffffff;
+      /* Pure White */
+      --surface-raised: #ffffff;
+
+      --text-main: #1e293b;
+      /* Slate 800 - Soft Black */
+      --text-secondary: #64748b;
+      /* Slate 500 */
+      --text-muted: #94a3b8;
+      /* Slate 400 */
+
+      --border: #e2e8f0;
+      /* Slate 200 */
+
       /* Semantic Colors */
-      --success: #10b981;       /* Emerald 500 */
-      --error: #ef4444;         /* Red 500 */
+      --success: #10b981;
+      /* Emerald 500 */
+      --error: #ef4444;
+      /* Red 500 */
 
       /* Shadows: The Core of Tactile Design */
       /* Soft, diffused ambient shadow */
       --shadow-sm: 0 2px 4px rgba(148, 163, 184, 0.1);
       --shadow-md: 0 8px 16px -4px rgba(148, 163, 184, 0.1);
-      --shadow-lg: 0 20px 40px -10px rgba(30, 41, 59, 0.12); /* Main Hero Shadow */
+      --shadow-lg: 0 20px 40px -10px rgba(30, 41, 59, 0.12);
+      /* Main Hero Shadow */
       --shadow-inner: inset 0 2px 4px 0 rgba(0, 0, 0, 0.05);
-      
+
       /* Typography */
       --font-ui: 'Outfit', sans-serif;
       --font-content: 'Libre Baskerville', serif;
-      
+
       --radius-lg: 24px;
       --radius-md: 16px;
       --radius-sm: 10px;
@@ -73,12 +88,13 @@
       line-height: 1.6;
       color: var(--text-main);
       background-color: var(--background);
-      
+
       /* DOT GRID PATTERN (CSS Only - No Images) */
       background-image: radial-gradient(var(--text-muted) 1px, transparent 1px);
-      background-size: 32px 32px; /* Spacing of dots */
+      background-size: 32px 32px;
+      /* Spacing of dots */
       background-attachment: fixed;
-      
+
       font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
       -webkit-font-smoothing: antialiased;
       min-height: 100vh;
@@ -87,10 +103,21 @@
     .app {
       max-width: 1000px;
       margin: 0 auto;
-      padding: 40px 24px;
-      min-height: 100vh;
+      padding: 16px 20px;
+      height: 100vh;
       display: flex;
       flex-direction: column;
+      overflow: hidden;
+      /* Основной контент не должен скроллить экран */
+    }
+
+    .main-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      /* Важно для flex-контейнеров внутри */
+      justify-content: center;
     }
 
     /* ===================================================================== */
@@ -99,29 +126,28 @@
 
     .header {
       text-align: center;
-      margin-bottom: 48px;
-      /* Backdrop blur to separate from grid */
+      margin-bottom: 20px;
       background: rgba(248, 250, 252, 0.8);
       backdrop-filter: blur(8px);
-      padding: 24px;
+      padding: 12px 16px;
       border-radius: var(--radius-lg);
-      border: 1px solid rgba(255,255,255, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.5);
       display: inline-block;
       align-self: center;
     }
 
     .header h1 {
       color: var(--text-main);
-      font-size: 2.5rem;
+      font-size: 1.5rem;
       font-weight: 800;
       letter-spacing: -0.03em;
       line-height: 1.1;
-      margin-bottom: 8px;
+      margin-bottom: 4px;
     }
 
     .subtitle {
       color: var(--text-secondary);
-      font-size: 1.125rem;
+      font-size: 0.9rem;
       font-weight: 400;
     }
 
@@ -191,12 +217,12 @@
       color: var(--text-main);
       border: 2px solid var(--border);
       /* Subtle lip for secondary buttons too */
-      box-shadow: 0 3px 0 var(--border), 0 4px 6px -2px rgba(0,0,0,0.05);
+      box-shadow: 0 3px 0 var(--border), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
     }
 
     .btn-secondary:hover:not(:disabled) {
       border-color: var(--text-secondary);
-      box-shadow: 0 3px 0 var(--text-secondary), 0 6px 12px -2px rgba(0,0,0,0.08);
+      box-shadow: 0 3px 0 var(--text-secondary), 0 6px 12px -2px rgba(0, 0, 0, 0.08);
       transform: translateY(-2px);
       color: var(--text-main);
     }
@@ -207,9 +233,9 @@
     }
 
     .actions {
-      margin-top: 48px;
+      margin-top: 32px;
       display: flex;
-      gap: 20px;
+      gap: 16px;
       justify-content: center;
       flex-wrap: wrap;
     }
@@ -234,29 +260,34 @@
 
     .instruction {
       text-align: center;
-      margin-bottom: 32px;
+      margin-bottom: 20px;
       color: var(--text-secondary);
-      font-size: 1.05rem;
+      font-size: 1rem;
     }
 
     .text-area {
       width: 100%;
-      min-height: 300px;
-      padding: 32px;
+      height: 200px;
+      /* Фиксированная высота для стабильности */
+      max-height: 30vh;
+      padding: 24px;
       border-radius: var(--radius-md);
       border: 1px solid var(--border);
-      
+
       /* Look like paper */
       background-color: var(--surface);
       box-shadow: var(--shadow-md);
-      
-      font-family: var(--font-content); /* Use Serif for input text */
+
+      font-family: var(--font-content);
+      /* Use Serif for input text */
       font-size: 1.1rem;
-      line-height: 1.8;
+      line-height: 1.6;
       color: var(--text-main);
-      resize: vertical;
+      resize: none;
+      /* Убрали resize для предотвращения поломки верстки */
       transition: all 0.2s ease;
-      margin-bottom: 32px;
+      margin-bottom: 20px;
+      overflow-y: auto;
     }
 
     .text-area:focus {
@@ -272,25 +303,32 @@
 
     .extracted-words {
       background: var(--surface);
-      padding: 40px;
+      padding: 24px;
       border-radius: var(--radius-lg);
       box-shadow: var(--shadow-md);
       text-align: center;
+      max-height: 60vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
     }
 
     .words-container {
       display: flex;
       flex-wrap: wrap;
-      gap: 12px;
-      margin: 32px 0;
+      gap: 8px;
+      margin: 16px 0;
       justify-content: center;
+      overflow-y: auto;
+      flex: 1;
+      padding: 4px;
     }
 
     .word-chip {
       background: var(--background);
-      padding: 10px 20px;
-      border-radius: 12px;
-      font-size: 0.95rem;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 0.9rem;
       font-weight: 600;
       color: var(--text-main);
       border: 1px solid transparent;
@@ -312,35 +350,42 @@
 
     .flashcards-header {
       text-align: center;
-      margin-bottom: 40px;
+      margin-bottom: 16px;
     }
 
     .flashcards-header h2 {
-      font-size: 2rem;
-      font-weight: 800;
+      font-size: 1.4rem;
+      font-weight: 700;
       color: var(--text-main);
-      margin-bottom: 8px;
+      margin-bottom: 6px;
     }
 
     .flashcards-count {
-      display: inline-block;
-      font-size: 0.8rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
       text-transform: uppercase;
       letter-spacing: 0.1em;
       font-weight: 700;
       color: var(--text-muted);
       background: var(--surface);
-      padding: 8px 16px;
+      padding: 6px 14px;
       border-radius: 20px;
       border: 1px solid var(--border);
+      min-width: 70px;
+      width: fit-content;
+      /* Ensure it doesn't stretch */
+      margin: 0 auto;
+      /* Center it */
     }
 
     .card-container {
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 40px;
-      padding: 20px 0;
+      gap: 32px;
+      padding: 16px 0;
       perspective: 1000px;
     }
 
@@ -382,6 +427,11 @@
       box-shadow: none;
     }
 
+    /* Utilities for platform-specific visibility */
+    .mobile-only {
+      display: none !important;
+    }
+
     /* ===================================================================== */
     /* THE CARD - HIGH END PHYSICAL OBJECT */
     /* ===================================================================== */
@@ -389,7 +439,8 @@
     .flashcard {
       width: 100%;
       max-width: 500px;
-      height: 380px; /* Fixed height for consistency */
+      height: 480px;
+      max-height: 60vh;
       cursor: pointer;
       position: relative;
     }
@@ -398,8 +449,9 @@
       width: 100%;
       height: 100%;
       position: relative;
-      transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); /* Springy Flip */
+      transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
       transform-style: preserve-3d;
+      -webkit-transform-style: preserve-3d;
     }
 
     .flashcard.flipped .card-inner {
@@ -409,46 +461,51 @@
     .card-front,
     .card-back {
       position: absolute;
+      top: 0;
+      left: 0;
       width: 100%;
       height: 100%;
       backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
       border-radius: var(--radius-lg);
       background: var(--surface);
-      
+
       /* DEEP, LUXURIOUS SHADOW */
-      box-shadow: var(--shadow-lg), 0 1px 2px rgba(0,0,0,0.05);
-      border: 1px solid rgba(255,255,255,0.8);
-      
+      box-shadow: var(--shadow-lg), 0 1px 2px rgba(0, 0, 0, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.8);
+
       display: flex;
       flex-direction: column;
       padding: 40px;
-      
+
       /* Hide scrollbar but allow scroll */
       scrollbar-width: none;
     }
-    
-    .card-front::-webkit-scrollbar, .card-back::-webkit-scrollbar {
-        display: none;
+
+    .card-front::-webkit-scrollbar,
+    .card-back::-webkit-scrollbar {
+      display: none;
     }
 
     /* Hover effect works on the WHOLE card container, lifting both sides */
     .flashcard:hover .card-inner {
       transform: translateY(-8px);
     }
-    
+
     .flashcard.flipped:hover .card-inner {
-      transform: translateY(-8px) rotateY(180deg); /* Maintain rotation */
+      transform: translateY(-8px) rotateY(180deg);
+      /* Maintain rotation */
     }
 
     /* FRONT DESIGN */
     .card-front {
       justify-content: center;
       align-items: center;
-      z-index: 2;
       background: linear-gradient(to bottom right, #ffffff, #fafafa);
-      overflow: hidden; /* For glare containment */
+      overflow: hidden;
+      transform: rotateY(0deg);
     }
-    
+
     .card-glare {
       position: absolute;
       top: 0;
@@ -470,17 +527,23 @@
     }
 
     .word {
-      font-family: var(--font-content); /* Serif font */
-      font-size: 3.5rem; /* Huge */
+      font-family: var(--font-content);
+      font-size: 3.5rem;
       font-weight: 700;
       color: var(--text-main);
       text-align: center;
       line-height: 1.1;
-      
-      /* Subtle ink trap effect */
       letter-spacing: -0.04em;
+      margin-bottom: 24px;
     }
-    
+
+    .front-meta {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+
     .audio-btn {
       width: 44px;
       height: 44px;
@@ -494,14 +557,14 @@
       cursor: pointer;
       transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
-    
+
     .audio-btn:hover {
       transform: scale(1.2);
       background: var(--primary);
       color: white;
       box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
     }
-    
+
     .audio-btn:active {
       transform: scale(0.9);
     }
@@ -528,58 +591,80 @@
       transform: translateX(4px);
     }
 
-    /* BACK DESIGN */
+    /* BACK DESIGN - ПОЛНОСТЬЮ ПЕРЕДЕЛАНО */
     .card-back {
-      transform: rotateY(180deg);
-      text-align: left;
-      align-items: flex-start;
-      overflow-y: auto;
       background: #ffffff;
-      border-top: 4px solid var(--primary); /* Accent line */
+      border-top: 4px solid var(--primary);
+      padding: 24px;
+
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      overflow-y: auto;
+      overflow-x: hidden;
+      transform: rotateY(180deg);
     }
 
-    .original-word {
-      font-family: var(--font-content);
-      font-size: 1.5rem;
-      color: var(--primary);
-      font-weight: 700;
-      margin-bottom: 24px;
-      padding-bottom: 16px;
-      border-bottom: 2px solid var(--background);
-      width: 100%;
+    .back-header {
+      flex-shrink: 0;
     }
 
-    .translations h4 {
-      font-family: var(--font-ui);
-      font-size: 0.75rem;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: var(--text-muted);
-      margin-bottom: 12px;
-      font-weight: 700;
+    .translations {
+      flex-shrink: 0;
     }
 
     .translations ul {
       list-style: none;
+      margin: 0;
+      padding: 0;
     }
 
     .translations li {
-      font-family: var(--font-ui);
       font-size: 1.1rem;
       color: var(--text-main);
-      padding: 8px 0;
-      border-bottom: 1px dashed var(--border);
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+      line-height: 1.6;
     }
-    
+
+    .translations li:first-child {
+      padding-top: 0;
+    }
+
     .translations li:last-child {
       border-bottom: none;
     }
 
-    .card-source {
-      margin-top: auto;
-      width: 100%;
-      text-align: right;
+    .no-translations {
+      font-size: 1rem;
+      color: var(--text-muted);
+      font-style: italic;
+      padding: 20px;
+      text-align: center;
+      background: rgba(0, 0, 0, 0.03);
+      border-radius: 8px;
+    }
+
+    .word-forms {
+      flex-shrink: 0;
       padding-top: 20px;
+      border-top: 2px solid var(--background);
+    }
+
+    .word-forms h4 {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      margin: 0 0 16px 0;
+      font-weight: 700;
+    }
+
+    .card-source {
+      flex-shrink: 0;
+      text-align: right;
+      padding-top: 16px;
+      border-top: 1px solid rgba(0, 0, 0, 0.06);
     }
 
     .source-badge {
@@ -595,26 +680,25 @@
     }
 
     /* ===================================================================== */
-    /* FUTURE DATA STYLES (Gender, Grammar, Forms) */
+    /* BACK-HEADER & TAGS */
     /* ===================================================================== */
 
     .back-header {
-      border-bottom: 2px solid var(--background);
-      margin-bottom: 24px;
-      padding-bottom: 16px;
+      /* Используется только для тегов */
     }
 
     .grammar-tags {
       display: flex;
       gap: 8px;
-      margin-top: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-start;
     }
 
     .tag {
-      font-size: 0.75rem;
-      padding: 4px 10px;
+      font-size: 0.8rem;
+      padding: 6px 12px;
       border-radius: 6px;
-      font-weight: 600;
+      font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.05em;
     }
@@ -642,48 +726,33 @@
       font-weight: 700;
       text-transform: uppercase;
       color: var(--text-secondary);
-      background: rgba(0,0,0,0.05);
+      background: rgba(0, 0, 0, 0.05);
       padding: 2px 8px;
       border-radius: 4px;
     }
 
-    .word-forms {
-      margin-top: 24px;
-      padding-top: 16px;
-      border-top: 1px dashed var(--border);
-    }
-
-    .word-forms h4 {
-      font-size: 0.8rem;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: var(--text-muted);
-      margin-bottom: 12px;
-      font-weight: 700;
-    }
+    /* ===================================================================== */
+    /* FORMS GRID */
+    /* ===================================================================== */
 
     .forms-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr; /* Строго 2 колонки, как в словаре */
-      gap: 4px 20px; /* Увеличили горизонтальный отступ между колонками */
-      margin-top: 12px;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px 20px;
     }
 
     .form-item {
-      font-size: 0.8rem;
+      font-size: 0.95rem;
       color: var(--text-secondary);
-      padding: 4px 0;
-      line-height: 1.2;
-      
-      /* Защита от длинных слов */
-      overflow-wrap: break-word; /* Перенос слова, если оно не влезает */
+      padding: 8px 6px;
+      line-height: 1.4;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+      overflow-wrap: break-word;
       word-wrap: break-word;
-      hyphens: auto; /* Автоматические дефисы при переносе */
-      border-bottom: 1px solid rgba(0,0,0,0.03); /* Легкая разделительная черта */
     }
-    
+
     .form-item:nth-last-child(-n+2) {
-      border-bottom: none; /* Убираем черту у последних элементов */
+      border-bottom: none;
     }
 
     .form-item.current {
@@ -691,8 +760,8 @@
       font-weight: 700;
       background: rgba(79, 70, 229, 0.05);
       border-left: 3px solid var(--primary);
-      padding-left: 8px;
-      margin-left: -8px; /* Компенсируем отступ, чтобы текст остался в колонке */
+      padding-left: 10px;
+      margin-left: -6px;
       border-bottom-color: transparent;
     }
 
@@ -701,16 +770,9 @@
       font-style: italic;
       color: var(--text-muted);
       margin-top: 8px;
-      background: rgba(0,0,0,0.03);
+      background: rgba(0, 0, 0, 0.03);
       padding: 4px 12px;
       border-radius: 20px;
-    }
-
-    .form-more {
-      font-size: 0.8rem;
-      color: var(--text-muted);
-      padding: 6px 8px;
-      align-self: center;
     }
 
     /* ===================================================================== */
@@ -733,7 +795,7 @@
       color: var(--text-main);
       margin-bottom: 8px;
     }
-    
+
     .dictionary-button {
       background: transparent;
       border: 1px solid var(--border);
@@ -746,7 +808,7 @@
       margin: 8px;
       transition: all 0.2s ease;
     }
-    
+
     .dictionary-button:hover {
       border-color: var(--text-main);
       color: var(--text-main);
@@ -791,28 +853,43 @@
       margin: 16px 0;
       font-weight: 500;
     }
-    
+
     /* Progress Dots */
     .progress-dots {
-        margin-top: 32px;
-        display: flex;
-        justify-content: center;
-        gap: 8px;
-        flex-wrap: wrap;
+      margin-top: 32px;
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: wrap;
     }
-    
+
     .progress-dot {
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
-        background: var(--border);
-        cursor: pointer;
-        transition: all 0.3s ease;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--border);
+      cursor: pointer;
+      transition: all 0.3s ease;
     }
-    
+
     .progress-dot.active {
-        background: var(--primary);
-        transform: scale(1.4);
+      background: var(--primary);
+      transform: scale(1.4);
+    }
+
+    .card-viewer-bottom {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      margin-top: 24px;
+    }
+
+    .actions-bottom {
+      display: flex;
+      justify-content: center;
+      width: 100%;
+      margin-top: 12px;
     }
 
     /* ===================================================================== */
@@ -837,62 +914,62 @@
       transition: transform 0.2s ease;
       z-index: 100;
     }
-    
+
     .theme-toggle:hover {
-        transform: scale(1.1) rotate(10deg);
+      transform: scale(1.1) rotate(10deg);
     }
 
     /* Apply dark theme variables when data-theme="dark" is present on root */
     :root[data-theme="dark"] {
-        --background: #0f172a; /* Deep Night */
-        --surface: #1e293b;    /* Lighter Night */
-        --surface-raised: #334155;
-        
-        --text-main: #f1f5f9;
-        --text-secondary: #cbd5e1;
-        --text-muted: #64748b;
-        
-        --border: #334155;
-        
-        --primary: #6366f1;    /* Lighter Indigo for dark mode */
-        --primary-hover: #818cf8;
-        --primary-active: #4f46e5;
-        
-        /* Invert shadows for glow effect */
-        --shadow-lg: 0 20px 40px -10px rgba(0, 0, 0, 0.5);
-        --shadow-md: 0 10px 20px -5px rgba(0, 0, 0, 0.4);
+      --background: #0f172a;
+      /* Deep Night */
+      --surface: #1e293b;
+      /* Lighter Night */
+      --surface-raised: #334155;
+
+      --text-main: #f1f5f9;
+      --text-secondary: #cbd5e1;
+      --text-muted: #64748b;
+
+      --border: #334155;
+
+      --primary: #6366f1;
+      /* Lighter Indigo for dark mode */
+      --primary-hover: #818cf8;
+      --primary-active: #4f46e5;
+
+      /* Invert shadows for glow effect */
+      --shadow-lg: 0 20px 40px -10px rgba(0, 0, 0, 0.5);
+      --shadow-md: 0 10px 20px -5px rgba(0, 0, 0, 0.4);
     }
-      
+
     :root[data-theme="dark"] body {
-        /* Invert dot pattern opacity */
-        background-image: radial-gradient(#334155 1px, transparent 1px);
+      /* Invert dot pattern opacity */
+      background-image: radial-gradient(#334155 1px, transparent 1px);
     }
-      
+
     :root[data-theme="dark"] .header {
-          background: rgba(15, 23, 42, 0.7);
-          border-color: rgba(255,255,255,0.1);
+      background: rgba(15, 23, 42, 0.7);
+      border-color: rgba(255, 255, 255, 0.1);
     }
-      
+
     :root[data-theme="dark"] .word-chip {
-          background: var(--surface);
+      background: var(--surface);
     }
-      
-    :root[data-theme="dark"] .card-front, 
+
+    :root[data-theme="dark"] .card-front,
     :root[data-theme="dark"] .card-back {
-          border-color: #334155;
-          background: var(--surface);
+      border-color: #334155;
+      background: var(--surface);
     }
-      
+
     :root[data-theme="dark"] .card-front {
-          background: linear-gradient(to bottom right, #1e293b, #111827);
+      background: linear-gradient(to bottom right, #1e293b, #111827);
     }
-      
-    :root[data-theme="dark"] .original-word {
-          border-bottom-color: var(--border);
-    }
-      
+
+
     :root[data-theme="dark"] .nav-btn:hover:not(:disabled) {
-          background: var(--surface-raised);
+      background: var(--surface-raised);
     }
 
     /* ===================================================================== */
@@ -900,25 +977,206 @@
     /* ===================================================================== */
 
     @media screen and (max-width: 768px) {
-      .app { padding: 24px 16px; }
-      
-      .header h1 { font-size: 1.8rem; }
-      
-      .flashcard { height: 400px; } /* Taller on mobile for scroll */
-      .card-container { flex-direction: column; gap: 24px; }
-      
-      .nav-btn { 
-        width: 64px; height: 64px; /* Larger targets */
-        order: 2; /* Move below card */
+      .app {
+        padding: 0;
+        /* Full height control */
+        height: 100vh;
+        overflow: hidden;
       }
-      
+
+      .header {
+        height: 10vh;
+        /* Уменьшили с 15vh */
+        margin-bottom: 0;
+        padding: 8px 12px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
+      .header h1 {
+        font-size: 1.2rem;
+        margin-bottom: 0;
+      }
+
+      .main-content {
+        height: 90vh;
+        /* 65% card + 20% bottom + 5% misc = 90% */
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      .flashcards-container {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+      }
+
+      .flashcards-header {
+        height: 4vh;
+        /* Уменьшили с 5vh */
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        margin-bottom: 0;
+      }
+
       .card-container {
-        flex-wrap: wrap;
+        flex: 0 0 65vh;
+        /* Card takes 65% of screen */
+        flex-direction: column;
+        gap: 8px;
+        padding: 8px 16px;
+        margin: 0;
       }
-      
-      .flashcard { order: 1; }
-      
-      .word { font-size: 2.5rem; }
+
+      .flashcard {
+        height: 100%;
+        max-height: 100%;
+        width: 100%;
+        order: 1;
+      }
+
+      .card-front,
+      .card-back {
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+      }
+
+      /* Fix overlapping on front card */
+      .word-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 16px;
+        width: 100%;
+      }
+
+      .front-meta {
+        position: static;
+        margin-top: 8px;
+      }
+
+      /* Buttons and info take remaining 20% */
+      .nav-btn {
+        width: 44px;
+        height: 44px;
+        font-size: 1.2rem;
+        position: static;
+      }
+
+      .mobile-only {
+        display: flex !important;
+      }
+
+      .desktop-only {
+        display: none !important;
+      }
+
+      .card-viewer-bottom {
+        height: 20vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        /* Уменьшили с 16px */
+        padding: 4px 12px 8px;
+        /* Уменьшили падинги */
+      }
+
+      .nav-controls {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 24px;
+        width: 100%;
+      }
+
+      .nav-controls .flashcards-count {
+        font-weight: 700;
+        color: var(--text-main);
+        /* Width is already handled by base .flashcards-count */
+      }
+
+      .actions-bottom {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        margin-top: 4px;
+      }
+
+      .actions-bottom .btn {
+        width: 80%;
+        max-width: 280px;
+      }
+
+      .translations p {
+        font-size: 1.1rem;
+        line-height: 1.4;
+        text-align: center;
+      }
+
+      .form-item {
+        font-size: 0.85rem;
+        padding: 4px 8px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+      }
+
+      .form-item.current {
+        background: var(--primary);
+        color: white;
+        border-color: var(--primary);
+        font-weight: 700;
+        box-shadow: 0 2px 4px rgba(79, 70, 229, 0.3);
+      }
+
+      .progress-dots {
+        margin-top: 4px;
+        gap: 6px;
+      }
+
+      .word {
+        font-size: 2.2rem;
+      }
+    }
+
+    /* Добавленные правила для компактности при низкой высоте */
+    @media screen and (max-height: 700px) {
+      .app {
+        padding: 8px 12px;
+      }
+
+      .header {
+        margin-bottom: 4px;
+      }
+
+      .flashcard {
+        height: 320px;
+      }
+
+      .text-area {
+        height: 120px;
+      }
+
+      .extracted-words {
+        padding: 12px;
+      }
+
+      .words-container {
+        margin: 8px 0;
+      }
+
+      .actions {
+        margin-top: 12px;
+      }
     }
   </style>
 </head>
