@@ -1,87 +1,176 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <!-- Градиентный фон -->
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="_Слой_1" data-name="Слой 1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 512 512">
   <defs>
-    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#2c3e50" />
-      <stop offset="100%" stop-color="#34495e" />
-    </linearGradient>
-    <linearGradient id="cardGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#3498db" />
-      <stop offset="100%" stop-color="#2980b9" />
-    </linearGradient>
-    <linearGradient id="redCardGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#e74c3c" />
-      <stop offset="100%" stop-color="#c0392b" />
+    <style>
+      .cls-1 {
+        fill: url(#_Безымянный_градиент);
+      }
+
+      .cls-2 {
+        font-size: 25.8px;
+      }
+
+      .cls-2, .cls-3, .cls-4, .cls-5, .cls-6, .cls-7, .cls-8, .cls-9, .cls-10 {
+        fill: #fff;
+      }
+
+      .cls-2, .cls-3, .cls-4, .cls-5, .cls-6, .cls-7, .cls-8, .cls-9, .cls-10, .cls-11 {
+        isolation: isolate;
+      }
+
+      .cls-2, .cls-5, .cls-9, .cls-11 {
+        font-family: Arial-BoldMT, Arial;
+      }
+
+      .cls-12 {
+        filter: url(#shadow-2);
+      }
+
+      .cls-3 {
+        opacity: .3;
+      }
+
+      .cls-13 {
+        filter: url(#shadow-3);
+      }
+
+      .cls-4 {
+        opacity: .5;
+      }
+
+      .cls-5, .cls-11 {
+        font-size: 32.25px;
+      }
+
+      .cls-6 {
+        opacity: .1;
+      }
+
+      .cls-14 {
+        fill: url(#_Безымянный_градиент_2);
+      }
+
+      .cls-7 {
+        opacity: .6;
+      }
+
+      .cls-8 {
+        opacity: .15;
+      }
+
+      .cls-9 {
+        font-size: 25.8px;
+      }
+
+      .cls-15 {
+        fill: #7f8c8d;
+      }
+
+      .cls-10 {
+        opacity: .7;
+      }
+
+      .cls-16 {
+        fill: #95a5a6;
+      }
+
+      .cls-17 {
+        fill: #bdc3c7;
+      }
+
+      .cls-18 {
+        fill: url(#_Безымянный_градиент_3);
+      }
+
+      .cls-11 {
+        fill: #3498db;
+      }
+
+      .cls-19 {
+        fill: none;
+        stroke: #fff;
+        stroke-width: 2px;
+      }
+
+      .cls-20 {
+        filter: url(#shadow);
+        opacity: .8;
+      }
+    </style>
+    <linearGradient id="_Безымянный_градиент" data-name="Безымянный градиент" x1="-40.92" y1="676.57" x2="-39.92" y2="675.57" gradientTransform="translate(20951 346402.69) scale(512 -512)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2c3e50"/>
+      <stop offset="1" stop-color="#34495e"/>
     </linearGradient>
     <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feGaussianBlur in="SourceAlpha" stdDeviation="15" />
-      <feOffset dx="0" dy="10" result="offsetblur" />
+      <feGaussianBlur in="SourceAlpha" stdDeviation="15"/>
+      <feOffset dx="0" dy="10" result="offsetblur"/>
       <feComponentTransfer>
-        <feFuncA type="linear" slope="0.3" />
+        <feFuncA slope="0.3" type="linear"/>
       </feComponentTransfer>
       <feMerge>
-        <feMergeNode />
-        <feMergeNode in="SourceGraphic" />
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
       </feMerge>
     </filter>
+    <filter id="shadow-2" data-name="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="15"/>
+      <feOffset dx="0" dy="10" result="offsetblur"/>
+      <feComponentTransfer>
+        <feFuncA slope="0.3" type="linear"/>
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <linearGradient id="_Безымянный_градиент_2" data-name="Безымянный градиент 2" x1="-40.8" y1="676.08" x2="-40" y2="675.27" gradientTransform="translate(12359 135333) scale(300 -200)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#3498db"/>
+      <stop offset="1" stop-color="#2980b9"/>
+    </linearGradient>
+    <filter id="shadow-3" data-name="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="15"/>
+      <feOffset dx="0" dy="10" result="offsetblur"/>
+      <feComponentTransfer>
+        <feFuncA slope="0.3" type="linear"/>
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <linearGradient id="_Безымянный_градиент_3" data-name="Безымянный градиент 3" x1="-40.75" y1="676.18" x2="-39.95" y2="675.37" gradientTransform="translate(-134871.97 12358.06) rotate(90) scale(300 -200)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#e74c3c"/>
+      <stop offset="1" stop-color="#c0392b"/>
+    </linearGradient>
   </defs>
-  
-  <!-- Фон -->
-  <rect width="512" height="512" rx="30" fill="url(#bgGradient)" />
-  
-  <!-- Круг подсветки -->
-  <circle cx="380" cy="120" r="180" fill="white" opacity="0.05" />
-  
-  <!-- Стопка карточек в ряд (для эффекта колоды) -->
-  <g filter="url(#shadow)" opacity="0.8">
-    <rect x="70" y="220" width="300" height="200" rx="20" fill="#bdc3c7" transform="rotate(-12 70 220)" />
-    <rect x="80" y="210" width="300" height="200" rx="20" fill="#95a5a6" transform="rotate(-8 80 210)" />
-    <rect x="90" y="200" width="300" height="200" rx="20" fill="#7f8c8d" transform="rotate(-4 90 200)" />
+  <rect class="cls-1" width="512" height="512" rx="30" ry="30"/>
+  <g>
+    <g class="cls-20">
+      <rect class="cls-17" x="107.5" y="170.63" width="241.84" height="161.23" rx="16.12" ry="16.12" transform="translate(-47.24 52.98) rotate(-12)"/>
+      <rect class="cls-16" x="111.49" y="171.86" width="241.84" height="161.23" rx="16.12" ry="16.12" transform="translate(-32.88 34.8) rotate(-8)"/>
+      <rect class="cls-15" x="114.83" y="172.78" width="241.84" height="161.23" rx="16.12" ry="16.12" transform="translate(-17.1 17.06) rotate(-4)"/>
+    </g>
+    <g class="cls-12">
+      <rect class="cls-14" x="117.57" y="116.92" width="241.84" height="161.23" rx="16.12" ry="16.12"/>
+      <rect class="cls-8" x="141.75" y="133.04" width="193.47" height="56.43" rx="8.06" ry="8.06"/>
+      <rect class="cls-8" x="129.66" y="120.95" width="217.66" height="24.18" rx="8.06" ry="8.06"/>
+      <text class="cls-9" transform="translate(141.75 165.29)"><tspan x="0" y="0">CS</tspan></text>
+      <path class="cls-10" d="M145.78,181.41h185.41c2.23,0,4.03,1.8,4.03,4.03h0c0,2.23-1.8,4.03-4.03,4.03H145.78c-2.23,0-4.03-1.8-4.03-4.03h0c0-2.23,1.8-4.03,4.03-4.03Z"/>
+      <path class="cls-7" d="M145.78,197.53h137.04c2.23,0,4.03,1.8,4.03,4.03h0c0,2.23-1.8,4.03-4.03,4.03H145.78c-2.23,0-4.03-1.8-4.03-4.03h0c0-2.23,1.8-4.03,4.03-4.03Z"/>
+      <path class="cls-10" d="M145.78,213.65h161.23c2.23,0,4.03,1.8,4.03,4.03h0c0,2.23-1.8,4.03-4.03,4.03H145.78c-2.23,0-4.03-1.8-4.03-4.03h0c0-2.23,1.8-4.03,4.03-4.03Z"/>
+      <path class="cls-7" d="M145.78,229.78h120.92c2.23,0,4.03,1.8,4.03,4.03h0c0,2.23-1.8,4.03-4.03,4.03h-120.92c-2.23,0-4.03-1.8-4.03-4.03h0c0-2.23,1.8-4.03,4.03-4.03Z"/>
+      <circle class="cls-3" cx="327.16" cy="157.22" r="12.09"/>
+      <path class="cls-19" d="M321.52,157.22l5.64-5.64,5.64,5.64m-11.29,0l5.64,5.64,5.64-5.64"/>
+    </g>
+    <g class="cls-13">
+      <rect class="cls-18" x="202.96" y="132.23" width="161.23" height="241.84" rx="16.12" ry="16.12" transform="translate(-23.01 477.9) rotate(-78)"/>
+      <rect class="cls-6" x="258.72" y="116.26" width="56.43" height="193.47" rx="8.06" ry="8.06" transform="translate(18.94 449.38) rotate(-78)"/>
+      <text class="cls-2" transform="translate(230.43 205.59) rotate(12)"><tspan x="0" y="0">RU</tspan></text>
+      <path class="cls-7" d="M234.37,222.55l149.82,31.85c2.18,.46,3.57,2.6,3.1,4.78h0c-.46,2.18-2.6,3.57-4.78,3.1l-149.82-31.85c-2.18-.46-3.57-2.6-3.1-4.78h0c.46-2.18,2.6-3.57,4.78-3.1Z"/>
+      <path class="cls-4" d="M234.37,238.68l118.28,25.14c2.18,.46,3.57,2.6,3.1,4.78h0c-.46,2.18-2.6,3.57-4.78,3.1l-118.28-25.14c-2.18-.46-3.57-2.6-3.1-4.78h0c.46-2.18,2.6-3.57,4.78-3.1Z"/>
+      <path class="cls-7" d="M234.37,254.8l134.05,28.49c2.18,.46,3.57,2.6,3.1,4.78h0c-.46,2.18-2.6,3.57-4.78,3.1l-134.05-28.49c-2.18-.46-3.57-2.6-3.1-4.78h0c.46-2.18,2.6-3.57,4.78-3.1Z"/>
+    </g>
+    <text class="cls-5" transform="translate(158.19 350.7)"><tspan x="0" y="0">Flashcards</tspan></text>
+    <text class="cls-11" transform="translate(182.39 382.94)"><tspan x="0" y="0">Seznam</tspan></text>
   </g>
-  
-  <!-- Основная карточка (синяя, чешский язык) -->
-  <g filter="url(#shadow)">
-    <rect x="100" y="120" width="300" height="200" rx="20" fill="url(#cardGradient)" />
-    
-    <!-- Блик на синей карточке -->
-    <rect x="130" y="140" width="240" height="70" rx="10" fill="white" opacity="0.15" />
-    
-    <!-- Глянцевый эффект -->
-    <rect x="115" y="125" width="270" height="30" rx="10" fill="white" opacity="0.15" />
-    
-    <!-- "CS" для обозначения чешского языка -->
-    <text x="130" y="180" font-family="Arial" font-size="32" font-weight="bold" fill="white">CS</text>
-    
-    <!-- Линии текста на чешском -->
-    <rect x="130" y="200" width="240" height="10" rx="5" fill="white" opacity="0.7" />
-    <rect x="130" y="220" width="180" height="10" rx="5" fill="white" opacity="0.6" />
-    <rect x="130" y="240" width="210" height="10" rx="5" fill="white" opacity="0.7" />
-    <rect x="130" y="260" width="160" height="10" rx="5" fill="white" opacity="0.6" />
-    
-    <!-- Buton переворота -->
-    <circle cx="360" cy="170" r="15" fill="white" opacity="0.3" />
-    <path d="M353 170 L360 163 L367 170 M353 170 L360 177 L367 170" stroke="white" stroke-width="2" fill="none" />
-  </g>
-  
-  <!-- Перевернутая карточка (красная, русский язык) -->
-  <g filter="url(#shadow)">
-    <rect x="180" y="160" width="300" height="200" rx="20" fill="url(#redCardGradient)" transform="rotate(12 180 160)" />
-    
-    <!-- Блик на красной карточке -->
-    <rect x="200" y="180" width="240" height="70" rx="10" fill="white" opacity="0.1" transform="rotate(12 200 180)" />
-    
-    <!-- "RU" для обозначения русского языка -->
-    <text x="240" y="230" font-family="Arial" font-size="32" font-weight="bold" fill="white" transform="rotate(12 240 230)">RU</text>
-    
-    <!-- Линии текста на русском -->
-    <rect x="240" y="250" width="200" height="10" rx="5" fill="white" opacity="0.6" transform="rotate(12 240 250)" />
-    <rect x="240" y="270" width="160" height="10" rx="5" fill="white" opacity="0.5" transform="rotate(12 240 270)" />
-    <rect x="240" y="290" width="180" height="10" rx="5" fill="white" opacity="0.6" transform="rotate(12 240 290)" />
-  </g>
-  
-  <!-- Текст "Flashcards" -->
-  <text x="256" y="410" font-family="Arial" font-size="40" font-weight="bold" fill="white" text-anchor="middle">Flashcards</text>
-  
-  <!-- Текст "Seznam" -->
-  <text x="256" y="450" font-family="Arial" font-size="40" font-weight="bold" fill="#3498db" text-anchor="middle">Seznam</text>
 </svg>
