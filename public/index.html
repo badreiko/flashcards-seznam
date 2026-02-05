@@ -9,6 +9,7 @@
 
   <!-- Иконки и манифест -->
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/favicon.svg">
   <link rel="manifest" href="/manifest.json">
 
   <!-- Шрифты -->
@@ -77,6 +78,27 @@
       --radius-sm: 10px;
     }
 
+    /* DARK THEME OVERRIDES */
+    [data-theme="dark"] {
+      --background: #0f172a;
+      /* Slate 900 */
+      --surface: #1e293b;
+      /* Slate 800 */
+      --surface-raised: #334155;
+      /* Slate 700 */
+      --text-main: #f1f5f9;
+      /* Slate 100 */
+      --text-secondary: #94a3b8;
+      /* Slate 400 */
+      --text-muted: #64748b;
+      /* Slate 500 */
+      --border: #334155;
+      /* Slate 700 */
+      --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 8px 16px -4px rgba(0, 0, 0, 0.4);
+      --shadow-lg: 0 20px 40px -10px rgba(0, 0, 0, 0.5);
+    }
+
     * {
       box-sizing: border-box;
       margin: 0;
@@ -120,6 +142,67 @@
       justify-content: center;
     }
 
+    .top-controls {
+      display: flex;
+      gap: 12px;
+      position: absolute;
+      top: 24px;
+      right: 24px;
+      z-index: 100;
+    }
+
+    .theme-toggle,
+    .lang-toggle {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text-main);
+      padding: 8px 12px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 1.2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .lang-toggle {
+      font-size: 1rem;
+      gap: 6px;
+      padding: 6px 10px;
+    }
+
+    .flag-icon {
+      opacity: 0.4;
+      filter: grayscale(1);
+      transition: all 0.2s;
+    }
+
+    .flag-icon.active {
+      opacity: 1;
+      filter: grayscale(0);
+      transform: scale(1.2);
+    }
+
+    .lang-separator {
+      color: var(--text-muted);
+      font-weight: 300;
+      opacity: 0.5;
+    }
+
+    .theme-toggle:hover,
+    .lang-toggle:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+      border-color: var(--primary);
+    }
+
+    .theme-toggle:active,
+    .lang-toggle:active {
+      transform: translateY(0);
+    }
+
     /* ===================================================================== */
     /* HEADER - CLEAN & TYPOGRAPHIC */
     /* ===================================================================== */
@@ -128,6 +211,7 @@
       text-align: center;
       margin-bottom: 20px;
       background: rgba(248, 250, 252, 0.8);
+      -webkit-backdrop-filter: blur(8px);
       backdrop-filter: blur(8px);
       padding: 12px 16px;
       border-radius: var(--radius-lg);
@@ -450,8 +534,8 @@
       height: 100%;
       position: relative;
       transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
-      transform-style: preserve-3d;
       -webkit-transform-style: preserve-3d;
+      transform-style: preserve-3d;
     }
 
     .flashcard.flipped .card-inner {
@@ -465,8 +549,8 @@
       left: 0;
       width: 100%;
       height: 100%;
-      backface-visibility: hidden;
       -webkit-backface-visibility: hidden;
+      backface-visibility: hidden;
       border-radius: var(--radius-lg);
       background: var(--surface);
 
@@ -479,6 +563,7 @@
       padding: 40px;
 
       /* Hide scrollbar but allow scroll */
+      -ms-overflow-style: none;
       scrollbar-width: none;
     }
 
@@ -541,8 +626,99 @@
       display: flex;
       gap: 12px;
       margin-bottom: 16px;
+      flex-wrap: wrap;
+      justify-content: center;
     }
 
+    /* Extended Data Styles */
+    .ipa-transcription {
+      font-family: 'Lucida Sans Unicode', 'DejaVu Sans', sans-serif;
+      font-size: 1.2rem;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+      letter-spacing: 0.05em;
+    }
+
+    .meta-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .meta-badge.gender {
+      background: rgba(236, 72, 153, 0.1);
+      color: #be185d;
+    }
+
+    .meta-badge.grammar {
+      background: rgba(79, 70, 229, 0.1);
+      color: var(--primary);
+    }
+
+    .meta-badge.vzor {
+      background: rgba(16, 185, 129, 0.1);
+      color: #059669;
+    }
+
+    .meta-badge.cefr {
+      background: rgba(245, 158, 11, 0.1);
+      color: #d97706;
+      font-weight: 700;
+    }
+
+    /* Back card tags */
+    .grammar-tags {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+
+    .tag {
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .tag-gender {
+      background: rgba(236, 72, 153, 0.1);
+      color: #be185d;
+    }
+
+    .tag-grammar {
+      background: rgba(79, 70, 229, 0.1);
+      color: var(--primary);
+    }
+
+    .tag-vzor {
+      background: rgba(16, 185, 129, 0.1);
+      color: #059669;
+    }
+
+    .tag-cefr {
+      background: rgba(245, 158, 11, 0.1);
+      color: #d97706;
+      font-weight: 700;
+    }
+
+    /* Ukrainian translations */
+    .translations-ua {
+      margin-top: 12px;
+      border-top: 1px solid var(--border);
+      padding-top: 12px;
+    }
+
+    .translations h4 {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      font-weight: 600;
+    }
 
     .audio-btn {
       width: 44px;
@@ -596,50 +772,92 @@
       background: #ffffff;
       border-top: 4px solid var(--primary);
       padding: 24px;
-
       display: flex;
       flex-direction: column;
-      gap: 20px;
+      gap: 16px;
       overflow-y: auto;
       overflow-x: hidden;
       transform: rotateY(180deg);
+      align-items: stretch;
     }
 
     .back-header {
       flex-shrink: 0;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .grammar-tags {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .tag {
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .tag-gender {
+      background: rgba(236, 72, 153, 0.1);
+      color: #be185d;
+    }
+
+    .tag-grammar {
+      background: rgba(79, 70, 229, 0.1);
+      color: var(--primary);
+    }
+
+    .tag-vzor {
+      background: rgba(16, 185, 129, 0.1);
+      color: #059669;
+    }
+
+    .tag-cefr {
+      background: rgba(245, 158, 11, 0.15);
+      color: #d97706;
+      font-weight: 700;
     }
 
     .translations {
       flex-shrink: 0;
+      text-align: center;
     }
 
-    .translations ul {
-      list-style: none;
-      margin: 0;
-      padding: 0;
+    .translations h4 {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin: 0 0 8px 0;
+      font-weight: 600;
     }
 
-    .translations li {
-      font-size: 1.1rem;
+    .translations p {
+      font-size: 1.4rem;
+      font-family: var(--font-content);
       color: var(--text-main);
-      padding: 12px 0;
-      border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-      line-height: 1.6;
+      line-height: 1.5;
+      margin: 0;
     }
 
-    .translations li:first-child {
-      padding-top: 0;
+    .translations-ua {
+      padding-top: 12px;
+      border-top: 1px dashed var(--border);
     }
 
-    .translations li:last-child {
-      border-bottom: none;
+    .translations-ua h4 {
+      color: #0099cc;
     }
 
     .no-translations {
       font-size: 1rem;
       color: var(--text-muted);
       font-style: italic;
-      padding: 20px;
+      padding: 16px;
       text-align: center;
       background: rgba(0, 0, 0, 0.03);
       border-radius: 8px;
@@ -647,8 +865,8 @@
 
     .word-forms {
       flex-shrink: 0;
-      padding-top: 20px;
-      border-top: 2px solid var(--background);
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
     }
 
     .word-forms h4 {
@@ -656,8 +874,8 @@
       text-transform: uppercase;
       letter-spacing: 0.1em;
       color: var(--text-muted);
-      margin: 0 0 16px 0;
-      font-weight: 700;
+      margin: 0 0 12px 0;
+      text-align: center;
     }
 
     .card-source {
@@ -677,58 +895,6 @@
       background: var(--background);
       padding: 4px 12px;
       border-radius: 99px;
-    }
-
-    /* ===================================================================== */
-    /* BACK-HEADER & TAGS */
-    /* ===================================================================== */
-
-    .back-header {
-      /* Используется только для тегов */
-    }
-
-    .grammar-tags {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      justify-content: flex-start;
-    }
-
-    .tag {
-      font-size: 0.8rem;
-      padding: 6px 12px;
-      border-radius: 6px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-
-    .tag-gender {
-      background: #e0e7ff;
-      color: #4338ca;
-    }
-
-    .tag-grammar {
-      background: #f1f5f9;
-      color: #64748b;
-    }
-
-    .front-meta {
-      display: flex;
-      gap: 8px;
-      position: absolute;
-      top: 24px;
-      opacity: 0.6;
-    }
-
-    .meta-badge {
-      font-size: 0.7rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      color: var(--text-secondary);
-      background: rgba(0, 0, 0, 0.05);
-      padding: 2px 8px;
-      border-radius: 4px;
     }
 
     /* ===================================================================== */
@@ -896,28 +1062,6 @@
     /* DARK MODE - ELEGANT NIGHT */
     /* ===================================================================== */
 
-    .theme-toggle {
-      position: fixed;
-      top: 24px;
-      right: 24px;
-      width: 48px;
-      height: 48px;
-      border-radius: 50%;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.25rem;
-      box-shadow: var(--shadow-md);
-      transition: transform 0.2s ease;
-      z-index: 100;
-    }
-
-    .theme-toggle:hover {
-      transform: scale(1.1) rotate(10deg);
-    }
 
     /* Apply dark theme variables when data-theme="dark" is present on root */
     :root[data-theme="dark"] {

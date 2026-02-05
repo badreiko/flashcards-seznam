@@ -1,3 +1,4 @@
 {
-    "intellicodeApiExamples.typescript.enabled": true
+    "intellicodeApiExamples.typescript.enabled": true,
+    "java.configuration.updateBuildConfiguration": "interactive"
 }

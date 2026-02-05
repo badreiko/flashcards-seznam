@@ -1,7 +1,7 @@
 /**
  * DataService.js
- * Централизованное управление данными с DeepL API
- * Приоритет источников: Cache → Firebase → DeepL API → BaseDict
+ * Централизованное управление данными с использованием AI (DeepSeek)
+ * Приоритет источников: Cache → Firebase → DeepSeek AI → BaseDict
  * LocalStorage используется только для кэширования
  */
 
@@ -9,22 +9,19 @@ import { ref, set, get } from 'firebase/database';
 import { database } from '../firebase';
 import { BaseDict } from '../utils/BaseDict';
 
-// Netlify Function URL для DeepL API (через прокси для обхода CORS)
-const DEEPL_PROXY_URL = '/.netlify/functions/translate-deepl';
-
 class DataService {
   constructor() {
     this.baseDict = new BaseDict();
     this.connectionStatus = {
       firebase: false,
-      deepl: true // DeepL всегда доступен (если есть API ключ)
+      deepseek: true // AI доступен через прокси
     };
     this.translationCache = new Map();
     this.pendingBatchOperations = [];
     this.stats = {
       cacheHits: 0,
       firebaseHits: 0,
-      deeplHits: 0,
+      deepseekHits: 0,
       fallbackHits: 0,
       totalRequests: 0
     };
@@ -40,7 +37,7 @@ class DataService {
     try {
       this.connectionStatus.firebase = await this.checkFirebaseConnection();
       console.log(`Firebase connection: ${this.connectionStatus.firebase ? 'OK' : 'FAILED'}`);
-      console.log(`DeepL API: via Netlify Functions`);
+      console.log(`DeepSeek AI: via Netlify Functions`);
 
       if (this.connectionStatus.firebase) {
         console.log(`[Firebase] 🔗 Database URL:`, database.app.options.databaseURL);
@@ -73,103 +70,6 @@ class DataService {
   }
 
   /**
-   * Перевод через DeepL API (через Netlify Function прокси)
-   * Получаем несколько вариантов перевода через разные контексты
-   */
-  async translateWithDeepL(word, retryCount = 0) {
-    const MAX_RETRIES = 2;
-    const RETRY_DELAY = 2000; // 2 секунды
-
-    try {
-      console.log(`[DeepL] Translating: "${word}"${retryCount > 0 ? ` (retry ${retryCount})` : ''}`);
-
-      // Запрашиваем слово в разных контекстах для получения альтернативных переводов
-      const contexts = [
-        `${word}.`, // Слово как предложение (лучше чем просто слово)
-        `Musím ${word}`, // В контексте глагола (должен...)
-        `To je ${word}`, // В контексте существительного/прилагательного (это...)
-        `Chci ${word}`, // Хочу... (для глаголов)
-        `Mám ${word}` // Имею... (для существительных)
-      ];
-
-      const response = await fetch(DEEPL_PROXY_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          text: contexts,
-          source_lang: 'CS',
-          target_lang: 'RU'
-        })
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-
-        // Если 503 (Service Unavailable) или 429 (Too Many Requests) - повторяем
-        if ((response.status === 503 || response.status === 429) && retryCount < MAX_RETRIES) {
-          console.warn(`[DeepL] Rate limit hit, retrying in ${RETRY_DELAY}ms...`);
-          await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
-          return this.translateWithDeepL(word, retryCount + 1);
-        }
-
-        throw new Error(`DeepL Proxy error: ${response.status} - ${errorText}`);
-      }
-
-      const data = await response.json();
-
-      if (!data.translations || data.translations.length === 0) {
-        throw new Error('No translations returned from DeepL');
-      }
-
-      // Собираем уникальные переводы из всех вариантов
-      const translations = [];
-      const examples = [];
-
-      data.translations.forEach((t, index) => {
-        const translatedText = t.text.trim();
-
-        if (index === 0) {
-          // Первый вариант - убираем точку
-          const cleaned = translatedText.replace(/\.$/, '');
-          translations.push(cleaned);
-        } else {
-          // Извлекаем перевод слова из контекста
-          const contextTranslation = this.extractWordFromContext(translatedText, index);
-          if (contextTranslation && !translations.includes(contextTranslation)) {
-            translations.push(contextTranslation);
-          }
-          // Добавляем примеры использования
-          examples.push({
-            czech: contexts[index],
-            russian: translatedText
-          });
-        }
-      });
-
-      const result = {
-        word: word,
-        translations: translations.slice(0, 5), // Максимум 5 вариантов
-        examples: examples.slice(0, 3), // Максимум 3 примера
-        gender: '', // Будет заполнено из SQLite
-        grammar: '', // Будет заполнено из SQLite
-        forms: [],   // Будет заполнено из SQLite
-        detectedSourceLang: data.translations[0].detected_source_language || 'CS',
-        source: 'deepl',
-        success: true
-      };
-
-      console.log(`[DeepL] ✅ Success: ${translations.length} translations:`, translations);
-      return result;
-
-    } catch (error) {
-      console.error(`[DeepL] ❌ Error:`, error);
-      return null;
-    }
-  }
-
-  /**
    * Перевод через DeepSeek API (через прокси)
    * Создает "Золотую запись" на лету
    */
@@ -183,7 +83,7 @@ class DataService {
       });
 
       if (!response.ok) throw new Error(`DeepSeek Error: ${response.status}`);
-      
+
       const data = await response.json();
       console.log(`[DeepSeek] Success: ${data.word}`);
       return { ...data, success: true };
@@ -194,43 +94,8 @@ class DataService {
   }
 
   /**
-   * Извлекает перевод слова из контекстного перевода
-   */
-  extractWordFromContext(contextTranslation, contextIndex) {
-    // Убираем известные контекстные фразы
-    const patterns = [
-      /^Я должен\s+(.+)$/i,
-      /^Должен\s+(.+)$/i,
-      /^Мне нужно\s+(.+)$/i,
-      /^Я хочу\s+(.+)$/i,
-      /^Хочу\s+(.+)$/i,
-      /^У меня есть\s+(.+)$/i,
-      /^Я имею\s+(.+)$/i,
-      /^Имею\s+(.+)$/i,
-      /^Это\s+(.+)$/i,
-      /^Это -\s+(.+)$/i,
-      /^Это:\s+(.+)$/i
-    ];
-
-    for (const pattern of patterns) {
-      const match = contextTranslation.match(pattern);
-      if (match) {
-        return match[1].trim().replace(/[.,!?;:]$/, '');
-      }
-    }
-
-    // Если не нашли паттерн, возвращаем последнее слово/фразу
-    const words = contextTranslation.trim().split(/\s+/);
-    if (words.length > 2) {
-      // Если больше 2 слов, берём последние 2-3 слова (это может быть фраза типа "отметить галочкой")
-      return words.slice(-3).join(' ').replace(/[.,!?;:]$/, '');
-    }
-    return words[words.length - 1].replace(/[.,!?;:]$/, '');
-  }
-
-  /**
    * Пакетная проверка существования слов в базе (кэш + Firebase)
-   * Помогает избежать лишних вызовов DeepL
+   * Помогает избежать лишних вызовов AI
    */
   async checkWordsExistence(words) {
     const results = {};
@@ -257,7 +122,7 @@ class DataService {
           console.error(`Error checking ${word}:`, e);
         }
       }
-      
+
       results[word] = false;
     }
     return results;

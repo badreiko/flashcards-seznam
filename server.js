@@ -1,4 +1,5 @@
-// server.js - Оптимизированный сервер для Flashcards Seznam с DeepL API
+// server.js - Оптимизированный сервер для Flashcards Seznam
+// Удалена поддержка DeepL, используется только DeepSeek для анализа
 
 // ВАЖНО: Загружаем переменные окружения из .env в самом начале
 require('dotenv').config();
@@ -6,9 +7,6 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-
-// DeepL API сервис для высококачественных переводов
-const deepLService = require('./src/services/DeepLService');
 
 // Инициализация приложения Express
 const app = express();
@@ -51,7 +49,7 @@ const allowedOrigins = [
 
 // Настраиваем CORS для всех доменов, особенно для Netlify
 app.use(cors({
-  origin: function(origin, callback) {
+  origin: function (origin, callback) {
     // Разрешаем запросы без origin (например, из Postman или curl)
     if (!origin) return callback(null, true);
 
@@ -108,137 +106,6 @@ const buildPath = path.join(__dirname, 'build');
 app.use(express.static(buildPath));
 
 // ==============================================
-// DEEPL API ENDPOINTS
-// ==============================================
-
-// API для перевода через DeepL (высококачественные переводы)
-app.get('/api/translate-deepl', async (req, res) => {
-  try {
-    const { word, text, from, to } = req.query;
-
-    // Принимаем либо word, либо text
-    const textToTranslate = word || text;
-
-    if (!textToTranslate) {
-      return res.status(400).json({
-        success: false,
-        error: 'Необходимо указать word или text для перевода'
-      });
-    }
-
-    const fromLang = from || 'CS';
-    const toLang = to || 'RU';
-
-    console.log(`[DeepL API] Запрос на перевод: "${textToTranslate}" (${fromLang} -> ${toLang})`);
-
-    // Вызываем DeepL API
-    const result = await deepLService.translateText(textToTranslate, fromLang, toLang);
-
-    // Проверяем на ошибку
-    if (result.error) {
-      console.error(`[DeepL API] ❌ Ошибка перевода:`, result.message);
-      return res.status(500).json({
-        success: false,
-        error: result.message,
-        source: 'deepl'
-      });
-    }
-
-    // Возвращаем в формате, совместимом с существующим API
-    res.json({
-      success: true,
-      word: textToTranslate,
-      translations: [result.translatedText], // Массив переводов для совместимости
-      data: {
-        translations: [result.translatedText],
-        examples: [], // DeepL не возвращает примеры, но можно добавить позже
-        detected_source_language: result.detectedSourceLang
-      },
-      source: 'deepl',
-      charactersUsed: result.charactersUsed,
-      timestamp: result.timestamp
-    });
-
-  } catch (error) {
-    console.error('[DeepL API] Критическая ошибка:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Ошибка при переводе через DeepL',
-      details: error.message,
-      source: 'deepl'
-    });
-  }
-});
-
-// API для пакетного перевода через DeepL
-app.post('/api/translate-deepl/batch', async (req, res) => {
-  try {
-    const { texts, from, to } = req.body;
-
-    if (!texts || !Array.isArray(texts) || texts.length === 0) {
-      return res.status(400).json({
-        success: false,
-        error: 'Необходимо указать массив texts для перевода'
-      });
-    }
-
-    const fromLang = from || 'CS';
-    const toLang = to || 'RU';
-
-    console.log(`[DeepL API] Пакетный запрос: ${texts.length} текстов (${fromLang} -> ${toLang})`);
-
-    // Вызываем пакетный перевод DeepL
-    const results = await deepLService.translateBatch(texts, fromLang, toLang);
-
-    res.json({
-      success: true,
-      results: results,
-      count: results.length,
-      source: 'deepl'
-    });
-
-  } catch (error) {
-    console.error('[DeepL API] Ошибка пакетного перевода:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Ошибка при пакетном переводе через DeepL',
-      details: error.message,
-      source: 'deepl'
-    });
-  }
-});
-
-// API для получения статистики использования DeepL
-app.get('/api/deepl/usage', async (req, res) => {
-  try {
-    const usage = await deepLService.getUsage();
-
-    if (usage.error) {
-      return res.status(500).json({
-        success: false,
-        error: usage.message,
-        source: 'deepl'
-      });
-    }
-
-    res.json({
-      success: true,
-      usage: usage,
-      source: 'deepl'
-    });
-
-  } catch (error) {
-    console.error('[DeepL API] Ошибка получения статистики:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Ошибка при получении статистики DeepL',
-      details: error.message,
-      source: 'deepl'
-    });
-  }
-});
-
-// ==============================================
 // HEALTH & INFO ENDPOINTS
 // ==============================================
 
@@ -257,16 +124,9 @@ app.get('/api/health', (req, res) => {
     service: 'Flashcards Seznam API',
     version: '2.0.0',
     features: {
-      deepl: true,
+      deepl: false, // DeepL disabled
       firebase: true,
       netlifyFunctions: true
-    },
-    endpoints: {
-      deepl: [
-        'GET  /api/translate-deepl?word=slovo&from=CS&to=RU',
-        'POST /api/translate-deepl/batch',
-        'GET  /api/deepl/usage'
-      ]
     }
   });
 });
@@ -338,14 +198,14 @@ app.post('/.netlify/functions/translate-deepseek', async (req, res) => {
     });
 
     const data = await response.json();
-    
+
     if (data.error) {
       throw new Error(data.error.message);
     }
 
     const resultJSON = JSON.parse(data.choices[0].message.content);
     resultJSON.source = 'deepseek';
-    
+
     res.json(resultJSON);
 
   } catch (error) {
@@ -381,13 +241,10 @@ app.listen(PORT, () => {
   console.log(`========================================`);
   console.log(`📡 Server: http://localhost:${PORT}`);
   console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🔑 DeepL API: ${process.env.DEEPL_API_KEY ? 'Configured ✓' : 'Not configured ✗'}`);
   console.log(`========================================`);
   console.log(`🔗 API Endpoints:`);
   console.log(`   GET  /api/health`);
-  console.log(`   GET  /api/translate-deepl?word=slovo`);
-  console.log(`   POST /api/translate-deepl/batch`);
-  console.log(`   GET  /api/deepl/usage`);
+  console.log(`   POST /.netlify/functions/translate-deepseek`);
   console.log(`========================================`);
   console.log(`✨ Ready for requests!`);
   console.log(`========================================`);

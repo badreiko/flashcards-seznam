@@ -11,41 +11,93 @@ const extractUniqueWords = (text) => {
   return Array.from(new Set(words)).sort();
 };
 
-// Компонент для ввода текста
-const TextInput = ({ text, onTextChange, onExtractWords }) => (
-  <div className="text-input">
-    <h2>Введите текст на чешском языке</h2>
-    <p className="instruction">Вставьте чешский текст для анализа и создания карточек.</p>
-    <textarea
-      className="text-area"
-      value={text}
-      onChange={(e) => onTextChange(e.target.value)}
-      placeholder="Вставьте текст..."
-      rows={10}
-    />
-    <button className="btn btn-primary" onClick={onExtractWords} disabled={!text.trim()}>
-      Извлечь слова
-    </button>
-  </div>
-);
+const uiTranslations = {
+  ru: {
+    subtitle: "Ваша золотая база чешского языка",
+    inputPlaceholder: "Вставьте текст...",
+    extractWords: "Извлечь слова",
+    foundWords: "Найдено слов",
+    getTranslations: "Получить данные",
+    reset: "Сбросить",
+    loading: "Загрузка...",
+    cardsTitle: "Карточки",
+    tapToTranslate: "Нажмите для перевода",
+    primaryLabelRu: "🇷🇺 Русский:",
+    primaryLabelUa: "🇺🇦 Українська:",
+    noTranslations: "Переводы не найдены",
+    formFor: "форма для",
+    emptyState: "Нет карточек",
+    startAgain: "Начать заново",
+    inputHeader: "Введите текст на чешском языке",
+    inputSubtitle: "Вставьте чешский текст для анализа и создания карточек.",
+    wordForms: "Словоформы",
+    from: "из"
+  },
+  ua: {
+    subtitle: "Ваша золота база чеської мови",
+    inputPlaceholder: "Вставте текст...",
+    extractWords: "Витягти слова",
+    foundWords: "Знайдено слів",
+    getTranslations: "Отримати дані",
+    reset: "Скинути",
+    loading: "Завантаження...",
+    cardsTitle: "Картки",
+    tapToTranslate: "Натисніть для перекладу",
+    primaryLabelRu: "🇷🇺 Російська:",
+    primaryLabelUa: "🇺🇦 Українська:",
+    noTranslations: "Переклади не знайдено",
+    formFor: "форма для",
+    emptyState: "Немає карток",
+    startAgain: "Почати заново",
+    inputHeader: "Введіть текст чеською мовою",
+    inputSubtitle: "Вставте чеський текст для аналізу та створення карток.",
+    wordForms: "Словоформи",
+    from: "з"
+  }
+};
 
-// Компонент индикатора прогресса
-const ProgressIndicator = ({ progress, currentWord, totalWords, processedWords }) => (
-  <div className="loading-indicator">
-    <div className="loading-spinner"></div>
-    {currentWord && <div className="loading-current-word">{currentWord}</div>}
-    <div className="progress-container" style={{ width: '100%', maxWidth: '300px' }}>
-      <div className="progress-bar">
-        <div className="progress-bar-fill" style={{ width: `${progress}%` }} />
-      </div>
-      <div className="loading-status">
-        {processedWords !== undefined ? `${processedWords} из ${totalWords} (${progress}%)` : `${progress}%`}
+// Компонент для ввода текста
+const TextInput = ({ text, onTextChange, onExtractWords, targetLang }) => {
+  const t = uiTranslations[targetLang] || uiTranslations.ru;
+  return (
+    <div className="text-input">
+      <h2>{t.inputHeader}</h2>
+      <p className="instruction">{t.inputSubtitle}</p>
+      <textarea
+        className="text-area"
+        value={text}
+        onChange={(e) => onTextChange(e.target.value)}
+        placeholder={t.inputPlaceholder}
+        rows={10}
+      />
+      <div className="actions">
+        <button className="btn btn-primary" onClick={onExtractWords} disabled={!text.trim()}>
+          {t.extractWords}
+        </button>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
-// Компонент переключения темы
+// Компонент индикатора прогресса
+const ProgressIndicator = ({ progress, currentWord, totalWords, processedWords, targetLang }) => {
+  const t = uiTranslations[targetLang] || uiTranslations.ru;
+  return (
+    <div className="loading-indicator">
+      <div className="loading-spinner"></div>
+      {currentWord && <div className="loading-current-word">{currentWord}</div>}
+      <div className="progress-container" style={{ width: '100%', maxWidth: '300px' }}>
+        <div className="progress-bar">
+          <div className="progress-bar-fill" style={{ width: `${progress}%` }} />
+        </div>
+        <div className="loading-status">
+          {processedWords !== undefined ? `${processedWords} ${t.from} ${totalWords} (${progress}%)` : `${progress}%`}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const ThemeToggle = () => {
   const [isDark, setIsDark] = useState(() => {
     return localStorage.getItem('theme') === 'dark' ||
@@ -58,14 +110,49 @@ const ThemeToggle = () => {
   }, [isDark]);
 
   return (
-    <button className="theme-toggle" onClick={() => setIsDark(!isDark)}>
+    <button className="theme-toggle" onClick={() => setIsDark(!isDark)} title="Переключить тему">
       {isDark ? '☀️' : '🌙'}
     </button>
   );
 };
 
+// Компонент переключения языка
+const LanguageToggle = ({ lang, onToggle }) => {
+  return (
+    <button className="lang-toggle" onClick={onToggle} title="Переключить язык (RU/UA)">
+      <span className={`flag-icon ${lang === 'ru' ? 'active' : ''}`}>🇷🇺</span>
+      <span className="lang-separator">/</span>
+      <span className={`flag-icon ${lang === 'ua' ? 'active' : ''}`}>🇺🇦</span>
+    </button>
+  );
+};
+
 // КАРТОЧКА (С 3D эффектом, Звуком и Поддержкой SQLite)
-const Flashcard = ({ word, translations, source, gender, grammar, forms, searchedWord, flipTrigger }) => {
+const Flashcard = ({
+  word, translations, source, gender, grammar, forms, searchedWord, flipTrigger,
+  ipa, vzor, cefrLevel, cefr_level, translationsUa, translations_ua,
+  targetLang = 'ru'
+}) => {
+  // Поддержка обоих форматов именования (camelCase и snake_case)
+  const ipaValue = ipa;
+  const vzorValue = vzor;
+  const cefrValue = cefrLevel || cefr_level;
+  const uaTranslations = translationsUa || translations_ua || [];
+
+  // Логика выбора основного и дополнительного перевода
+  const t = uiTranslations[targetLang] || uiTranslations.ru;
+  let primaryTranslations = translations;
+  let secondaryTranslations = uaTranslations;
+  let primaryLabel = t.primaryLabelRu;
+  let secondaryLabel = t.primaryLabelUa;
+
+  if (targetLang === 'ua' && uaTranslations.length > 0) {
+    primaryTranslations = uaTranslations;
+    secondaryTranslations = translations;
+    primaryLabel = t.primaryLabelUa;
+    secondaryLabel = t.primaryLabelRu;
+  }
+
   const [isFlipped, setIsFlipped] = useState(false);
   const [rotateX, setRotateX] = useState(0);
   const [rotateY, setRotateY] = useState(0);
@@ -114,13 +201,13 @@ const Flashcard = ({ word, translations, source, gender, grammar, forms, searche
 
   const getSourceText = () => {
     if (source === 'golden_db' || source === 'sqlite_migration') return '★ Golden DB';
-    if (source === 'deepl') return '🤖 DeepL AI';
+    if (source === 'deepseek') return '🤖 AI (DeepSeek)';
     return source?.toUpperCase() || 'DB';
   };
 
   const getSourceColor = () => {
-    if (source?.includes('db')) return '#8b5cf6';
-    if (source === 'deepl') return '#0f2b46';
+    if (source === 'golden_db' || source === 'sqlite_migration') return '#8b5cf6';
+    if (source === 'deepseek') return '#0ea5e9';
     return 'var(--primary)';
   };
 
@@ -138,10 +225,13 @@ const Flashcard = ({ word, translations, source, gender, grammar, forms, searche
           )}
           <div className="word-container">
             <div className="word">{word}</div>
-            {(gender || grammar) && (
+            {ipaValue && <div className="ipa-transcription">{ipaValue}</div>}
+            {(gender || grammar || vzorValue || cefrValue) && (
               <div className="front-meta">
                 {gender && <span className="meta-badge gender">{gender}</span>}
                 {grammar && <span className="meta-badge grammar">{grammar}</span>}
+                {vzorValue && <span className="meta-badge vzor">vzor: {vzorValue}</span>}
+                {cefrValue && <span className="meta-badge cefr">{cefrValue}</span>}
               </div>
             )}
             <button className="audio-btn" onClick={handleSpeak}>
@@ -149,28 +239,38 @@ const Flashcard = ({ word, translations, source, gender, grammar, forms, searche
             </button>
           </div>
           {searchedWord && searchedWord.toLowerCase() !== word.toLowerCase() && (
-            <div className="search-context">форма для: <strong>{searchedWord}</strong></div>
+            <div className="search-context">{t.formFor}: <strong>{searchedWord}</strong></div>
           )}
-          <p className="hint">Нажмите для перевода</p>
+          <p className="hint">{t.tapToTranslate}</p>
         </div>
 
         <div className="card-back">
-          {(gender || grammar) && (
+          {(gender || grammar || vzorValue || cefrValue) && (
             <div className="back-header">
               <div className="grammar-tags">
                 {gender && <span className="tag tag-gender">{gender}</span>}
                 {grammar && <span className="tag tag-grammar">{grammar}</span>}
+                {vzorValue && <span className="tag tag-vzor">vzor: {vzorValue}</span>}
+                {cefrValue && <span className="tag tag-cefr">{cefrValue}</span>}
               </div>
             </div>
           )}
           <div className="translations">
-            {translations?.length > 0 ? (
-              <p>{translations.join(', ')}</p>
-            ) : <p className="no-translations">Переводы не найдены</p>}
+            <h4>{primaryLabel}</h4>
+            {primaryTranslations?.length > 0 ? (
+              <p>{primaryTranslations.join(', ')}</p>
+            ) : <p className="no-translations">{t.noTranslations}</p>}
           </div>
+
+          {secondaryTranslations?.length > 0 && (
+            <div className="translations translations-ua">
+              <h4>{secondaryLabel}</h4>
+              <p>{secondaryTranslations.join(', ')}</p>
+            </div>
+          )}
           {forms?.length > 0 && (
             <div className="word-forms">
-              <h4>Словоформы:</h4>
+              <h4>{t.wordForms}:</h4>
               <div className="forms-grid">
                 {forms.map((f, i) => {
                   const isSearched = searchedWord && f.toLowerCase() === searchedWord.toLowerCase();
@@ -193,7 +293,8 @@ const Flashcard = ({ word, translations, source, gender, grammar, forms, searche
 };
 
 // ПРОСМОТРЩИК КАРТОЧЕК
-const FlashcardViewer = ({ flashcards, onReset }) => {
+const FlashcardViewer = ({ flashcards, onReset, targetLang }) => {
+  const t = uiTranslations[targetLang] || uiTranslations.ru;
   const [currentIndex, setCurrentIndex] = useState(0);
   const [flipTrigger, setFlipTrigger] = useState(0);
 
@@ -215,20 +316,20 @@ const FlashcardViewer = ({ flashcards, onReset }) => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [goToPrevious, goToNext]);
 
-  if (!flashcards.length) return <div className="empty-state">Нет карточек</div>;
+  if (!flashcards.length) return <div className="empty-state">{t.emptyState}</div>;
 
   const currentCard = flashcards[currentIndex];
 
   return (
     <div className="flashcards-container">
       <div className="flashcards-header">
-        <h2>Карточки</h2>
+        <h2>{t.cardsTitle}</h2>
         <div className="flashcards-count desktop-only">{currentIndex + 1} / {flashcards.length}</div>
       </div>
 
       <div className="card-container">
         <button className="nav-btn desktop-only" onClick={goToPrevious}>&#8249;</button>
-        <Flashcard key={currentCard.word} {...currentCard} flipTrigger={flipTrigger} />
+        <Flashcard key={currentCard.word} {...currentCard} flipTrigger={flipTrigger} targetLang={targetLang} />
         <button className="nav-btn desktop-only" onClick={goToNext}>&#8250;</button>
       </div>
 
@@ -246,7 +347,7 @@ const FlashcardViewer = ({ flashcards, onReset }) => {
         </div>
 
         <div className="actions-bottom">
-          <button className="btn btn-secondary" onClick={onReset}>Начать заново</button>
+          <button className="btn btn-secondary" onClick={onReset}>{t.startAgain}</button>
         </div>
       </div>
     </div>
@@ -263,7 +364,13 @@ const App = () => {
   const [progress, setProgress] = useState(0);
   const [currentWord, setCurrentWord] = useState('');
   const [processedCount, setProcessedCount] = useState(0);
+  const [targetLang, setTargetLang] = useState(() => localStorage.getItem('targetLang') || 'ru');
 
+  useEffect(() => {
+    localStorage.setItem('targetLang', targetLang);
+  }, [targetLang]);
+
+  const t = uiTranslations[targetLang] || uiTranslations.ru;
   const { translateWord } = useTranslation();
 
   const handleExtractWords = () => {
@@ -336,36 +443,44 @@ const App = () => {
 
   return (
     <div className="app">
-      <ThemeToggle />
+      <div className="top-controls">
+        <LanguageToggle lang={targetLang} onToggle={() => setTargetLang(prev => prev === 'ru' ? 'ua' : 'ru')} />
+        <ThemeToggle />
+      </div>
       <header className="header">
         <h1>Flashcards Seznam</h1>
-        <p className="subtitle">Ваша золотая база чешского языка</p>
+        <p className="subtitle">{t.subtitle}</p>
         <button onClick={handleDebug} style={{ opacity: 0.5, fontSize: '10px' }}>Debug Firebase</button>
       </header>
 
       <main className="main-content">
         {currentStep === 'input' && (
-          <TextInput text={text} onTextChange={setText} onExtractWords={handleExtractWords} />
+          <TextInput
+            text={text}
+            onTextChange={setText}
+            onExtractWords={handleExtractWords}
+            targetLang={targetLang}
+          />
         )}
 
         {currentStep === 'extracted' && (
           <div className="extracted-words">
-            <h2>Найдено слов: {uniqueWords.length}</h2>
+            <h2>{t.foundWords}: {uniqueWords.length}</h2>
             <div className="words-container">
               {uniqueWords.map((w, i) => <span key={i} className="word-chip">{w}</span>)}
             </div>
             <div className="actions">
               <button className="btn btn-primary" onClick={handleGetTranslations} disabled={isLoading}>
-                {isLoading ? 'Загрузка...' : 'Получить данные'}
+                {isLoading ? t.loading : t.getTranslations}
               </button>
-              <button className="btn btn-secondary" onClick={handleReset}>Сбросить</button>
+              <button className="btn btn-secondary" onClick={handleReset}>{t.reset}</button>
             </div>
-            {isLoading && <ProgressIndicator progress={progress} currentWord={currentWord} totalWords={uniqueWords.length} processedWords={processedCount} />}
+            {isLoading && <ProgressIndicator progress={progress} currentWord={currentWord} totalWords={uniqueWords.length} processedWords={processedCount} targetLang={targetLang} />}
           </div>
         )}
 
         {currentStep === 'translated' && (
-          <FlashcardViewer flashcards={flashcards} onReset={handleReset} />
+          <FlashcardViewer flashcards={flashcards} onReset={handleReset} targetLang={targetLang} />
         )}
       </main>
     </div>
