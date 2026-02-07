@@ -131,6 +131,7 @@ class DataService {
   /**
    * Проверяет, является ли запись "неполной" (требующей дообогащения)
    * Проверяем реальные поля, а не флаг isEnriched
+   */
   isRecordIncomplete(data) {
     if (!data) return true;
     
