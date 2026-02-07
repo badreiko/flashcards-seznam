@@ -363,6 +363,24 @@ class DataService {
         detectedSourceLang: data.detectedSourceLang || 'CS'
       });
 
+      // Обновляем forms_index: каждая словоформа → базовое слово
+      const forms = data.forms || [];
+      if (forms.length > 0) {
+        const indexUpdates = {};
+        for (const form of forms) {
+          const normalizedForm = this.normalizeUnicode(form);
+          if (normalizedForm && normalizedForm !== normalizedKey) {
+            indexUpdates[`forms_index/${normalizedForm}`] = normalizedKey;
+          }
+        }
+        if (Object.keys(indexUpdates).length > 0) {
+          const { update } = await import('firebase/database');
+          const rootRef = ref(database);
+          await update(rootRef, indexUpdates);
+          console.log(`📇 forms_index updated: ${Object.keys(indexUpdates).length} forms → "${normalizedKey}"`);
+        }
+      }
+
       return true;
     } catch (error) {
       console.error('❌ Firebase save error:', error.message);
