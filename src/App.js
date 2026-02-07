@@ -2,13 +2,21 @@ import React, { useState, useEffect, useCallback } from 'react';
 import useTranslation from './hooks/useTranslation';
 import { dataService } from './services/DataService';
 
+// Чешские возвратные частицы и служебные слова, которые не нужны как отдельные карточки
+const CZECH_NOISE_WORDS = new Set(['se', 'si', 'by', 'aby', 'že', 'je', 'to', 'už']);
+
 // Функция для извлечения уникальных слов из текста
 const extractUniqueWords = (text) => {
   if (!text || typeof text !== 'string') return [];
   const lowerCaseText = text.toLowerCase();
   const cleanedText = lowerCaseText.replace(/[.,/#!$%^&*;:{}=\-_`~()«»„"[\]]/g, ' ');
-  const words = cleanedText.split(/\s+/).filter(word => word.length > 1);
-  return Array.from(new Set(words)).sort();
+  const allWords = cleanedText.split(/\s+/).filter(word => word.length > 1);
+
+  // Убираем шумовые/служебные слова (se, si, etc.)
+  // DeepSeek сам восстановит возвратную форму глагола (učím → učit se)
+  const meaningfulWords = allWords.filter(w => !CZECH_NOISE_WORDS.has(w));
+
+  return Array.from(new Set(meaningfulWords)).sort();
 };
 
 const uiTranslations = {
