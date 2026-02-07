@@ -579,14 +579,13 @@
       /* Maintain rotation */
     }
 
-    /* FRONT DESIGN — PREMIUM */
+    /* FRONT DESIGN — CLEAN, CONTENT-FOCUSED */
     .card-front {
       justify-content: center;
       align-items: center;
-      background: linear-gradient(160deg, #ffffff 0%, #f8f9fc 50%, #f1f3f9 100%);
+      background: var(--surface);
       overflow: hidden;
       transform: rotateY(0deg);
-      border-top: 3px solid var(--primary);
     }
 
     .card-glare {
@@ -641,44 +640,24 @@
       display: inline-block;
       padding: 3px 8px;
       border-radius: 6px;
-      font-size: 0.7rem;
-      font-weight: 600;
+      font-size: 0.65rem;
+      font-weight: 500;
       text-transform: uppercase;
       letter-spacing: 0.04em;
-    }
-
-    .meta-badge.gender {
-      background: rgba(236, 72, 153, 0.1);
-      color: #be185d;
-    }
-
-    .meta-badge.grammar {
-      background: rgba(79, 70, 229, 0.1);
-      color: var(--primary);
-    }
-
-    .meta-badge.vzor {
-      background: rgba(16, 185, 129, 0.1);
-      color: #059669;
+      background: rgba(0, 0, 0, 0.04);
+      color: var(--text-muted);
     }
 
     .meta-badge.cefr {
-      background: rgba(245, 158, 11, 0.1);
-      color: #d97706;
-      font-weight: 700;
+      font-weight: 600;
     }
 
     .meta-badge.style {
-      background: rgba(100, 116, 139, 0.1);
-      color: var(--text-secondary);
       font-style: italic;
       text-transform: lowercase;
     }
 
     .meta-badge.aspect {
-      background: rgba(79, 70, 229, 0.05);
-      border: 1px dashed rgba(79, 70, 229, 0.3);
-      color: var(--primary);
       text-transform: none;
     }
 
@@ -686,19 +665,19 @@
       display: inline-flex;
       align-items: center;
       gap: 4px;
-      padding: 4px 10px;
-      background: rgba(16, 185, 129, 0.08);
-      color: #059669;
+      padding: 3px 10px;
+      background: rgba(0, 0, 0, 0.03);
+      color: var(--text-muted);
       border-radius: 10px;
-      font-size: 0.8rem;
-      font-weight: 600;
-      margin-top: 6px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      margin-top: 4px;
     }
 
     .vazba-label {
-      opacity: 0.6;
-      font-weight: 500;
-      font-size: 0.7rem;
+      opacity: 0.5;
+      font-weight: 400;
+      font-size: 0.65rem;
     }
 
     /* Back card tags */
@@ -752,12 +731,12 @@
     }
 
     .audio-btn {
-      width: 44px;
-      height: 44px;
+      width: 40px;
+      height: 40px;
       border-radius: 50%;
-      background: rgba(79, 70, 229, 0.1);
+      background: rgba(0, 0, 0, 0.04);
       border: none;
-      color: var(--primary);
+      color: var(--text-muted);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -766,10 +745,9 @@
     }
 
     .audio-btn:hover {
-      transform: scale(1.2);
-      background: var(--primary);
-      color: white;
-      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+      transform: scale(1.15);
+      background: var(--text-main);
+      color: var(--surface);
     }
 
     .audio-btn:active {
@@ -799,10 +777,9 @@
       transform: translateX(4px);
     }
 
-    /* BACK DESIGN — PREMIUM, NO SCROLL */
+    /* BACK DESIGN — CLEAN, NO SCROLL */
     .card-back {
-      background: #ffffff;
-      border-top: 3px solid var(--primary);
+      background: var(--surface);
       padding: 20px 24px;
       display: flex;
       flex-direction: column;
@@ -821,50 +798,28 @@
 
     .grammar-tags {
       display: flex;
-      gap: 6px;
+      gap: 5px;
       flex-wrap: wrap;
       justify-content: center;
     }
 
     .tag {
-      padding: 3px 10px;
+      padding: 2px 8px;
       border-radius: 20px;
-      font-size: 0.65rem;
-      font-weight: 600;
+      font-size: 0.6rem;
+      font-weight: 500;
       text-transform: uppercase;
       letter-spacing: 0.03em;
-    }
-
-    .tag-gender {
-      background: rgba(236, 72, 153, 0.1);
-      color: #be185d;
-    }
-
-    .tag-grammar {
-      background: rgba(79, 70, 229, 0.1);
-      color: var(--primary);
-    }
-
-    .tag-vzor {
-      background: rgba(16, 185, 129, 0.1);
-      color: #059669;
+      background: rgba(0, 0, 0, 0.04);
+      color: var(--text-muted);
     }
 
     .tag-cefr {
-      background: rgba(245, 158, 11, 0.15);
-      color: #d97706;
-      font-weight: 700;
+      font-weight: 600;
     }
 
     .tag-style {
-      background: rgba(100, 116, 139, 0.1);
-      color: var(--text-secondary);
       font-style: italic;
-    }
-
-    .tag-aspect {
-      background: rgba(79, 70, 229, 0.05);
-      color: var(--primary);
     }
 
     .translations {
@@ -952,7 +907,7 @@
       padding: 4px 8px;
       background: rgba(0, 0, 0, 0.02);
       border-radius: 6px;
-      border-left: 2px solid var(--primary);
+      border-left: 2px solid var(--border);
     }
 
     .ex-cz {
@@ -1194,13 +1149,24 @@
       background: var(--surface);
     }
 
-    :root[data-theme="dark"] .card-front {
-      background: linear-gradient(160deg, #1e293b 0%, #1a2332 50%, #151d2b 100%);
-      border-top-color: #818cf8;
+    :root[data-theme="dark"] .meta-badge,
+    :root[data-theme="dark"] .tag {
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text-muted);
     }
 
-    :root[data-theme="dark"] .card-back {
-      border-top-color: #818cf8;
+    :root[data-theme="dark"] .vazba-badge {
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text-muted);
+    }
+
+    :root[data-theme="dark"] .form-item {
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    :root[data-theme="dark"] .example-item {
+      background: rgba(255, 255, 255, 0.02);
+      border-left-color: var(--text-muted);
     }
 
 

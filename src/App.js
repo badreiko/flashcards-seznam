@@ -198,9 +198,7 @@ const Flashcard = ({
   };
 
   const getSourceColor = () => {
-    if (source === 'golden_db' || source === 'sqlite_migration') return '#8b5cf6';
-    if (source === 'deepseek') return '#0ea5e9';
-    return 'var(--primary)';
+    return 'transparent';
   };
 
   // Новые поля
