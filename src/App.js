@@ -39,6 +39,7 @@ const uiTranslations = {
     inputHeader: "Введите текст на чешском языке",
     inputSubtitle: "Вставьте чешский текст для анализа и создания карточек.",
     wordForms: "Словоформы",
+    examples: "Примеры",
     from: "из"
   },
   ua: {
@@ -60,6 +61,7 @@ const uiTranslations = {
     inputHeader: "Введіть текст чеською мовою",
     inputSubtitle: "Вставте чеський текст для аналізу та створення карток.",
     wordForms: "Словоформи",
+    examples: "Приклади",
     from: "з"
   }
 };
@@ -292,7 +294,7 @@ const Flashcard = ({
 
           {examples?.length > 0 && (
             <div className="examples-section">
-              <h4>Примеры:</h4>
+              <h4>{t.examples}:</h4>
               <div className="examples-list">
                 {examples.slice(0, 2).map((ex, i) => (
                   <div key={i} className="example-item">
