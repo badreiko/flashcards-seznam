@@ -50,7 +50,11 @@ exports.handler = async (event, context) => {
 2. vzor - ОБЯЗАТЕЛЬНО! Всегда указывай vzor (образец)
 3. cefr_level - ОБЯЗАТЕЛЬНО! Оцени уровень сложности
 4. translations_ua - ОБЯЗАТЕЛЬНО! Переводы на украинский
-5. Ответ ТОЛЬКО валидный JSON без markdown и пояснений`;
+5. Ответ ТОЛЬКО валидный JSON без markdown и пояснений
+6. Если слово - предлог или союз, поле vzor может быть пустым.`;
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 секунд макс на запрос к API
 
     const response = await fetch('https://api.deepseek.com/chat/completions', {
       method: 'POST',
@@ -62,12 +66,14 @@ exports.handler = async (event, context) => {
         model: "deepseek-chat",
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: `Полный лингвистический анализ чешского слова: "${word}"` }
+          { role: "user", content: `Analysis of: "${word}"` }
         ],
         temperature: 0.1,
         response_format: { type: "json_object" }
-      })
+      }),
+      signal: controller.signal
     });
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       const err = await response.text();
