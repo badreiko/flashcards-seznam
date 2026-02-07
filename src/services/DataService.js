@@ -129,6 +129,28 @@ class DataService {
   }
 
   /**
+   * Проверяет, является ли запись "неполной" (требующей дообогащения)
+   */
+  isRecordIncomplete(data) {
+    if (!data) return true;
+
+    // 1. Нет примеров
+    const hasNoExamples = !data.examples || data.examples.length === 0;
+
+    // 2. Нет видовой пары для глагола
+    const isVerb = data.grammar && (data.grammar.toLowerCase().includes('verb') || data.grammar.toLowerCase().includes('гл.'));
+    const hasNoAspectPair = isVerb && (!data.aspect_pair && !data.aspectPair);
+
+    // 3. Нет ударения или стилистики (новые поля)
+    const hasNoStress = !data.stress;
+
+    // Если уже было "дообогащено", не трогаем (чтобы избежать циклов)
+    if (data.isEnriched) return false;
+
+    return hasNoExamples || hasNoAspectPair || hasNoStress;
+  }
+
+  /**
    * Получает перевод слова с автоматическим выбором источника
    * Приоритет: Cache → Firebase (Golden DB) → DeepSeek → BaseDict → DeepL
    */
@@ -150,6 +172,18 @@ class DataService {
       try {
         const firebaseData = await this.getFromFirebase(normalizedWord);
         if (firebaseData) {
+          // ПРОВЕРКА НА ПОЛНОТУ ДАННЫХ (Enrichment)
+          if (this.isRecordIncomplete(firebaseData) && this.connectionStatus.deepseek) {
+            console.log(`⚠️ Record for "${normalizedWord}" is incomplete. Fetching enrichment...`);
+            const enrichedData = await this.translateWithDeepSeek(normalizedWord);
+            if (enrichedData && enrichedData.success) {
+              const finalData = { ...enrichedData, isEnriched: true };
+              await this.saveToFirebase(normalizedWord, finalData);
+              this.translationCache.set(normalizedWord, finalData);
+              return { ...finalData, source: 'deepseek-enriched' };
+            }
+          }
+
           console.log(`✅ Found in Firebase`);
           this.stats.firebaseHits++;
           this.translationCache.set(normalizedWord, firebaseData);
@@ -177,14 +211,7 @@ class DataService {
     const fallbackData = this.getFromBaseDict(normalizedWord);
     if (fallbackData) return { ...fallbackData, source: 'fallback' };
 
-    // 5. DeepL (Last Resort)
-    try {
-      const deeplData = await this.translateWithDeepL(normalizedWord);
-      if (deeplData && deeplData.success) {
-        return { ...deeplData, source: 'deepl' };
-      }
-    } catch (e) { console.error(e); }
-
+    // 5. No more fallbacks (DeepL removed)
     return { word: normalizedWord, translations: [], forms: [], source: 'none', error: 'Not found' };
   }
 
@@ -328,8 +355,14 @@ class DataService {
         gender: data.gender || '',
         grammar: data.grammar || '',
         forms: data.forms || [],
+        stress: data.stress || '',
+        vazba: data.vazba || '',
+        aspect_pair: data.aspect_pair || data.aspectPair || '',
+        style: data.style || '',
+        frequency_rank: data.frequency_rank || data.frequencyRank || 0,
+        isEnriched: data.isEnriched || false,
         timestamp: new Date().toISOString(),
-        source: data.source || 'deepl',
+        source: data.source || 'deepseek',
         detectedSourceLang: data.detectedSourceLang || 'CS'
       });
 
@@ -357,7 +390,7 @@ class DataService {
       ...this.stats,
       cacheHitRate: ((this.stats.cacheHits / total) * 100).toFixed(2) + '%',
       firebaseHitRate: ((this.stats.firebaseHits / total) * 100).toFixed(2) + '%',
-      deeplHitRate: ((this.stats.deeplHits / total) * 100).toFixed(2) + '%',
+      deepseekHitRate: ((this.stats.deepseekHits / total) * 100).toFixed(2) + '%',
       fallbackHitRate: ((this.stats.fallbackHits / total) * 100).toFixed(2) + '%',
       cacheSize: this.translationCache.size,
       connectionStatus: this.connectionStatus

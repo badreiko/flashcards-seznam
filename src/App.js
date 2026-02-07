@@ -131,7 +131,7 @@ const LanguageToggle = ({ lang, onToggle }) => {
 const Flashcard = ({
   word, translations, source, gender, grammar, forms, searchedWord, flipTrigger,
   ipa, vzor, cefrLevel, cefr_level, translationsUa, translations_ua,
-  targetLang = 'ru'
+  targetLang = 'ru', ...props
 }) => {
   // Поддержка обоих форматов именования (camelCase и snake_case)
   const ipaValue = ipa;
@@ -139,19 +139,11 @@ const Flashcard = ({
   const cefrValue = cefrLevel || cefr_level;
   const uaTranslations = translationsUa || translations_ua || [];
 
-  // Логика выбора основного и дополнительного перевода
+  // Логика выбора перевода (всегда только один язык)
   const t = uiTranslations[targetLang] || uiTranslations.ru;
-  let primaryTranslations = translations;
-  let secondaryTranslations = uaTranslations;
-  let primaryLabel = t.primaryLabelRu;
-  let secondaryLabel = t.primaryLabelUa;
-
-  if (targetLang === 'ua' && uaTranslations.length > 0) {
-    primaryTranslations = uaTranslations;
-    secondaryTranslations = translations;
-    primaryLabel = t.primaryLabelUa;
-    secondaryLabel = t.primaryLabelRu;
-  }
+  const displayTranslations = (targetLang === 'ua' && uaTranslations.length > 0)
+    ? uaTranslations
+    : translations;
 
   const [isFlipped, setIsFlipped] = useState(false);
   const [rotateX, setRotateX] = useState(0);
@@ -211,6 +203,13 @@ const Flashcard = ({
     return 'var(--primary)';
   };
 
+  // Новые поля
+  const aspectPair = props.aspect_pair || props.aspectPair;
+  const wordStyle = props.style;
+  const examples = props.examples || [];
+  const stressWord = props.stress;
+  const vazbaValue = props.vazba;
+
   return (
     <div
       className={`flashcard ${isFlipped ? 'flipped' : ''}`}
@@ -224,14 +223,21 @@ const Flashcard = ({
             <div className="card-glare" style={{ background: `radial-gradient(circle at ${glarePosition.x}% ${glarePosition.y}%, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0) 80%)` }} />
           )}
           <div className="word-container">
-            <div className="word">{word}</div>
+            <div className="word">{stressWord || word}</div>
             {ipaValue && <div className="ipa-transcription">{ipaValue}</div>}
-            {(gender || grammar || vzorValue || cefrValue) && (
+            {(gender || grammar || vzorValue || cefrValue || wordStyle || aspectPair) && (
               <div className="front-meta">
                 {gender && <span className="meta-badge gender">{gender}</span>}
                 {grammar && <span className="meta-badge grammar">{grammar}</span>}
                 {vzorValue && <span className="meta-badge vzor">vzor: {vzorValue}</span>}
                 {cefrValue && <span className="meta-badge cefr">{cefrValue}</span>}
+                {wordStyle && <span className="meta-badge style">{wordStyle}</span>}
+                {aspectPair && <span className="meta-badge aspect">{aspectPair}</span>}
+              </div>
+            )}
+            {vazbaValue && (
+              <div className="vazba-badge">
+                <span className="vazba-label">vazba:</span> {vazbaValue}
               </div>
             )}
             <button className="audio-btn" onClick={handleSpeak}>
@@ -245,34 +251,28 @@ const Flashcard = ({
         </div>
 
         <div className="card-back">
-          {(gender || grammar || vzorValue || cefrValue) && (
+          {(gender || grammar || vzorValue || cefrValue || wordStyle || aspectPair) && (
             <div className="back-header">
               <div className="grammar-tags">
                 {gender && <span className="tag tag-gender">{gender}</span>}
                 {grammar && <span className="tag tag-grammar">{grammar}</span>}
                 {vzorValue && <span className="tag tag-vzor">vzor: {vzorValue}</span>}
                 {cefrValue && <span className="tag tag-cefr">{cefrValue}</span>}
+                {wordStyle && <span className="tag tag-style">{wordStyle}</span>}
+                {aspectPair && <span className="tag tag-aspect">{aspectPair}</span>}
               </div>
             </div>
           )}
           <div className="translations">
-            <h4>{primaryLabel}</h4>
-            {primaryTranslations?.length > 0 ? (
-              <p>{primaryTranslations.join(', ')}</p>
+            {displayTranslations?.length > 0 ? (
+              <p>{displayTranslations.join(', ')}</p>
             ) : <p className="no-translations">{t.noTranslations}</p>}
           </div>
-
-          {secondaryTranslations?.length > 0 && (
-            <div className="translations translations-ua">
-              <h4>{secondaryLabel}</h4>
-              <p>{secondaryTranslations.join(', ')}</p>
-            </div>
-          )}
           {forms?.length > 0 && (
             <div className="word-forms">
               <h4>{t.wordForms}:</h4>
               <div className="forms-grid">
-                {forms.map((f, i) => {
+                {forms.slice(0, 12).map((f, i) => {
                   const isSearched = searchedWord && f.toLowerCase() === searchedWord.toLowerCase();
                   return (
                     <span key={i} className={`form-item ${isSearched ? 'current' : ''}`}>
@@ -280,6 +280,20 @@ const Flashcard = ({
                     </span>
                   );
                 })}
+              </div>
+            </div>
+          )}
+
+          {examples?.length > 0 && (
+            <div className="examples-section">
+              <h4>Примеры:</h4>
+              <div className="examples-list">
+                {examples.slice(0, 3).map((ex, i) => (
+                  <div key={i} className="example-item">
+                    <p className="ex-cz">{ex.czech}</p>
+                    <p className="ex-ru">{targetLang === 'ua' ? (ex.ukrainian || ex.russian) : ex.russian}</p>
+                  </div>
+                ))}
               </div>
             </div>
           )}
@@ -396,6 +410,15 @@ const App = () => {
       setProcessedCount(i + 1);
       setProgress(Math.floor(((i + 1) / uniqueWords.length) * 100));
     }
+
+    // Сортировка по частотности (frequency_rank). 
+    // Чем меньше ранг, тем более частотное (важное) слово.
+    // Слова без ранга (0) уходят в конец.
+    translatedCards.sort((a, b) => {
+      const rankA = a.frequency_rank || a.frequencyRank || 999999;
+      const rankB = b.frequency_rank || b.frequencyRank || 999999;
+      return rankA - rankB;
+    });
 
     setFlashcards(translatedCards);
     setCurrentStep('translated');

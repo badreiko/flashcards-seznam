@@ -670,6 +670,39 @@
       font-weight: 700;
     }
 
+    .meta-badge.style {
+      background: rgba(100, 116, 139, 0.1);
+      color: var(--text-secondary);
+      font-style: italic;
+      text-transform: lowercase;
+    }
+
+    .meta-badge.aspect {
+      background: rgba(79, 70, 229, 0.05);
+      border: 1px dashed rgba(79, 70, 229, 0.3);
+      color: var(--primary);
+      text-transform: none;
+    }
+
+    .vazba-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      background: rgba(16, 185, 129, 0.08);
+      color: #059669;
+      border-radius: 12px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-top: 12px;
+    }
+
+    .vazba-label {
+      opacity: 0.6;
+      font-weight: 500;
+      font-size: 0.8rem;
+    }
+
     /* Back card tags */
     .grammar-tags {
       display: flex;
@@ -824,6 +857,17 @@
       font-weight: 700;
     }
 
+    .tag-style {
+      background: rgba(100, 116, 139, 0.1);
+      color: var(--text-secondary);
+      font-style: italic;
+    }
+
+    .tag-aspect {
+      background: rgba(79, 70, 229, 0.05);
+      color: var(--primary);
+    }
+
     .translations {
       flex-shrink: 0;
       text-align: center;
@@ -876,6 +920,52 @@
       color: var(--text-muted);
       margin: 0 0 12px 0;
       text-align: center;
+    }
+
+    /* Examples Section - MORE COMPACT */
+    .examples-section {
+      flex-shrink: 0;
+      padding-top: 12px;
+      margin-top: 4px;
+      border-top: 1px dashed var(--border);
+    }
+
+    .examples-section h4 {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin: 0 0 8px 0;
+      text-align: center;
+      opacity: 0.8;
+    }
+
+    .examples-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .example-item {
+      padding: 6px 10px;
+      background: rgba(0, 0, 0, 0.015);
+      border-radius: 6px;
+      border-left: 2px solid var(--border);
+    }
+
+    .ex-cz {
+      font-size: 0.85rem;
+      color: var(--text-main);
+      font-weight: 500;
+      margin-bottom: 2px;
+      line-height: 1.2;
+    }
+
+    .ex-ru {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      font-style: italic;
+      line-height: 1.2;
     }
 
     .card-source {
