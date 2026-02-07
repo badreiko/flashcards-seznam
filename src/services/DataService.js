@@ -130,24 +130,17 @@ class DataService {
 
   /**
    * Проверяет, является ли запись "неполной" (требующей дообогащения)
+   * Проверяем реальные поля, а не флаг isEnriched
    */
   isRecordIncomplete(data) {
     if (!data) return true;
 
-    // 1. Нет примеров
-    const hasNoExamples = !data.examples || data.examples.length === 0;
+    const hasNoIpa = !data.ipa;
+    const hasNoVzor = !data.vzor;
+    const hasNoUaTranslations = !data.translations_ua || !data.translations_ua.length;
+    const hasNoCefr = !data.cefr_level && !data.cefrLevel;
 
-    // 2. Нет видовой пары для глагола
-    const isVerb = data.grammar && (data.grammar.toLowerCase().includes('verb') || data.grammar.toLowerCase().includes('гл.'));
-    const hasNoAspectPair = isVerb && (!data.aspect_pair && !data.aspectPair);
-
-    // 3. Нет ударения или стилистики (новые поля)
-    const hasNoStress = !data.stress;
-
-    // Если уже было "дообогащено", не трогаем (чтобы избежать циклов)
-    if (data.isEnriched) return false;
-
-    return hasNoExamples || hasNoAspectPair || hasNoStress;
+    return hasNoIpa || hasNoVzor || hasNoUaTranslations || hasNoCefr;
   }
 
   /**
