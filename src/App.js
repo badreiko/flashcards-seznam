@@ -12,9 +12,14 @@ const extractUniqueWords = (text) => {
   const cleanedText = lowerCaseText.replace(/[.,/#!$%^&*;:{}=\-_`~()«»„"[\]]/g, ' ');
   const allWords = cleanedText.split(/\s+/).filter(word => word.length > 1);
 
+  // Убираем цифры и слова с цифрами (как в Android)
+  const noDigits = allWords
+    .filter(w => !/^\d+$/.test(w))        // чисто цифры: "123"
+    .filter(w => !/^\d+.*|.*\d+$/.test(w)); // начинается/заканчивается цифрой: "3x", "km2"
+
   // Убираем шумовые/служебные слова (se, si, etc.)
   // DeepSeek сам восстановит возвратную форму глагола (učím → učit se)
-  const meaningfulWords = allWords.filter(w => !CZECH_NOISE_WORDS.has(w));
+  const meaningfulWords = noDigits.filter(w => !CZECH_NOISE_WORDS.has(w));
 
   return Array.from(new Set(meaningfulWords)).sort();
 };
