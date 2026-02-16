@@ -280,7 +280,7 @@ const Flashcard = ({
             <div className="word-forms">
               <h4>{t.wordForms}:</h4>
               <div className="forms-grid">
-                {forms.slice(0, 6).map((f, i) => {
+                {forms.slice(0, 12).map((f, i) => {
                   const isSearched = searchedWord && f.toLowerCase() === searchedWord.toLowerCase();
                   return (
                     <span key={i} className={`form-item ${isSearched ? 'current' : ''}`}>

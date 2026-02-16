@@ -361,6 +361,7 @@ class DataService {
         cefr_level: data.cefr_level || data.cefrLevel || '',
         frequency_rank: data.frequency_rank || data.frequencyRank || 0,
         isEnriched: data.isEnriched || false,
+        learned_at: data.learned_at || Date.now(),
         timestamp: new Date().toISOString(),
         source: data.source || 'deepseek',
         detectedSourceLang: data.detectedSourceLang || 'CS'
