@@ -8,7 +8,7 @@ const CZECH_NOISE_WORDS = new Set(['se', 'si', 'by', 'aby', 'že', 'je', 'to', '
 // Функция для извлечения уникальных слов из текста
 const extractUniqueWords = (text) => {
   if (!text || typeof text !== 'string') return [];
-  const lowerCaseText = text.toLowerCase();
+  const lowerCaseText = text.normalize('NFC').toLowerCase();
   const cleanedText = lowerCaseText.replace(/[.,/#!$%^&*;:{}=\-_`~()«»„"[\]]/g, ' ');
   const allWords = cleanedText.split(/\s+/).filter(word => word.length > 1);
 
