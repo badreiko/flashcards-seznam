@@ -409,22 +409,28 @@ const App = () => {
   const handleGetTranslations = async () => {
     setIsLoading(true); setProgress(0); setProcessedCount(0);
     const translatedCards = [];
+    const seenWords = new Set(); // Дедупликация по базовой форме слова
 
     for (let i = 0; i < uniqueWords.length; i++) {
       const word = uniqueWords[i];
       setCurrentWord(word);
       const res = await translateWord(word);
       if (res) {
-        translatedCards.push({
-          ...res,
-          searchedWord: word // Запоминаем, что искали
-        });
+        // Ключ дедупликации: word_normalized или word (базовая форма от DeepSeek)
+        const baseWord = (res.word_normalized || res.word || word).normalize('NFC').toLowerCase().trim();
+        if (!seenWords.has(baseWord)) {
+          seenWords.add(baseWord);
+          translatedCards.push({
+            ...res,
+            searchedWord: word
+          });
+        }
       }
       setProcessedCount(i + 1);
       setProgress(Math.floor(((i + 1) / uniqueWords.length) * 100));
     }
 
-    // Сортировка по частотности (frequency_rank). 
+    // Сортировка по частотности (frequency_rank).
     // Чем меньше ранг, тем более частотное (важное) слово.
     // Слова без ранга (0) уходят в конец.
     translatedCards.sort((a, b) => {
