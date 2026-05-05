@@ -9,6 +9,7 @@ import kotlinx.coroutines.tasks.await
 import java.text.Normalizer
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.random.Random
 
 /**
  * DataSource для работы с Firebase Realtime Database
@@ -26,6 +27,12 @@ class FirebaseDataSource @Inject constructor() {
     
     private val formsIndexRef: DatabaseReference
         get() = database.reference.child("forms_index")
+
+    private val phraseIndexRef: DatabaseReference
+        get() = database.reference.child("phrase_index")
+
+    private val phraseBucketsRef: DatabaseReference
+        get() = database.reference.child("phrase_buckets")
     
     private val wordsRef: DatabaseReference
         get() = database.reference.child("words")
@@ -61,7 +68,7 @@ class FirebaseDataSource @Inject constructor() {
                     val entry = parseWordSnapshot(snapshot.value, normalizedWord)
                     if (entry != null) {
                         Log.d(TAG, "Found at path: $path")
-                        return entry
+                        return preservePhraseKeyIfNeeded(normalizedWord, entry)
                     }
                 }
             } catch (e: Exception) {
@@ -96,7 +103,15 @@ class FirebaseDataSource @Inject constructor() {
                     for (path in basePaths) {
                         val snapshot = database.reference.child(path).get().await()
                         if (snapshot.exists()) {
-                            return parseWordSnapshot(snapshot.value, baseWord)
+                            val entry = parseWordSnapshot(snapshot.value, baseWord)
+                            if (entry != null && isValidFormIndexMatch(form, entry)) {
+                                return entry
+                            }
+
+                            Log.w(
+                                TAG,
+                                "Ignoring stale forms_index mapping: $form → $baseWord"
+                            )
                         }
                     }
                 }
@@ -106,6 +121,15 @@ class FirebaseDataSource @Inject constructor() {
         }
         
         return null
+    }
+
+    private fun isValidFormIndexMatch(form: String, entry: WordEntry): Boolean {
+        val normalizedForm = normalizeWord(form)
+        if (normalizeWord(entry.word) == normalizedForm) return true
+
+        return entry.forms.any { candidate ->
+            normalizeWord(candidate) == normalizedForm
+        }
     }
     
     /**
@@ -136,11 +160,14 @@ class FirebaseDataSource @Inject constructor() {
                 stress = (map["stress"] as? String) ?: "",
                 style = (map["style"] as? String) ?: "",
                 isCorrected = (map["is_corrected"] as? Boolean) ?: (map["isCorrected"] as? Boolean) ?: false,
+                // Время добавления пользователем (для группировки сессий в истории)
+                learnedAt = ((map["learned_at"] ?: map["learnedAt"]) as? Number)?.toLong() ?: 0L,
                 // Поля для умного обучения
                 aspectPair = (map["aspect_pair"] as? String) ?: (map["aspectPair"] as? String) ?: "",
                 frequencyRank = ((map["frequency_rank"] ?: map["frequencyRank"]) as? Number)?.toInt() ?: 0,
                 isKnown = (map["is_known"] as? Boolean) ?: (map["isKnown"] as? Boolean) ?: false,
-                partOfSpeech = (map["part_of_speech"] as? String) ?: (map["partOfSpeech"] as? String) ?: ""
+                partOfSpeech = (map["part_of_speech"] as? String) ?: (map["partOfSpeech"] as? String) ?: "",
+                isEnriched = (map["isEnriched"] as? Boolean) ?: (map["is_enriched"] as? Boolean) ?: false
             )
         } catch (e: Exception) {
             Log.e(TAG, "Error parsing word snapshot", e)
@@ -190,7 +217,8 @@ class FirebaseDataSource @Inject constructor() {
                 "forms" to entry.forms,
                 "examples" to entry.examples.map { mapOf("czech" to it.czech, "russian" to it.russian) },
                 "source" to entry.source,
-                "timestamp" to java.time.Instant.now().toString()
+                "timestamp" to java.time.Instant.now().toString(),
+                "learned_at" to if (entry.learnedAt > 0) entry.learnedAt else System.currentTimeMillis()
             )
             
             // Добавляем расширенные поля только если они не пустые
@@ -205,6 +233,7 @@ class FirebaseDataSource @Inject constructor() {
             if (entry.aspectPair.isNotEmpty()) data["aspect_pair"] = entry.aspectPair
             if (entry.frequencyRank > 0) data["frequency_rank"] = entry.frequencyRank
             if (entry.partOfSpeech.isNotEmpty()) data["part_of_speech"] = entry.partOfSpeech
+            if (entry.isEnriched) data["isEnriched"] = true
             // isKnown не сохраняем в Firebase (локальное состояние пользователя)
             
             dictionaryRef.child(normalizedWord).setValue(data).await()
@@ -230,7 +259,147 @@ class FirebaseDataSource @Inject constructor() {
     }
 
     
+    /**
+     * Добавляет маппинг словоформы на базовое слово в forms_index
+     */
+    suspend fun addFormIndex(form: String, baseWord: String) {
+        val normalizedForm = normalizeWord(form)
+        val normalizedBase = normalizeWord(baseWord)
+        if (normalizedForm.isNotEmpty() && normalizedForm != normalizedBase) {
+            formsIndexRef.child(normalizedForm).setValue(normalizedBase).await()
+            Log.d(TAG, "forms_index updated: $normalizedForm → $normalizedBase")
+        }
+    }
+
+    /**
+     * Получает случайные словосочетания из phrase_index.
+     * Полные карточки берутся из dictionary, phrase_index используется только как лёгкий индекс.
+     */
+    suspend fun getRandomPhrases(limit: Int = 20): List<WordEntry> {
+        val selectedKeys = linkedSetOf<String>()
+        val triedBuckets = mutableSetOf<Int>()
+
+        while (selectedKeys.size < limit && triedBuckets.size < PHRASE_BUCKET_COUNT) {
+            val bucket = nextUntriedBucket(triedBuckets)
+            triedBuckets.add(bucket)
+
+            try {
+                val bucketKeys = getPhraseBucketKeys(bucket).shuffled()
+
+                for (key in bucketKeys) {
+                    selectedKeys.add(key)
+                    if (selectedKeys.size >= limit) break
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error reading phrase bucket $bucket", e)
+            }
+        }
+
+        return selectedKeys
+            .take(limit)
+            .mapNotNull { key -> getDictionaryEntry(key) }
+    }
+
+    private suspend fun getPhraseBucketKeys(bucket: Int): List<String> {
+        val bucketSnapshot = phraseBucketsRef.child(bucket.toString()).get().await()
+        val directBucketKeys = bucketSnapshot.children
+            .mapNotNull { child -> child.getValue(String::class.java) ?: child.key }
+            .filter { it.contains(' ') }
+
+        if (directBucketKeys.isNotEmpty()) return directBucketKeys
+
+        val indexSnapshot = phraseIndexRef
+            .orderByChild("bucket")
+            .equalTo(bucket.toDouble())
+            .get()
+            .await()
+
+        return indexSnapshot.children
+            .mapNotNull { child ->
+                child.child("canonical_key").getValue(String::class.java)
+                    ?: child.child("dictionary_key").getValue(String::class.java)
+                    ?: child.key
+            }
+            .filter { it.contains(' ') }
+    }
+
+    private suspend fun getDictionaryEntry(key: String): WordEntry? {
+        val normalizedKey = normalizeWord(key)
+        return try {
+            val snapshot = dictionaryRef.child(normalizedKey).get().await()
+            if (snapshot.exists()) {
+                parseWordSnapshot(snapshot.value, normalizedKey)?.let { entry ->
+                    preservePhraseKeyIfNeeded(normalizedKey, entry)
+                }
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error reading dictionary phrase: $normalizedKey", e)
+            null
+        }
+    }
+
+    private fun nextUntriedBucket(triedBuckets: Set<Int>): Int {
+        var bucket = Random.nextInt(PHRASE_BUCKET_COUNT)
+        while (bucket in triedBuckets) {
+            bucket = Random.nextInt(PHRASE_BUCKET_COUNT)
+        }
+        return bucket
+    }
+
+    private fun preservePhraseKeyIfNeeded(requestedKey: String, entry: WordEntry): WordEntry {
+        val normalizedKey = normalizeWord(requestedKey)
+        val normalizedEntryWord = normalizeWord(entry.word)
+        if (normalizedKey.contains(' ') && !normalizedEntryWord.contains(' ')) {
+            Log.w(
+                TAG,
+                "Preserving phrase key for corrupted phrase entry: $normalizedKey had word=${entry.word}"
+            )
+            return entry.copy(word = normalizedKey)
+        }
+
+        return entry
+    }
+
+    suspend fun markPhraseRefreshed(originalKey: String, refreshedEntry: WordEntry) {
+        val normalizedOriginal = normalizeWord(originalKey)
+        val normalizedRefreshed = normalizeWord(refreshedEntry.word)
+        if (!normalizedOriginal.contains(' ')) return
+
+        val updates = mutableMapOf<String, Any?>(
+            "phrase_index/$normalizedOriginal/last_enriched_at" to System.currentTimeMillis(),
+            "phrase_index/$normalizedOriginal/needs_enrichment" to false,
+            "phrase_index/$normalizedOriginal/repair_status" to "refreshed"
+        )
+
+        if (normalizedRefreshed.contains(' ') && normalizedRefreshed != normalizedOriginal) {
+            updates["phrase_index/$normalizedOriginal/canonical_key"] = normalizedRefreshed
+            updates["phrase_index/$normalizedOriginal/repair_status"] = "repaired"
+            updates["phrase_index/$normalizedRefreshed/dictionary_key"] = normalizedRefreshed
+            updates["phrase_index/$normalizedRefreshed/word_count"] =
+                normalizedRefreshed.split(Regex("\\s+")).filter { it.isNotEmpty() }.size
+            updates["phrase_index/$normalizedRefreshed/char_count"] = normalizedRefreshed.length
+            updates["phrase_index/$normalizedRefreshed/bucket"] = phraseBucket(normalizedRefreshed)
+            updates["phrase_index/$normalizedRefreshed/last_enriched_at"] = System.currentTimeMillis()
+            updates["phrase_index/$normalizedRefreshed/needs_enrichment"] = false
+            updates["phrase_index/$normalizedRefreshed/repair_status"] = "valid"
+            updates["phrase_buckets/${phraseBucket(normalizedRefreshed)}/$normalizedRefreshed"] = normalizedRefreshed
+        }
+
+        database.reference.updateChildren(updates).await()
+    }
+
+    private fun phraseBucket(key: String): Int {
+        var hash = 0
+        for (char in key) {
+            hash = 31 * hash + char.code
+        }
+        return Math.floorMod(hash, PHRASE_BUCKET_COUNT)
+    }
+
     companion object {
         private const val TAG = "FirebaseDataSource"
+        private const val PHRASE_BUCKET_COUNT = 100
     }
 }
