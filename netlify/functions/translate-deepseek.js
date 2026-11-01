@@ -107,7 +107,8 @@ exports.handler = async (event, context) => {
           'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
         },
         body: JSON.stringify({
-          model: "deepseek-chat",
+          model: "deepseek-flash",
+          thinking: { type: "disabled" },
           messages: [
             { role: "system", content: prompt },
             { role: "user", content: promptUser }
