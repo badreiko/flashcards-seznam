@@ -3,6 +3,9 @@
  * Генерирует богатые данные (грамматика, формы, переводы) для новых слов
  */
 
+const { createHash } = require('node:crypto');
+const FUNCTION_REVISION = 'deepseek-auth-diagnostics-v1';
+
 exports.handler = async (event, context) => {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method Not Allowed' };
@@ -13,6 +16,16 @@ exports.handler = async (event, context) => {
     if (!DEEPSEEK_API_KEY) {
       throw new Error('DEEPSEEK_API_KEY not configured');
     }
+
+    console.log('[DeepSeek runtime]', JSON.stringify({
+      revision: FUNCTION_REVISION,
+      keyFingerprint: createHash('sha256').update(DEEPSEEK_API_KEY).digest('hex').slice(0, 12),
+      keyLength: DEEPSEEK_API_KEY.length,
+      hasWhitespace: /\s/.test(DEEPSEEK_API_KEY),
+      hasWrappingQuotes: /^["']|["']$/.test(DEEPSEEK_API_KEY),
+      siteId: process.env.SITE_ID || null,
+      requestId: context?.awsRequestId || null
+    }));
 
     const { text, mode: requestedMode, type } = JSON.parse(event.body);
     const word = Array.isArray(text) ? text[0] : text;
@@ -122,7 +135,17 @@ exports.handler = async (event, context) => {
 
       if (!response.ok) {
         const err = await response.text();
-        console.error('[DeepSeek API Error]', err);
+        let providerError;
+        try { providerError = JSON.parse(err).error; } catch { providerError = null; }
+        const redact = value => String(value || '')
+          .split(DEEPSEEK_API_KEY).join('[REDACTED]')
+          .replace(/sk-[^\s"'<>]+/gi, '[REDACTED]');
+        console.error('[DeepSeek API Error]', JSON.stringify({
+          status: response.status,
+          type: redact(providerError?.type),
+          code: redact(providerError?.code),
+          message: redact(providerError?.message || 'Non-JSON or unrecognized provider error')
+        }));
         throw new Error(`DeepSeek API Error: ${response.status}`);
       }
 
@@ -218,6 +241,7 @@ exports.handler = async (event, context) => {
       statusCode: 200,
       headers: {
         'Content-Type': 'application/json',
+        'X-Translation-Revision': FUNCTION_REVISION,
         'Access-Control-Allow-Origin': '*'
       },
       body: JSON.stringify(result)
@@ -227,6 +251,11 @@ exports.handler = async (event, context) => {
     console.error('[DeepSeek Proxy] Error:', error);
     return {
       statusCode: 500,
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Translation-Revision': FUNCTION_REVISION,
+        'Access-Control-Allow-Origin': '*'
+      },
       body: JSON.stringify({ error: error.message })
     };
   }
