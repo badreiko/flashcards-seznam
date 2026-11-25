@@ -3,6 +3,7 @@ import { dataService } from './services/DataService';
 import { normalizeWord, hasCyrillic } from './utils/wordMatcher';
 import { getVazbaTheory } from './utils/vazbaTheory';
 import { SRS_RATING } from './utils/srsScheduler';
+import { ttsService } from './utils/ttsService';
 
 // Чешские возвратные частицы и служебные слова, которые не нужны как отдельные карточки
 const CZECH_NOISE_WORDS = new Set(['se', 'si', 'by', 'aby', 'že', 'je', 'to', 'už']);
@@ -45,12 +46,7 @@ const extractUniqueWords = (text) => {
 };
 
 function speakCzech(text) {
-  if (!text || !('speechSynthesis' in window)) return;
-  window.speechSynthesis.cancel();
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang = 'cs-CZ';
-  utterance.rate = 0.85;
-  window.speechSynthesis.speak(utterance);
+  ttsService.speak(text);
 }
 
 const uiTranslations = {
