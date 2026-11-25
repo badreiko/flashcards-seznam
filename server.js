@@ -151,7 +151,6 @@ app.get('/', (req, res) => {
 // Используем тот же handler, что и в продакшене Netlify (единый промпт,
 // модель deepseek-flash, режим фраз и валидация).
 const deepseekHandler = require('./netlify/functions/translate-deepseek').handler;
-const googleTtsHandler = require('./netlify/functions/tts-google').handler;
 
 app.post('/.netlify/functions/translate-deepseek', async (req, res) => {
   try {
@@ -173,31 +172,6 @@ app.post('/.netlify/functions/translate-deepseek', async (req, res) => {
     res.status(result.statusCode || 200).send(result.body);
   } catch (error) {
     console.error('[Dev Proxy] DeepSeek Error:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Эмуляция Netlify Function для Google Gemini TTS
-app.post('/.netlify/functions/tts-google', async (req, res) => {
-  try {
-    const result = await googleTtsHandler(
-      {
-        httpMethod: 'POST',
-        headers: req.headers,
-        body: JSON.stringify(req.body || {})
-      },
-      {}
-    );
-
-    if (result.headers) {
-      Object.entries(result.headers).forEach(([key, value]) => {
-        res.setHeader(key, value);
-      });
-    }
-
-    res.status(result.statusCode || 200).send(result.body);
-  } catch (error) {
-    console.error('[Dev Proxy] Google TTS Error:', error);
     res.status(500).json({ error: error.message });
   }
 });
