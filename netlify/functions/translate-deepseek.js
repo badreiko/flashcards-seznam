@@ -36,7 +36,10 @@ exports.handler = async (event, context) => {
 
     const normalizedInput = String(word).trim();
     const modeHint = requestedMode || type;
-    const mode = modeHint === 'phrase' || /\s/.test(normalizedInput) ? 'phrase' : 'word';
+    const isCyrillicInput = /[а-яёіїєґ]/i.test(normalizedInput);
+    const mode = modeHint === 'reverse' || isCyrillicInput
+      ? 'reverse'
+      : (modeHint === 'phrase' || /\s/.test(normalizedInput) ? 'phrase' : 'word');
 
     console.log(`[DeepSeek] Processing (${mode}): "${word}"`);
 
@@ -104,10 +107,42 @@ exports.handler = async (event, context) => {
 10. Пример: вход "benzín bezolovnatý" -> base "bezolovnatý benzín" или "benzín bezolovnatý", translations ["неэтилированный бензин"], НЕ другая техническая фраза.
 11. Ответ ТОЛЬКО валидный JSON без markdown и пояснений.`;
 
-    const systemPrompt = mode === 'phrase' ? phraseSystemPrompt : wordSystemPrompt;
-    const userPrompt = mode === 'phrase'
-      ? `Analyze this Czech phrase as one whole expression, not by first word: "${word}"`
-      : `Analysis of: "${word}"`;
+    const reverseSystemPrompt = `Ты эксперт по чешскому языку. На вход приходит слово или короткое выражение на РУССКОМ или УКРАИНСКОМ языке.
+Найди самый точный и употребительный ЧЕШСКИЙ перевод (одно базовое чешское слово в словарной форме — infinitiv для глаголов, nominativ sg для существительных — или устойчивую чешскую фразу) и верни JSON со ВСЕМИ полями:
+
+{
+  "base": "точное ЧЕШСКОЕ слово или фраза (латиница с диакритикой, НЕ кириллица)",
+  "pos": "noun|verb|adj|adv|prep|conj|pron|num|part|interj|phrase",
+  "gender": "m|f|n или null",
+  "vzor": "образец склонения/спряжения чешского слова (или null для фраз/предлогов)",
+  "vazba": "управление (например: na + 4, s + 7) или null",
+  "ipa": "ОБЯЗАТЕЛЬНАЯ фонетическая транскрипция IPA чешского слова в квадратных скобках",
+  "stress": "чешское слово с ударением или null",
+  "style": "hovor.|kniž.|zastaralé|expr.|vulg. или null",
+  "cefr_level": "ОБЯЗАТЕЛЬНО уровень A1|A2|B1|B2|C1|C2",
+  "is_corrected": false,
+  "translations": ["перевод на русский 1", "перевод 2", "перевод 3"],
+  "translations_ua": ["ОБЯЗАТЕЛЬНО переклад українською 1", "переклад 2", "переклад 3"],
+  "forms": ["форма1", "форма2", "..."],
+  "examples": [{"czech": "Пример на чешском.", "russian": "Перевод на русский."}],
+  "aspect_pair": "для глаголов: видовая пара (napsat ↔ psát) или null",
+  "frequency_rank": числовой ранг частоты 1-50000
+}
+
+КРИТИЧЕСКИ ВАЖНО:
+1. Поле "base" ОБЯЗАТЕЛЬНО на ЧЕШСКОМ языке (без кириллицы).
+2. translations (RU) должны включать исходный смысл слова, translations_ua (UA) — обязательный перевод на украинский.
+3. ipa и cefr_level — ОБЯЗАТЕЛЬНЫ.
+4. Ответ ТОЛЬКО валидный JSON без markdown и пояснений.`;
+
+    const systemPrompt = mode === 'reverse'
+      ? reverseSystemPrompt
+      : (mode === 'phrase' ? phraseSystemPrompt : wordSystemPrompt);
+    const userPrompt = mode === 'reverse'
+      ? `Translate this Russian/Ukrainian word or short expression into the single best Czech lemma/phrase and return full linguistic JSON: "${word}"`
+      : (mode === 'phrase'
+        ? `Analyze this Czech phrase as one whole expression, not by first word: "${word}"`
+        : `Analysis of: "${word}"`);
 
     const requestDeepSeek = async (prompt, promptUser) => {
       const controller = new AbortController();
@@ -188,6 +223,10 @@ exports.handler = async (event, context) => {
       throw new Error(`Phrase analysis returned unrelated phrase: ${parsedBase}`);
     }
 
+    if (mode === 'reverse' && /[а-яёіїєґ]/i.test(String(parsedBase))) {
+      throw new Error(`Reverse translation returned non-Czech base: ${parsedBase}`);
+    }
+
     const safeBase = collapsedPhrase
       ? normalizedInput
       : parsedBase;
@@ -196,7 +235,7 @@ exports.handler = async (event, context) => {
     const result = {
       // Основные поля
       word: safeBase,
-      word_normalized: String(safeBase).toLowerCase(),
+      word_normalized: String(safeBase).normalize('NFC').toLowerCase().trim(),
       translations: parsed.translations || [],
       gender: parsed.gender || "",
       grammar: parsed.pos || parsed.grammar || "",
@@ -263,6 +302,7 @@ exports.handler = async (event, context) => {
 
 function phraseTokens(value) {
   return String(value)
+    .normalize('NFC')
     .toLowerCase()
     .trim()
     .split(/\s+/)

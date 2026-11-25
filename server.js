@@ -135,13 +135,11 @@ app.get('/api/health', (req, res) => {
 app.get('/', (req, res) => {
   res.json({
     name: 'Flashcards Seznam API',
-    version: '2.0.0',
-    description: 'API для перевода чешских слов через DeepL',
+    version: '2.1.0',
+    description: 'API для перевода чешских слов и фраз через DeepSeek',
     endpoints: {
       health: '/api/health',
-      translateDeepL: '/api/translate-deepl?word=slovo',
-      translateDeepLBatch: '/api/translate-deepl/batch',
-      deeplUsage: '/api/deepl/usage'
+      translateDeepSeek: 'POST /.netlify/functions/translate-deepseek'
     }
   });
 });
@@ -150,64 +148,28 @@ app.get('/', (req, res) => {
 // NETLIFY FUNCTION EMULATION (FOR LOCAL DEV)
 // ==============================================
 
-// Эмуляция Netlify Function для DeepSeek
+// Используем тот же handler, что и в продакшене Netlify (единый промпт,
+// модель deepseek-flash, режим фраз и валидация).
+const deepseekHandler = require('./netlify/functions/translate-deepseek').handler;
+
 app.post('/.netlify/functions/translate-deepseek', async (req, res) => {
   try {
-    const { text } = req.body;
-    const word = Array.isArray(text) ? text[0] : text;
-    const apiKey = process.env.DEEPSEEK_API_KEY;
-
-    if (!apiKey) return res.status(500).json({ error: 'DEEPSEEK_API_KEY missing' });
-
-    console.log(`[Dev Proxy] DeepSeek request for: "${word}"`);
-
-    const systemPrompt = `Ты эксперт по чешскому языку. Твоя задача — проанализировать слово и вернуть строгий JSON объект.
-    
-    Формат ответа JSON:
-    {
-      "word": "базовая форма слова (лемма)",
-      "word_normalized": "базовая форма lowercase",
-      "translations": ["русский перевод 1", "русский перевод 2", "русский перевод 3"],
-      "gender": "род (m/f/n) или пустая строка",
-      "grammar": "часть речи (noun/verb/adj...)",
-      "forms": ["список", "основных", "словоформ", "этого", "слова", "(до 12 штук)"],
-      "examples": [
-        {"czech": "Пример на чешском", "russian": "Перевод на русский"}
-      ]
-    }
-
-    ВАЖНО:
-    1. Если слово "zkontroluj", то базовая форма "zkontrolovat".
-    2. ОТВЕЧАЙ ТОЛЬКО ВАЛИДНЫМ JSON.`;
-
-    const response = await fetch('https://api.deepseek.com/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
+    const result = await deepseekHandler(
+      {
+        httpMethod: 'POST',
+        headers: req.headers,
+        body: JSON.stringify(req.body || {})
       },
-      body: JSON.stringify({
-        model: "deepseek-chat",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: `Проанализируй чешское слово: "${word}"` }
-        ],
-        temperature: 0.1,
-        response_format: { type: "json_object" }
-      })
-    });
+      {}
+    );
 
-    const data = await response.json();
-
-    if (data.error) {
-      throw new Error(data.error.message);
+    if (result.headers) {
+      Object.entries(result.headers).forEach(([key, value]) => {
+        res.setHeader(key, value);
+      });
     }
 
-    const resultJSON = JSON.parse(data.choices[0].message.content);
-    resultJSON.source = 'deepseek';
-
-    res.json(resultJSON);
-
+    res.status(result.statusCode || 200).send(result.body);
   } catch (error) {
     console.error('[Dev Proxy] DeepSeek Error:', error);
     res.status(500).json({ error: error.message });

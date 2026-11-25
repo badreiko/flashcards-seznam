@@ -1,5 +1,6 @@
 node_modules/
 build/
+backups/
 .env
 .DS_Store
 *.log

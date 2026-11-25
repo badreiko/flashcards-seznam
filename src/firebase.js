@@ -2,7 +2,7 @@
 
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
-import { getDatabase, connectDatabaseEmulator } from "firebase/database";
+import { getDatabase } from "firebase/database";
 
 // Исправленная конфигурация Firebase
 const firebaseConfig = {

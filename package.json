@@ -24,7 +24,8 @@
     "server": "node server.js",
     "dev": "concurrently \"npm run server\" \"npm start\"",
     "dev:server": "nodemon server.js",
-    "build:server": "node server.js"
+    "build:server": "node server.js",
+    "backup": "node scripts/backup-firebase.js"
   },
   "eslintConfig": {
     "extends": [
